@@ -1,0 +1,37 @@
+{%- set page_name = "meter-settings" -%}
+{% extends "base.html" %}
+{% block title %}{{ icon('settings') }} {{ _('Meter settings') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('settings') }} {{ _('Settings') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ _('Meter') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="site-meters">
+            <div id="box-settings" class="box">
+                <div class="box-header">
+                    <span class="title">Meter settings</span>
+                </div> <!-- class="box-header" -->
+                <div class="box-content padded">
+                    <form class="form-horizontal">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="site-meters">
+        {% with %}
+          {% set title = _('Meters') %}
+          {% include "meters-table.html" %}
+        {% endwith %}
+        </div>
+    </div>
+{% endblock %}

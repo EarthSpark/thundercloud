@@ -1,0 +1,15 @@
+[
+    {
+        "created_by_id": null,
+        "environment": {},
+        "event_type": "ground-override-meter-state-disabled",
+        "ground_id": "00000002-0000-0000-0000-000000000001",
+        "id": "%% FILTERED BY UNITTEST %%",
+        "object_id": "00000002-0000-0000-0000-000000000001",
+        "object_table": "ground",
+        "processed": false,
+        "processed_timestamp": null,
+        "snapshot_id": "ca3675b2-0f78-83b6-4a85-4d61c1393307",
+        "timestamp": "%% FILTERED BY UNITTEST %%"
+    }
+]

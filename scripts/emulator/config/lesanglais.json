@@ -1,0 +1,45 @@
+{
+    "devices": {
+        "SM15R": {
+            "ids": [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 30, 33, 34, 37, 38, 41, 42, 43, 49, 50, 51, 52],
+            "config": {
+                "default": {
+                    "state": "on",
+                    "uptime": 0,
+                    "frequency": {
+                        "min": 61,
+                        "max": 64
+                    },
+                    "voltage_avg": {
+                        "min": 112,
+                        "max": 126
+                    },
+                    "current_avg": {
+                        "min": 0.0175,
+                        "max": 2.15
+                    },
+                    "energy": 0,
+                    "true_power_inst": {
+                        "min": 1,
+                        "max": 10
+                    },
+                    "true_power_avg": {
+                        "min": 1,
+                        "max": 10
+                    },
+                    "apparent_power_avg": {
+                        "min": 15,
+                        "max": 45
+                    },
+                    "power_factor_avg": {
+                        "min": 0.0,
+                        "max": 1.0
+                    },
+                    "user_power_limit": 11,
+                    "soft_power_limit": 11,
+                    "tx": 0.9
+                }
+            }
+        }
+    }
+}

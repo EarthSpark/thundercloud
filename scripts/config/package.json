@@ -1,0 +1,46 @@
+{
+  "name": "sparkmeter",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "compass-mixins": "~0.12.10",
+    "sass": "^1.97.2",
+    "uglify-js": "^2.7.3",
+    "webpack": "^1.13.2"
+  },
+  "devDependencies": {
+    "angular-mocks": "1.4.9",
+    "babel-core": "^6.26.0",
+    "babel-jest": "^22.1.0",
+    "eslint": "1.10.3",
+    "eslint-config-standard": "4.4.0",
+    "eslint-plugin-standard": "1.1.0",
+    "jest": "^22.1.4",
+    "jest-mock": "^22.1.0",
+    "regenerator-runtime": "^0.11.1"
+  },
+  "jest": {
+    "coverageDirectory": ".coverage-js",
+    "collectCoverageFrom": [
+      "assets/javascripts/*.js",
+      "sparkmeter/**/*.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/assets/javascripts/vendor/",
+      "/*.spec.js/"
+    ],
+    "rootDir": "../..",
+    "modulePaths": [
+      "assets/javascripts",
+      "sparkmeter"
+    ],
+    "setupFiles": [
+      "./scripts/config/jest.init.js"
+    ],
+    "testURL": "http://localhost"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

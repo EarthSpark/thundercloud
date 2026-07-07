@@ -1,0 +1,18 @@
+> GET /api/v0/customers?ground_name=test+micr%C3%B8grid+1&ground_id=00000002-0000-0000-0000-000000000001 HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 400 BAD REQUEST
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "can't pass in both ground_id and ground_name",
+  "status": "failure"
+}

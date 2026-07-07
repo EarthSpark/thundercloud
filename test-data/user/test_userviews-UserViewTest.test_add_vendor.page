@@ -1,0 +1,21 @@
+> POST /user/add/vendor HTTP/1.1
+> Content-Length: 83
+> Content-Type: application/x-www-form-urlencoded
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> email=foo%40bar.com&password=foobar&confirm=foobar&username=username&save_button=Save
+
+< HTTP/1.1 302 FOUND
+< Content-Type: text/html; charset=utf-8
+< Location: /user/
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/user/">/user/</a>. If not, click the link.
+

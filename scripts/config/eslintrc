@@ -1,0 +1,34 @@
+// -*- mode: js -*-
+{
+    // The environment, eg global APIs that we use in out source code
+    "env": {
+        // enable window/document etc global API
+        "browser": true,
+        // enable $ global API
+	"jquery": true
+    },
+
+    // Use the configuration from https://github.com/feross/standard as a base
+    "extends": "standard",
+
+    // Overide a couple of rules to better fit out current style
+    // guide, see http://eslint.org/docs/rules/ for more information about specific rules
+    "rules": {
+        // indent to be 4 spaces instead of 2, like Python
+        "indent": [2, 4, { "SwitchCase": 1 }],
+        // Allow console.log/info for now
+        "no-console": 0,
+        // We use new for creating a fixed header in datatables
+        "no-new": 0,
+        // allow both ' and " for string quoting
+        "quotes": [0, "single", "avoid-escape"],
+        // require ;
+        "semi": [2, "always"],
+        //
+        "no-unused-vars": [2, {"vars": "all", "args": "none"}],
+        // require no spaces before first function partenthesis
+        "space-before-function-paren": [2, "never"],
+	// allow mixing camelcase for now
+	"camelcase": 0,
+    }
+}

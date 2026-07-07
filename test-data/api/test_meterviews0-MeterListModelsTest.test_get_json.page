@@ -1,0 +1,125 @@
+> GET /api/v0/meters/models HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "models": [
+    {
+      "continuous_limit": 100.0,
+      "count": 0,
+      "inrush_limit": 100.0,
+      "name": "SM100E",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 20.0,
+      "count": 0,
+      "inrush_limit": 20.0,
+      "name": "SM15R",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 16.0,
+      "count": 0,
+      "inrush_limit": 19.0,
+      "name": "SM16R",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 200.0,
+      "count": 0,
+      "inrush_limit": 200.0,
+      "name": "SM200E",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 20.0,
+      "count": 0,
+      "inrush_limit": 20.0,
+      "name": "SM20R",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 20.0,
+      "count": 1,
+      "inrush_limit": 20.0,
+      "name": "SM25R",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 6.0,
+      "count": 0,
+      "inrush_limit": 12.0,
+      "name": "SM5R",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 61.0,
+      "name": "SM60R",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 61.0,
+      "name": "SM60RP",
+      "phase_count": 3
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 101.0,
+      "name": "SMRPI",
+      "phase_count": 3
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 101.0,
+      "name": "SMRPIPLC",
+      "phase_count": 3
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 101.0,
+      "name": "SMRPIRF",
+      "phase_count": 3
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 81.0,
+      "name": "SMRSD",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 81.0,
+      "name": "SMRSDPLC",
+      "phase_count": 1
+    },
+    {
+      "continuous_limit": 61.0,
+      "count": 0,
+      "inrush_limit": 81.0,
+      "name": "SMRSDRF",
+      "phase_count": 1
+    }
+  ],
+  "status": "success"
+}

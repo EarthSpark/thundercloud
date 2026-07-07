@@ -1,0 +1,13 @@
+> GET /api/v0/does-not-exist HTTP/1.1
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 404 NOT FOUND
+< Content-Type: application/json
+< Vary: Cookie
+<
+{
+  "error": "no such api",
+  "status": "failure"
+}

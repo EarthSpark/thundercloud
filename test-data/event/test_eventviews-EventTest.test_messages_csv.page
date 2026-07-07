@@ -1,0 +1,16 @@
+> GET /event/messages.csv HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Disposition: attachment; filename=messages.csv
+< Content-Type: text/csv; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+Date,Type,In/Out,Customer Name,Phone Number,Message,Processed,Event Type,Message Type,Origin,Ground
+2011-01-01 12:01:00,N/A,in,strëet,+18008000001,Incoming Message to Meter on Ground#1,No,,,command,test micrøgrid 1
+

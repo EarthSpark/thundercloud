@@ -1,0 +1,24 @@
+> POST /api/v0/tariffs HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 278
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"cycle_start_day_of_month": 1,"flat_load_limit": 150,"flat_price": 4,"load_limit_type": "flat","name": "TARIFF TOU","plan_price": 0,"tariff_type": "flat","tou_enabled": true,"tous": [{"end": "24:00","id": "612aaccf-a86f-486e-82b4-3abd136f34ef","start": "00:00","value": -100}]}
+
+< HTTP/1.1 400 BAD REQUEST
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "There was an error creating the tariff.",
+  "status": "failure",
+  "tous": [
+    "The TOU period modifier must be a positive number."
+  ]
+}

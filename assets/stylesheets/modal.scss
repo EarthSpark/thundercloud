@@ -1,0 +1,52 @@
+@import "mixin_helpers";
+
+.modal-body {
+  background: #f5f5f5;
+}
+
+.modal-content {
+  border: 3px solid #808080;
+}
+
+.modal-header, .modal-footer {
+  @include std-bg($header-gradient-top, $header-gradient-bottom);
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+  }
+}
+
+.modal-footer {
+  margin-top: 0;
+}
+
+.modal-header {
+  @include border-top-left-radius(4px);
+  @include border-top-right-radius(4px);
+}
+
+.modal-header {
+  border-bottom: 1px solid #CDCDCD;
+}
+
+.delete-text {
+  span {
+    text-align: center;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  span:first-child {
+    font-size: 17px;
+  }
+
+  span:nth-child(2) {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+
+  span:nth-child(3) {
+    font-style: italic;
+  }
+}

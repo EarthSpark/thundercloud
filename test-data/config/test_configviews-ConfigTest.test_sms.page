@@ -1,0 +1,497 @@
+> GET /config/sms HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+        <meta itemprop="config-currency" content="USD">
+        <meta itemprop="config-username" content="testüser-001">
+        <meta itemprop="config-vendor" content="false">
+        <meta itemprop="config-ground" content=null>
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter ThunderCloud</title>
+
+        <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
+        <script src="%% VENDOR_JS %%" type="text/javascript"></script>
+        <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/static/logo/apple-touch-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/static/logo/apple-touch-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/static/logo/apple-touch-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/static/logo/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/static/logo/apple-touch-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/static/logo/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon-180x180.png">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-32x32.png" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-194x194.png" sizes="194x194">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-96x96.png" sizes="96x96">
+        <link rel="icon" type="image/png" href="/static/logo/android-chrome-192x192.png" sizes="192x192">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-16x16.png" sizes="16x16">
+        <link rel="manifest" href="/static/logo/manifest.json">
+        <link rel="mask-icon" href="/static/logo/safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body data-page-name="sms-settings">
+
+        <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">
+                    ThunderCloud - operator</a>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-top">
+                    <span class="sr-only">Toggle Top Navigation</span>
+                    <i class="icon-align-justify"></i>
+                </button>
+
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-collapse-top">
+                <div class="navbar-right">
+                    <ul class="nav navbar-nav navbar-left">
+                            <li class="cdrop  " title="View ground"><a href="/ground/" data-name="ground"><i class="icon-th"></i>Ground Info</a></li>
+    <li class="cdrop  " title="View tariffs"><a href="/tariff/" data-name="tariffs"><i class="icon-money"></i>Tariffs</a></li>
+                            <li class="cdrop  " title="View sales accounts"><a href="/sales-account/" data-name="salesaccounts"><i class="icon-credit-card"></i>Sales Accounts</a></li>
+    <li class="cdrop  " title="Manage users"><a href="/user/" data-name="users"><i class="icon-group"></i>Users</a></li>
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="settings-menu">
+                                   <span>Global Settings<i class="icon-caret-down"></i></span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="/config/billing" data-name="billing-config">
+                                            <span>Billing</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/config/meters" data-name="meter-config">
+                                            <span>Meters</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/config/sms" data-name="sms-config">
+                                            <span>SMS</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="user-menu">
+                                   <span>
+                                       <span data-name="current-username">testüser-001 <i class="icon-caret-down"></i></span>
+                                   </span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li class="with-image">
+                                      <span>testüser-001</span>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/user/test%C3%BCser-001/" data-action="user-profile">
+                                            <i class="icon-user"></i> <span>Profile</span>
+                                        </a>
+                                    </li>
+                                        <li>
+                                            <a href="/user/test%C3%BCser-001/edit" data-action="settings">
+                                                <i class="icon-cog"></i> <span>Settings</span>
+                                            </a>
+                                        </li>
+                                    <li>
+                                        <a href="/logout" data-action="logout">
+                                            <i class="icon-off"></i> <span>Logout</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li style="text-align:center;">
+                                        <div id="locales" class="btn-group">
+                                                <a class="btn btn-primary" href="/user/test%C3%BCser-001/en_US">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/US.png">
+                                                </a>
+                                                <a class="btn " href="/user/test%C3%BCser-001/fr_FR">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/FR.png">
+                                                </a>
+                                        </div>
+                                    </li>
+                                    <li style="text-align:center;">
+                                      <h6>%% APP_VERSION %% <small>%% GIT_VERSION %%</small></h6>
+                                    </li>
+                                </ul>
+                            </li>
+                    </ul>
+                </div>
+            </div><!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="main-content">
+            <div class="container">
+                <div class="row">
+                    <div class="area-top clearfix">
+                        <div class="pull-left header">
+                            <h3 class="title">
+<i class="icon-cog"></i> SMS settings                            </h3>
+                            <h5></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    <div class="alerts">
+                    </div> <!-- class="alerts"-->
+
+                    <div id="breadcrumbs">
+        <a class="breadcrumb-button blue" href="/">
+                <span class="breadcrumb-label">
+                                                <i class="icon-home"></i> Home
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+        <div class="breadcrumb-button " >
+                <span class="breadcrumb-label">
+                            <i class="icon-cog"></i> Settings
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </div>
+        <div class="breadcrumb-button " >
+                <span class="breadcrumb-label">
+                            SMS
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </div>
+                    </div> <!-- id="breadcrumbs"-->
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+<div class="box" ng-app="sparkmeter.event.sms" ng-strict-di>
+  <div class="box-header">
+    <span class="title">SMS settings</span>
+    <ul class="box-toolbar">
+    </ul>
+  </div> <!-- class="box-header" -->
+  <div class="box-content padded">
+    <div class="config row">
+      <div class="col-sm-2 text-center text-sm-right">
+        <h5>Two-way SMS</h5>
+      </div>
+      <div class="col-md-6" data-box="sms-config-commands">
+
+<script type="text/ng-template" id="sms-config-command-modal.html">
+
+  <!-- If the modal is not Delete-->
+  <div ng-show="vm.title != 'Delete'">
+    <div class="modal-header">
+      <h3 class="modal-title" ng-cloak>{{ vm.title }} Command</h3>
+    </div>
+    <div class="modal-body">
+      <form name="form" class="form form-horizontal" role="form" novalidate>
+        <div class="form-group form-group-lg" ng-class="{ 'has-error': form.code.$invalid }">
+          <label class="control-label col-sm-3" for="code">Code in SMS</label>
+          <div class="input-group col-sm-2">
+            <input class="form-control" name="code" id="code" autocomplete="off" autofocus
+                   sm-force-uppercase
+                   maxlength="8"
+                   ng-model="command.code"
+                   ng-required="true"
+                   ng-maxlength="8"
+                   ng-pattern="/^[A-z]+$/">
+            </input>
+          </div>
+          <div class="col-sm-offset-3 col-sm-9">
+            <p class="help-block" ng-show="form.code.$error.required">
+              Code cannot be empty.
+            </p>
+            <p class="help-block" ng-show="form.code.$error.duplicate">
+              That code has already been used, pick another one.
+            </p>
+            <p class="help-block" ng-show="form.code.$error.pattern">
+              Code can only contain upper case letters.
+            </p>
+          </div>
+        </div>
+        <div class="form-group form-group-lg" ng-class="{ 'has-error': form.template.$invalid }">
+          <label class="control-label col-sm-3" for="template">Outbound text</label>
+          <div class="input-group col-sm-6">
+            <div name="template"
+                 ng-model="command.template"
+                 sm-sms-template
+                 completion-type="customer-low-balance"/>
+          </div>
+        </div>
+        <div class="form-group form-group-lg" ng-show="command.template">
+          <label class="control-label col-sm-3" for="template">Example</label>
+          <div class="input-group col-sm-6">
+            <p class="form-control-static">
+              {{ command.template | templateExampleRenderer: 'customer-low-balance' }}
+            </p>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+              data-action="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" ng-click="vm.save(command)"
+              ng-disabled="form.$invalid"
+              data-action="save">Save</button>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div ng-show="vm.title == 'Delete'">
+    <div class="modal-header">
+        <h3 class="modal-title" ng-cloak>{{ vm.title }} Command</h3>
+      </div>
+    <div class="modal-body delete-text">
+      <span>Are you sure you want to delete:</span>
+      <span>{{command.code}}</span>
+      <span>This action cannot be undone.</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+              data-action="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" ng-click="vm.remove(command)" data-action="delete">Delete</button>
+    </div>
+  </div>
+</script>
+
+<div ng-controller="SMSCommandsController as vm">
+  <table class="table table-bordered table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="col-sm-2">Code in inbound SMS</th>
+        <th class="col-sm-4">Outbound message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="command in vm.commands | orderBy: 'code'">
+        <td class="col-sm-2" ng-cloak>{{ command.code }}</td>
+        <td class="col-sm-4">
+          {{ command.template }}
+          <div class="btn-group pull-right">
+            <button class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown">
+              <i class="icon-cog"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a ng-click="vm.openModal('Edit', command)" data-action="edit">Edit</a></li>
+              <li class="divider"></li>
+              <li><a ng-click="vm.openModal('Delete', command)">Delete</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="btn btn-default" ng-click="vm.openModal('Add')"
+          data-action="add">Add a two-way SMS type</button>
+</div>
+      </div>
+    </div>
+
+    <div class="config row">
+      <div class="col-sm-2 text-center text-sm-right">
+        <h5>SMS alerts</h5>
+      </div>
+      <div class="col-md-6" data-box="sms-config-alerts">
+
+<script type="text/ng-template" id="sms-config-alert-modal.html">
+  <div ng-show="vm.title != 'Delete'">
+    <div data-dialog="sms-config-alert">
+      <div class="modal-header">
+        <h3 class="modal-title" ng-cloak>{{ vm.title }} Alert</h3>
+      </div>
+      <div class="modal-body">
+        <form name="form" class="form form-horizontal" role="form">
+          <div class="form-group form-group-lg">
+            <label class="control-label col-sm-3" for="event-type">Event type</label>
+            <div class="input-group col-sm-6">
+              <select class="form-control" name="event-type" id="event-type"
+                      ng-model="alert.event_type"
+                      ng-hide="vm.title == 'Edit' || unusedEventTypes.length == 1"
+                      ng-attr-autofocus="unusedEventTypes.length > 1">
+                <option ng-repeat="et in unusedEventTypes" value="{{ et.value }}" ng-cloak>{{ et.label }}</option>
+              </select>
+              <p class="form-control-static"
+                 ng-show="vm.title == 'Edit' || unusedEventTypes.length == 1">{{ alert.label }}</p>
+            </div>
+          </div>
+          <div class="form-group form-group-lg" ng-class="{ 'has-error': form.template.$invalid }">
+            <label class="control-label col-sm-3" for="template">Outbound text</label>
+            <div class="input-group col-sm-6">
+              <div sm-sms-template
+                   completion-type="alert"
+                   name="template"
+                   ng-model="alert.template"/>
+            </div>
+          </div>
+          <div class="form-group form-group-lg" ng-show="alert.template">
+            <label class="control-label col-sm-3" for="template">Example</label>
+            <div class="input-group col-sm-6">
+              <p class="form-control-static">
+                {{ alert.template | templateExampleRenderer: alert.event_type }}
+              </p>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+                data-action="cancel">Cancel</button>
+        <button class="btn btn-primary" type="button" ng-click="vm.save(alert)"
+                ng-disabled="form.$invalid"
+                data-action="save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div ng-show="vm.title == 'Delete'">
+    <div class="modal-header">
+        <h3 class="modal-title" ng-cloak>{{ vm.title }} Alert</h3>
+      </div>
+    <div class="modal-body delete-text">
+      <span>Are you sure you want to delete:</span>
+      <span>{{alert.label}}</span>
+      <span>This action cannot be undone.</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+              data-action="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" ng-click="vm.remove(alert)" data-action="delete">Delete</button>
+    </div>
+  </div>
+</script>
+
+<div ng-controller="SMSAlertsController as vm">
+  <table id="sms-alert" class="table table-bordered table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="col-sm-2">Event type</th>
+        <th class="col-sm-4">Outbound message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="alert in vm.alerts | orderBy: 'label'">
+        <td class="col-sm-2" ng-cloak>{{ alert.label }}</td>
+        <td class="col-sm-4" style="word-break: break-all" ng-cloak>
+          {{ alert.template }}
+          <div class="btn-group pull-right">
+            <button class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i></button>
+            <ul class="dropdown-menu">
+              <li><a ng-click="vm.openModal('Edit', alert)" data-action="edit">Edit</a></li>
+              <li class="divider"></li>
+              <li><a ng-click="vm.openModal('Delete', alert)">Delete</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="btn btn-default"
+          ng-disabled="vm.alerts.length === vm.eventTypes.length"
+          ng-click="vm.openModal('Add')"
+          data-action="add">Add an alert type</button>
+</div>
+      </div>
+    </div>
+
+    <div class="config row">
+      <div class="col-sm-2 text-center text-sm-right">
+        <h5>System Messages</h5>
+      </div>
+      <div class="col-md-6" data-box="sms-config-messages">
+
+<script type="text/ng-template" id="sms-config-message-modal.html">
+  <div class="modal-header">
+    <h3 class="modal-title" ng-cloak>{{ vm.title }} System Message</h3>
+  </div>
+  <div class="modal-body">
+    <form name="form" class="form form-horizontal" role="form">
+      <div class="form-group form-group-lg">
+        <label class="control-label col-sm-3" for="event-type">Message type</label>
+        <div class="input-group col-sm-6">
+          <p class="form-control-static">{{ messageLabels[message.message_type] }}</p>
+        </div>
+      </div>
+      <div class="form-group form-group-lg" ng-class="{ 'has-error': form.template.$invalid }">
+        <label class="control-label col-sm-3" for="template">Outbound text</label>
+        <div class="input-group col-sm-6">
+          <div sm-sms-template
+               completion-type="message"
+               name="template"
+               ng-model="message.template"/>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+            data-action="cancel">Cancel</button>
+    <button class="btn btn-primary" type="button" ng-click="vm.save(message)"
+            ng-disabled="form.$invalid"
+            data-action="save">Save</button>
+  </div>
+</script>
+
+<div ng-controller="SMSConfigMessagesController as vm">
+  <table id="sms-message" class="table table-bordered table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="col-sm-2">Message type</th>
+        <th class="col-sm-4">Outbound text</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="message in vm.messages | orderBy: 'label'">
+        <td class="col-sm-2" ng-cloak>{{ vm.messageLabels[message.message_type] }}</td>
+        <td class="col-sm-4">
+          {{ message.template }}
+          <div class="btn-group pull-right">
+            <button class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i></button>
+            <ul class="dropdown-menu">
+              <li><a ng-click="vm.openModal('Edit', message)" data-action="edit">Edit</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+                </div>
+            </div>
+
+        </div> <!-- class="main-content"-->
+    </body>
+</html>

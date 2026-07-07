@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ _('Reset Demo') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+            {% call render_box(_('Reset Demo'), box_content_class="padded") %}
+
+
+                <form method="POST" class="form-horizontal" role="form">
+
+
+<p>WARNING: This will delete all data from the database including users, meters, and readings. It will create new operator and vendor accounts.</p>
+
+<p>To continue, type "YES" into the box below.</p>
+
+<div class="form-group ">
+            <label class="control-label  col-sm-5" for="confirm">{{ _('Confirm Reset') }}</label>
+        <div class="input-group col-sm-7">
+          <input class="form-control" id="confirm" name="confirm" type="text">
+        </div>
+  </div>
+
+                    <div class="form-group">
+                        <div class="col-sm-12">
+                            <button name="submit" type="submit" class="btn btn-primary btn-lg  btn-block">{{ _('Reset') }}</button>
+                        </div>
+                    </div>
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}

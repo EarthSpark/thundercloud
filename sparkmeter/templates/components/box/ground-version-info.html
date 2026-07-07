@@ -1,0 +1,12 @@
+{%- set title = _('Version Information') -%}
+{%- set box_content_class = "padded" -%}
+
+{%- extends "components/box/base-box.html" -%}
+
+{% block box_content %}
+  <dl class="dl-horizontal">
+      <dt>{{ _('Hardware UUID') }}:</dt><dd>{{ ground.serial|e }}</dd>
+      <dt>{{ _('SparkCentral Version') }}:</dt><dd>{# TODO #}</dd>
+      <dt>{{ _('SparkMAC version') }}:</dt><dd>{# TODO #}</dd>
+  </dl>
+{% endblock box_content %}

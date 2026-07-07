@@ -1,0 +1,7 @@
+{% set table_class = "meter-list" %}
+{% set in_box = True %}
+{% set headers = [_("Model"), _("Phases"), Markup('<abbr title="%s">%s</abbr>') % (_("The upper bound of the current consumed by a meter during normal operation. If a meter spends too much time over this limit, throttling occurs."), _("Continuous Current Limit")), Markup('<abbr title="%s">%s</abbr>') % (_("The upper bound for the inrush current consumed by a meter. If a meter draws over this limit, it will enter protect mode."), _("Inrush Current Limit")), _("Count")] %}
+{% set headers_units = ["", _("#"), _("Amps"), _("Amps"), _("# of meters")] %}
+{% set thead_class = "double-header" %}
+{% set box_content_class = "padded" %}
+{% extends "list/base.html" %}

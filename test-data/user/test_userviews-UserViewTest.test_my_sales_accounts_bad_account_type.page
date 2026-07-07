@@ -1,0 +1,18 @@
+> GET /user/sales-account/bad-account-type.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 400 BAD REQUEST
+< Content-Type: text/html; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+<!doctype html>
+<html lang=en>
+<title>400 Bad Request</title>
+<h1>Bad Request</h1>
+<p>The browser (or proxy) sent a request that this server could not understand.</p>
+

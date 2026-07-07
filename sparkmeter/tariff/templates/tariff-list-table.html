@@ -1,0 +1,19 @@
+{% set table_class = "tariff-list" %}
+{% set in_box = True %}
+{% set box_content_class = "padded" %}
+{% set headers = [_('Name'), _('Load Limit'), _('Plan'), _('Electricity Rate'), _('TOU Pricing'), _('Daily Energy Limit')] %}
+{% set headers_units = ["", _('Watts'), _('%(currency)s per unit time', currency=config['CURRENCY']), _('%(currency)s/kWh', currency=config['CURRENCY']), _('%% of normal tariff'), _('kWh')] %}
+{% set thead_class = "double-header" %}
+
+{% extends "list/base.html" %}
+
+{% block toolbar %}
+  <li class="toolbar-link">
+    <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul id="export-menu" class="dropdown-menu">
+      <li>
+        <a class="add" href="{{ url_for('tariff.add') }}">{{ icon('add') }} {{ add_label }}</a>
+      </li>
+    </ul>
+  </li>
+{% endblock %}

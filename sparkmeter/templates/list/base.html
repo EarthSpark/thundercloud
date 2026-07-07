@@ -1,0 +1,33 @@
+{%- from "_icons.html" import icon -%}
+
+{%- if in_box -%}
+  {%- extends "components/box/base-box.html" -%}
+{%- endif -%}
+
+{% block box_content %}
+  <table {% if table_id %}id="{{ table_id }}"{% endif %} class='table table-striped table-bordered table-hover table-normal dataTable {{ table_class }}'{% if table_extra %}{{ table_extra }}{% endif %}>
+      <thead class="{{ thead_class }}">
+      {% block thead %}
+      {%- if headers %}
+      <tr>
+        {% for header in headers %}
+          <th>{{ header }}</th>
+        {% endfor %}
+      </tr>
+      {%- endif %}
+      {%- if headers_units %}
+        <tr>
+          {%- for units in headers_units %}
+            <th>{{ units }}</th>
+          {%- endfor %}
+        </tr>
+      {%- endif %}
+      {% endblock %}
+    </thead>
+    <tfoot>{% block tfoot %}{% endblock %}</tfoot>
+    <tbody>{% block tbody %}{% endblock %}</tbody>
+  </table>
+{% endblock box_content %}
+
+{% block list_footer %}
+{% endblock list_footer %}

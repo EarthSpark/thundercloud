@@ -1,0 +1,16 @@
+> GET /dashboard/tariff-daily-summary/daily-avg-consumption.csv HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: text/csv; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+Date,tariff 1,tariff 2
+2016-02-01,0.3448275862068966,0.27586206896551724
+2016-03-01,8.0,0.0
+

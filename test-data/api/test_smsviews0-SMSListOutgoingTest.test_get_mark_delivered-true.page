@@ -1,0 +1,30 @@
+> GET /api/v0/sms/outgoing HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 26
+> Content-Type: application/json
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"mark_delivered": "true"}
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "messages": [
+    {
+      "id": "%% FILTERED BY UNITTEST %%",
+      "phone_number": "+18008000001",
+      "text": "Low on alert 0.00",
+      "timestamp": "2016-01-01T00:00:00"
+    }
+  ],
+  "status": "success"
+}

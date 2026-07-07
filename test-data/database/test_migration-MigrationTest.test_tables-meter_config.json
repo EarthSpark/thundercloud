@@ -1,0 +1,23 @@
+[
+    {
+        "hidden": false,
+        "id": "541d7491-1054-4300-a90d-d3c8bb0f892e",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "state": 2,
+        "subnet": 255
+    },
+    {
+        "hidden": false,
+        "id": "60a627aa-f80b-410b-b6df-c9fe1a257dac",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "state": 2,
+        "subnet": 255
+    },
+    {
+        "hidden": false,
+        "id": "fe5a8782-211d-40c4-adf1-7a4ffc7d58f3",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "state": 2,
+        "subnet": 255
+    }
+]

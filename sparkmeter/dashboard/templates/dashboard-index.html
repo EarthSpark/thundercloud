@@ -1,0 +1,71 @@
+{%- set page_name = "dashboard" -%}
+{% extends "base.html" %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('dashboard') }} {{ _('Dashboard') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+  <div class="box">
+    <div class="box-header">
+      <span class="title">My Dashboards</span>
+      {% if config['HEROKU'] %}
+      <div class="row dashboard-filter-container">
+        <div>
+          <label for="dashboard-filter" class="select-filter-label">Ground:</label>
+          <select id="dashboard-filter" class="select-filter">
+            <option value="">All</option>
+          </select>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      {% call render_box(_('Electricity purchase (in %(currency)s)', currency=config['CURRENCY'])) %}
+      <div id="energy-purchase"></div>
+      {% endcall %}
+    </div>
+    <div class="col-md-4">
+      {% call render_box(_('Monthly consumption (in kWh)')) %}
+      <div id="monthly-consumption"></div>
+      {% endcall %}
+    </div>
+    <div class="col-md-4">
+      {% call render_box(_('Daily Avg. consumption (in kWh)')) %}
+      <div id="daily-avg-consumption"></div>
+      {% endcall %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      {% call render_box(_('Number of customers over 30 days')) %}
+      <div id="last-30-days-customer-count"></div>
+      {% endcall %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      {% call render_box(_('Daily consumption over 30 days (in kWh)')) %}
+      <div id="last-30-days-consumption"></div>
+      {% endcall %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      {% call render_box(_('Sales over 30 days (in %(currency)s)', currency=config['CURRENCY'])) %}
+      <div id="last-30-days-sales-amount"></div>
+      {% endcall %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      {% call render_box(_('Number of sales over 30 days')) %}
+      <div id="last-30-days-sales-count"></div>
+      {% endcall %}
+    </div>
+  </div>
+{% endblock %}

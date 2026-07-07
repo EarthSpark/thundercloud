@@ -1,0 +1,5 @@
+[gerrit]
+host=gerrit.spk.io
+port=29418
+project=sparkmeter.git
+defaultbranch=master

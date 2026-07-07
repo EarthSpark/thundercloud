@@ -1,0 +1,950 @@
+"""
+cattrs converter utilities for generated clients.
+
+This module provides cattrs converter functions for JSON serialization/deserialization
+in generated API clients. It handles:
+- Automatic camelCase ↔ snake_case transformation
+- Python keyword conflicts (id → id_)
+- base64 bytes encoding/decoding
+- Nested object structures
+
+The converter is configured globally to handle name transformations automatically
+for all dataclasses, with no per-class metadata required.
+"""
+
+from __future__ import annotations
+
+import base64
+import dataclasses
+import re
+import types
+from datetime import date, datetime
+from typing import Annotated, Any, Callable, TypeVar, Union, get_args, get_origin, get_type_hints
+
+import cattrs
+from cattrs.errors import BaseValidationError, ClassValidationError, IterableValidationError
+from cattrs.gen import make_dict_unstructure_fn, override
+
+T = TypeVar("T")
+
+# Module-level caches: each class is processed at most once per process.
+# get_type_hints() is expensive for modules using `from __future__ import annotations`
+# (PEP 563) — string annotations are re-evaluated on every call. Without caching,
+# every structure_from_dict call triggers a full type-graph traversal with a fresh
+# get_type_hints() call per class, producing O(N × calls) evaluations.
+_type_hints_cache: dict[type, dict[str, Any]] = {}
+_structure_hooks_registered: set[type] = set()
+_unstructure_hooks_registered: set[type] = set()
+# Lazily populated on first unstructure call per class; see _register_unstructure_hooks_recursively.
+_unstructure_fn_cache: dict[type, Any] = {}
+
+
+def _get_type_hints_with_extras(cls: type) -> dict[str, Any]:
+    """Return get_type_hints(cls, include_extras=True), cached globally.
+
+    include_extras=True preserves Annotated[...] discriminator metadata.
+    The result is cached so string annotations in PEP 563 modules are
+    evaluated only once rather than on every structure_from_dict call.
+    """
+    if cls not in _type_hints_cache:
+        try:
+            _type_hints_cache[cls] = get_type_hints(cls, include_extras=True)
+        except Exception:
+            _type_hints_cache[cls] = {}
+    return _type_hints_cache[cls]
+
+
+# Python keywords that get '_' suffix in generated code
+PYTHON_KEYWORDS = {
+    "id",
+    "type",
+    "class",
+    "def",
+    "return",
+    "if",
+    "elif",
+    "else",
+    "for",
+    "while",
+    "import",
+    "from",
+    "as",
+    "pass",
+    "break",
+    "continue",
+}
+
+
+def camel_to_snake(name: str) -> str:
+    """
+    Convert camelCase to snake_case.
+
+    Scenario:
+        Convert JSON field names (camelCase) to Python field names (snake_case).
+
+    Expected Outcome:
+        Proper snake_case transformation with special handling for Python keywords.
+
+    Examples:
+        "pageSize" → "page_size"
+        "totalPages" → "total_pages"
+        "hasNext" → "has_next"
+        "id" → "id_" (Python keyword)
+        "_count" → "count" (leading underscore preserved as-is in JSON, but mapped)
+    """
+    # Insert underscore before uppercase letters
+    snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", name)
+    snake = snake.lower()
+
+    # Add trailing underscore for Python keywords
+    if snake in PYTHON_KEYWORDS:
+        snake = f"{snake}_"
+
+    return snake
+
+
+def snake_to_camel(name: str) -> str:
+    """
+    Convert snake_case to camelCase.
+
+    Scenario:
+        Convert Python field names (snake_case) back to JSON field names (camelCase).
+
+    Expected Outcome:
+        Proper camelCase transformation with special handling for Python keyword suffixes.
+
+    Examples:
+        "page_size" → "pageSize"
+        "total_pages" → "totalPages"
+        "has_next" → "hasNext"
+        "id_" → "id" (remove trailing underscore from Python keyword)
+        "count" → "_count" (if original JSON had leading underscore)
+    """
+    # Remove trailing underscore if it was added for Python keyword
+    if name.endswith("_") and name[:-1] in PYTHON_KEYWORDS:
+        name = name[:-1]
+
+    # Convert snake_case to camelCase
+    components = name.split("_")
+    return components[0] + "".join(x.title() for x in components[1:])
+
+
+# Global converter instance with automatic name transformation
+converter = cattrs.Converter()
+
+
+def _make_dataclass_structure_fn(cls: type[T]) -> Any:
+    """
+    Create a structure function for a dataclass with automatic name transformation.
+
+    Scenario:
+        Generate a structure function that automatically converts JSON keys
+        (camelCase) to Python dataclass field names (snake_case), while
+        preserving Annotated[...] metadata on nested field types so that
+        discriminated union hooks remain active.
+
+    Expected Outcome:
+        A function that structures JSON into the dataclass with correct field
+        name transformation, and that passes the fully-preserved Annotated type
+        (including discriminator metadata) to converter.structure for every field.
+
+    Why not make_dict_structure_fn:
+        cattrs' make_dict_structure_fn internally calls adapted_fields() which
+        uses get_type_hints() without include_extras=True. Generated model files
+        use `from __future__ import annotations`, making all annotations lazy
+        strings. When adapted_fields resolves those strings it strips Annotated
+        extras, losing discriminator metadata before structuring begins.
+        This custom implementation owns the full pipeline and preserves extras.
+    """
+    # Resolve field types preserving Annotated extras (discriminator metadata).
+    # include_extras=True is required: without it, Annotated[Union[...], Disc()]
+    # is reduced to Union[...], dropping the discriminator.
+    # Result is globally cached; see _get_type_hints_with_extras.
+    type_hints: dict[str, Any] = _get_type_hints_with_extras(cls)
+
+    # Build python_name → json_key lookup from Meta.key_transform_with_load.
+    # Meta.key_transform_with_load format: {"json_key": "python_field_name"}
+    python_to_json: dict[str, str] = {}
+    if hasattr(cls, "Meta") and hasattr(cls.Meta, "key_transform_with_load"):  # type: ignore[attr-defined]
+        for json_key, python_name in cls.Meta.key_transform_with_load.items():  # type: ignore[attr-defined]
+            python_to_json[python_name] = json_key
+
+    # Pre-compute per-field data at registration time to eliminate dict lookups
+    # inside structure_fn on every call. Tuple layout:
+    #   (python_name, json_key, field_type, default, default_factory)
+    field_specs: list[tuple[str, str, Any, Any, Any]] = [
+        (
+            f.name,
+            python_to_json.get(f.name, f.name),
+            type_hints.get(f.name, f.type),
+            f.default,
+            f.default_factory,
+        )
+        for f in dataclasses.fields(cls)  # type: ignore[arg-type]
+    ]
+
+    cls_name = cls.__name__  # avoid attribute lookup on every error path
+
+    def structure_fn(data: dict[str, Any] | None, _type: type) -> Any:
+        if data is None:
+            raise TypeError(
+                f"Cannot structure None into {cls_name}: "
+                f"Received null value for non-optional field. "
+                f"This is likely a schema mismatch - either the API is returning null "
+                f"for a required field, or the OpenAPI schema is missing 'nullable: true'. "
+                f"To fix: make the field optional in the OpenAPI spec by adding 'nullable: true' "
+                f"or removing it from the 'required' array."
+            )
+
+        if not isinstance(data, dict):
+            raise TypeError(
+                f"Cannot structure {type(data).__name__} into {cls_name}: "
+                f"Expected a dict, got {type(data).__name__}"
+            )
+
+        kwargs: dict[str, Any] = {}
+        field_errors: list[Exception] = []
+
+        for python_name, json_key, field_type, default, default_factory in field_specs:
+            if json_key in data:
+                try:
+                    kwargs[python_name] = converter.structure(data[json_key], field_type)
+                except Exception as exc:
+                    # Attach cattrs-compatible note so _extract_errors can
+                    # reconstruct the field path (e.g. "items[].id").
+                    note = f"Structuring class {cls_name} @ attribute {python_name}"
+                    if not hasattr(exc, "__notes__") or exc.__notes__ is None:
+                        exc.__notes__ = []
+                    exc.__notes__.append(note)
+                    field_errors.append(exc)
+            elif default is not dataclasses.MISSING:
+                kwargs[python_name] = default
+            elif default_factory is not dataclasses.MISSING:
+                kwargs[python_name] = default_factory()
+            # Required field absent from data: omit from kwargs so that the
+            # dataclass constructor raises a descriptive TypeError.
+
+        if field_errors:
+            raise ClassValidationError(f"While structuring {cls_name}", field_errors, cls)
+
+        return cls(**kwargs)
+
+    return structure_fn
+
+
+def _make_dataclass_unstructure_fn(cls: type[T]) -> Any:
+    """
+    Create an unstructure function for a dataclass with field name transformation.
+
+    Scenario:
+        Generate an unstructure function that converts Python dataclass field names
+        to JSON keys using the Meta class mappings if available.
+
+    Expected Outcome:
+        A function that cattrs can use to unstructure the dataclass into JSON,
+        with field name transformation based on Meta.key_transform_with_dump.
+        For user-defined dataclasses without Meta, Python field names are used as-is.
+    """
+    # Get field renaming map (Python field name → JSON key)
+    field_overrides: dict[str, Any] = {}
+    if dataclasses.is_dataclass(cls):
+        for field in dataclasses.fields(cls):
+            python_name = field.name
+            json_key = python_name  # Default: no transformation
+
+            # Check if class has Meta with explicit mappings
+            if hasattr(cls, "Meta") and hasattr(cls.Meta, "key_transform_with_dump"):  # type: ignore[attr-defined]
+                mappings: dict[str, str] = cls.Meta.key_transform_with_dump  # type: ignore[attr-defined]
+                # Use explicit mapping if available, otherwise keep Python name
+                json_key = mappings.get(python_name, python_name)
+            # No Meta mappings - use Python name as-is (no camelCase assumption)
+
+            # Only add override if JSON key differs from Python field name
+            if json_key != python_name:
+                field_overrides[python_name] = override(rename=json_key)
+
+    return make_dict_unstructure_fn(cls, converter, **field_overrides)
+
+
+def structure_with_base64_bytes(data: str | bytes, _: type[bytes]) -> bytes:
+    """
+    Structure hook for base64-encoded bytes.
+
+    Handles OpenAPI format "byte" which is base64-encoded string.
+
+    Args:
+        data: Either base64 string or raw bytes
+        _: Target type (bytes)
+
+    Returns:
+        Decoded bytes
+    """
+    if isinstance(data, str):
+        return base64.b64decode(data)
+    return data
+
+
+def unstructure_bytes_to_base64(data: bytes) -> str:
+    """
+    Unstructure hook for bytes to base64 string.
+
+    Args:
+        data: Raw bytes
+
+    Returns:
+        base64-encoded string
+    """
+    return base64.b64encode(data).decode("utf-8")
+
+
+# Register base64 bytes handling
+converter.register_structure_hook(bytes, structure_with_base64_bytes)
+converter.register_unstructure_hook(bytes, unstructure_bytes_to_base64)
+
+
+def structure_datetime(data: str | datetime, _: type[datetime]) -> datetime:
+    """
+    Structure hook for datetime fields.
+
+    Handles OpenAPI format "date-time" which is ISO 8601 string.
+
+    Args:
+        data: Either ISO 8601 string or datetime object
+        _: Target type (datetime)
+
+    Returns:
+        datetime object
+
+    Raises:
+        ValueError: If string is not valid ISO 8601 format
+    """
+    if isinstance(data, datetime):
+        return data
+    if isinstance(data, str):
+        # Try ISO 8601 format with timezone
+        try:
+            return datetime.fromisoformat(data.replace("Z", "+00:00"))
+        except ValueError:
+            # Try without timezone
+            return datetime.fromisoformat(data)
+    raise TypeError(f"Cannot convert {type(data)} to datetime")
+
+
+def unstructure_datetime(data: datetime) -> str:
+    """
+    Unstructure hook for datetime to ISO 8601 string.
+
+    Args:
+        data: datetime object
+
+    Returns:
+        ISO 8601 formatted string
+    """
+    return data.isoformat()
+
+
+def structure_date(data: str | date, _: type[date]) -> date:
+    """
+    Structure hook for date fields.
+
+    Handles OpenAPI format "date" which is ISO 8601 date string.
+
+    Args:
+        data: Either ISO 8601 date string or date object
+        _: Target type (date)
+
+    Returns:
+        date object
+
+    Raises:
+        ValueError: If string is not valid ISO 8601 date format
+    """
+    if isinstance(data, date):
+        return data
+    if isinstance(data, str):
+        return date.fromisoformat(data)
+    raise TypeError(f"Cannot convert {type(data)} to date")
+
+
+def unstructure_date(data: date) -> str:
+    """
+    Unstructure hook for date to ISO 8601 string.
+
+    Args:
+        data: date object
+
+    Returns:
+        ISO 8601 formatted date string (YYYY-MM-DD)
+    """
+    return data.isoformat()
+
+
+# Register datetime and date handling
+converter.register_structure_hook(datetime, structure_datetime)
+converter.register_unstructure_hook(datetime, unstructure_datetime)
+converter.register_structure_hook(date, structure_date)
+converter.register_unstructure_hook(date, unstructure_date)
+
+
+# =============================================================================
+# Union Type Structure Hook
+# =============================================================================
+
+
+def _is_union_type(t: Any) -> bool:
+    """
+    Check if a type is a Union type (including Annotated[Union, ...]).
+
+    Scenario:
+        Detect Union types including both typing.Union and Python 3.10+ X | Y syntax,
+        as well as Annotated[Union, ...] for discriminated unions.
+
+    Expected Outcome:
+        Returns True for Union types, False otherwise.
+    """
+    origin = get_origin(t)
+    # Handle both typing.Union and types.UnionType (Python 3.10+ X | Y syntax)
+    if origin is Union or (hasattr(types, "UnionType") and isinstance(t, types.UnionType)):
+        return True
+
+    # Also handle Annotated[Union, ...] for discriminated unions
+    if origin is Annotated:
+        args = get_args(t)
+        if args and _is_union_type(args[0]):
+            return True
+
+    return False
+
+
+def _truncate_data_repr(data: Any, max_length: int = 200) -> str:
+    """
+    Create a truncated string representation of data for error messages.
+
+    Args:
+        data: The data to represent
+        max_length: Maximum length of the output string
+
+    Returns:
+        A string representation, truncated if necessary
+    """
+    try:
+        repr_str = repr(data)
+        if len(repr_str) <= max_length:
+            return repr_str
+        return repr_str[: max_length - 3] + "..."
+    except Exception:
+        return f"<{type(data).__name__}: repr failed>"
+
+
+def _structure_union(data: Any, union_type: type) -> Any:
+    """
+    Structure a Union type by trying each variant.
+
+    Scenario:
+        OpenAPI oneOf/anyOf schemas generate Union types. When deserialising
+        API responses, we need to determine which variant matches the data.
+
+    Expected Outcome:
+        Returns the structured data as the first matching Union variant.
+
+    Strategy:
+        1. If data is None and NoneType is in the union, return None
+        2. Check for discriminator metadata for O(1) variant lookup
+        3. If data is a dict, try each dataclass variant
+        4. Try structuring with other variants (generic types, registered hooks)
+        5. Fall back to dict[str, Any] if present
+        6. Raise error if no variant matches
+
+    Args:
+        data: The raw data to structure
+        union_type: The Union type to structure into
+
+    Returns:
+        Structured data as one of the Union variants
+
+    Raises:
+        TypeError: If data is None but NoneType not in union
+        ValueError: If no Union variant matches the data
+    """
+    # If this is Annotated[Union[...], metadata], extract the Union and metadata
+    origin = get_origin(union_type)
+    if origin is Annotated:
+        annotated_args = get_args(union_type)
+        if annotated_args:
+            actual_union = annotated_args[0]
+            args = get_args(actual_union)
+        else:
+            args = get_args(union_type)
+    else:
+        args = get_args(union_type)
+
+    # Handle None explicitly
+    if data is None:
+        if type(None) in args:
+            return None
+        raise TypeError(f"None is not valid for {union_type}")
+
+    # Check for discriminator metadata (from Annotated[Union[...], discriminator])
+    # This enables O(1) lookup instead of O(n) sequential tries
+    if hasattr(union_type, "__metadata__"):
+        for metadata in union_type.__metadata__:
+            # Check if this is discriminator metadata (has property_name and get_mapping method)
+            if hasattr(metadata, "property_name") and hasattr(metadata, "get_mapping"):
+                if isinstance(data, dict) and metadata.property_name in data:
+                    discriminator_value = data[metadata.property_name]
+
+                    # Get the mapping using the get_mapping method
+                    mapping = metadata.get_mapping()
+
+                    if mapping and discriminator_value in mapping:
+                        variant = mapping[discriminator_value]
+
+                        # Handle forward reference strings
+                        if isinstance(variant, str):
+                            # Try to find the actual type from union args
+                            for arg in args:
+                                if hasattr(arg, "__name__") and arg.__name__ == variant:
+                                    variant = arg
+                                    break
+
+                        # Attempt to structure with the discriminated variant
+                        try:
+                            _register_structure_hooks_recursively(variant)
+                            return converter.structure(data, variant)
+                        except Exception as e:
+                            # Provide clear error message for discriminated variant failure
+                            raise ValueError(
+                                f"Failed to deserialize as {variant.__name__} "
+                                f"(discriminator {metadata.property_name}={discriminator_value!r}): {e}"
+                            ) from e
+                    elif mapping:
+                        # Unknown discriminator value
+                        valid_values = list(mapping.keys())
+                        raise ValueError(
+                            f"Unknown discriminator value {discriminator_value!r} "
+                            f"for field {metadata.property_name!r}. "
+                            f"Expected one of: {valid_values}"
+                        )
+                # If discriminator property not in data, fall through to sequential try
+
+    # Separate variants by type category
+    dataclass_variants: list[type[Any]] = []
+    dict_any_fallback = False
+    other_variants: list[Any] = []  # Can include generic types like List[T]
+
+    for arg in args:
+        if arg is type(None):
+            continue
+        elif isinstance(arg, type) and dataclasses.is_dataclass(arg):
+            dataclass_variants.append(arg)
+        elif get_origin(arg) is dict:
+            # Check if it's dict[str, Any] - our fallback type
+            dict_args = get_args(arg)
+            if dict_args == (str, Any):
+                dict_any_fallback = True
+            else:
+                # Other dict types should be tried as variants
+                other_variants.append(arg)
+        else:
+            # Includes plain types (str, int, datetime) and generic types (List[T])
+            other_variants.append(arg)
+
+    # If data is a dict, try dataclass variants first
+    if isinstance(data, dict):
+        errors: list[tuple[str, str]] = []
+        for variant in dataclass_variants:
+            try:
+                # Ensure hooks are registered for this variant
+                _register_structure_hooks_recursively(variant)
+                return converter.structure(data, variant)
+            except Exception as e:
+                errors.append((variant.__name__, str(e)))
+                continue
+
+        # If no dataclass matched and dict fallback is available, return raw dict
+        if dict_any_fallback:
+            return data
+
+        # All variants failed - provide helpful error with data preview
+        if errors:
+            data_preview = _truncate_data_repr(data)
+            error_details = "\n".join(f"  - {name}: {err}" for name, err in errors)
+            raise ValueError(
+                f"Could not structure dict into any variant of {union_type}.\n"
+                f"Data: {data_preview}\n"
+                f"Tried variants:\n{error_details}"
+            )
+
+    # Try other variants using converter.structure (accumulate errors for debugging)
+    # This handles:
+    # - Types with registered hooks (datetime, date, bytes, etc.)
+    # - Generic types (List[T], Dict[K,V], etc.)
+    # - Plain types (str, int, etc.)
+    other_errors: list[tuple[str, str]] = []
+    for variant in other_variants:
+        try:
+            return converter.structure(data, variant)
+        except Exception as e:  # nosec B112 - intentional: trying variants until one succeeds
+            variant_name = getattr(variant, "__name__", str(variant))
+            other_errors.append((variant_name, str(e)))
+            continue
+
+    # Last resort: if dict fallback is available and we have dict data
+    if dict_any_fallback and isinstance(data, dict):
+        return data
+
+    # Include data preview in error message for debugging
+    data_preview = _truncate_data_repr(data)
+    if other_errors:
+        error_details = "\n".join(f"  - {name}: {err}" for name, err in other_errors)
+        raise TypeError(
+            f"Cannot structure {type(data).__name__} into {union_type}.\n"
+            f"Data: {data_preview}\n"
+            f"Tried variants:\n{error_details}"
+        )
+
+    raise TypeError(
+        f"Cannot structure {type(data).__name__} into {union_type}.\n"
+        f"Data: {data_preview}\n"
+        f"Expected one of: {[arg for arg in args if arg is not type(None)]}"
+    )
+
+
+def _union_structure_hook(data: Any, union_type: type) -> Any:
+    """
+    Structure hook for Union types.
+
+    This hook is called directly by cattrs when structuring a Union type.
+    It delegates to _structure_union to handle the actual structuring logic.
+
+    Args:
+        data: The raw data to structure
+        union_type: The Union type to structure into
+
+    Returns:
+        Structured data as one of the Union variants
+    """
+    return _structure_union(data, union_type)
+
+
+def _register_union_structure_hook() -> None:
+    """
+    Register a structure hook for Union types.
+
+    Scenario:
+        cattrs doesn't natively handle Union types containing dataclasses.
+        This registers a hook that enables structuring for all Union types.
+
+    Expected Outcome:
+        All Union types (from OpenAPI oneOf/anyOf) can be structured correctly.
+    """
+
+    def predicate(t: type) -> bool:
+        return _is_union_type(t)
+
+    converter.register_structure_hook_func(predicate, _union_structure_hook)
+
+
+# Register the Union hook at module load time
+_register_union_structure_hook()
+
+
+def _register_structure_hooks_recursively(cls: type[Any], visited: set[type[Any]] | None = None) -> None:
+    """
+    Recursively register structure hooks for a dataclass and all its nested dataclass types.
+
+    Scenario:
+        Before structuring a dataclass, we need to register hooks for it and all
+        nested data classes so that field name transformation works at all levels.
+
+    Expected Outcome:
+        All dataclass types in the object graph have structure hooks registered.
+
+    Args:
+        cls: The dataclass type to register hooks for
+        visited: Set of already-visited types to avoid infinite recursion
+    """
+    if visited is None:
+        visited = set()
+
+    # Global persistent guard: each class is registered at most once per process.
+    # Without this, structure_from_dict traverses and calls get_type_hints for the
+    # entire type graph on every invocation — O(N × calls) instead of O(N) total.
+    if cls in _structure_hooks_registered:
+        return
+
+    # Local within-call guard: prevents infinite recursion during the traversal.
+    if cls in visited:
+        return
+
+    visited.add(cls)
+
+    # Only process dataclasses
+    if not dataclasses.is_dataclass(cls):
+        return
+
+    # Mark as processing before recursing to prevent cycles.
+    _structure_hooks_registered.add(cls)
+
+    try:
+        structure_fn = _make_dataclass_structure_fn(cls)
+
+        def predicate(t: type[Any], captured_cls: type[Any] = cls) -> bool:
+            return t is captured_cls
+
+        # Predicate-based registration intentionally used instead of register_structure_hook.
+        # Predicate hooks have lower priority than exact hooks, so user-registered hooks
+        # (e.g. converter.register_structure_hook(MyClass, custom_fn)) are not overwritten.
+        converter.register_structure_hook_func(predicate, structure_fn)
+    except Exception:  # nosec B110
+        pass
+
+    # Traverse nested dataclass fields using the cached type hints.
+    type_hints = _get_type_hints_with_extras(cls)
+
+    for field in dataclasses.fields(cls):
+        # Use resolved type hint if available, otherwise raw field type
+        field_type = type_hints.get(field.name, field.type)
+
+        # Handle direct dataclass types
+        if isinstance(field_type, type) and dataclasses.is_dataclass(field_type):
+            _register_structure_hooks_recursively(field_type, visited)
+            continue
+
+        # Handle generic types (List[T], Optional[T], etc.) and Unions
+        _register_hooks_for_nested_types(field_type, visited, _register_structure_hooks_recursively)
+
+
+def _register_hooks_for_nested_types(
+    type_hint: Any, visited: set[type], registrar: Callable[[type, set[type]], None]
+) -> None:
+    """
+    Recursively inspect a type hint to find and register hooks for nested dataclasses.
+    Handles Unions, Lists, Optionals, and other generic types.
+    """
+    # If it's a direct dataclass, register it
+    if isinstance(type_hint, type) and dataclasses.is_dataclass(type_hint):
+        registrar(type_hint, visited)
+        return
+
+    # If it's a generic type or Union, inspect its arguments
+    origin = get_origin(type_hint)
+    if origin is not None:
+        for arg in get_args(type_hint):
+            _register_hooks_for_nested_types(arg, visited, registrar)
+
+
+def _extract_errors(e: BaseException | Exception, path: str = "") -> list[str]:
+    """
+    Recursively extract human-readable error messages from cattrs validation errors.
+
+    Args:
+        e: The exception to extract errors from
+        path: The current path in the object structure (e.g. "items[0].id")
+
+    Returns:
+        List of formatted error messages
+    """
+    messages = []
+
+    if isinstance(e, IterableValidationError):
+        # Handle list/iterable errors
+        for sub_exc in e.exceptions:
+            # We don't have reliable index information from cattrs for which item failed
+            # (it only returns the exceptions, not the indices), so we use [] to indicate
+            # an item in the list without specifying a misleading index.
+            new_path = f"{path}[]" if path else "[]"
+            messages.extend(_extract_errors(sub_exc, new_path))
+
+    elif isinstance(e, ClassValidationError):
+        # Handle dataclass/object errors
+        for sub_exc in e.exceptions:
+            # ClassValidationError usually wraps other exceptions.
+            # We try to find which field caused it by inspecting the notes attached by cattrs.
+            # Notes format: "Structuring class {ClassName} @ attribute {AttributeName}"
+            field_name = None
+            if hasattr(sub_exc, "__notes__"):
+                for note in sub_exc.__notes__:
+                    match = re.search(r"Structuring class .* @ attribute (.*)", note)
+                    if match:
+                        field_name = match.group(1)
+                        break
+
+            if field_name:
+                new_path = f"{path}.{field_name}" if path else field_name
+                messages.extend(_extract_errors(sub_exc, new_path))
+            else:
+                messages.extend(_extract_errors(sub_exc, path))
+
+    elif isinstance(e, ExceptionGroup):
+        # Handle Python 3.11+ ExceptionGroup if cattrs uses it
+        for sub_exc in e.exceptions:
+            messages.extend(_extract_errors(sub_exc, path))
+
+    else:
+        # Leaf exception (ValueError, TypeError, etc.)
+        msg = str(e)
+        if path:
+            messages.append(f"{path}: {msg}")
+        else:
+            messages.append(msg)
+
+    return messages
+
+
+def structure_from_dict(data: Any, cls: type[T]) -> T:
+    """
+    Structure data into a typed instance with automatic field name transformation.
+
+    Scenario:
+        Convert JSON response (with camelCase keys) into Python dataclass instance
+        (with snake_case fields). Works recursively for nested dataclasses.
+        Supports both single objects and generic types like list[T].
+
+    Expected Outcome:
+        Properly structured instance with all field names transformed
+        automatically, including nested objects and lists.
+
+    Args:
+        data: Data from JSON (dict, list, or primitive)
+        cls: Target type (dataclass, list[dataclass], etc.)
+
+    Returns:
+        Instance of cls
+    """
+    # Register structure hooks for this dataclass and all nested dataclasses
+    if dataclasses.is_dataclass(cls):
+        _register_structure_hooks_recursively(cls)
+    else:
+        # Handle generic types like list[T], dict[str, T] — register hooks
+        # for any dataclass types found in the type arguments
+        _register_hooks_for_nested_types(cls, set(), _register_structure_hooks_recursively)
+
+    try:
+        return converter.structure(data, cls)
+    except BaseValidationError as e:
+        # Extract readable error messages
+        error_msgs = _extract_errors(e)
+        error_text = "\n".join(f"- {msg}" for msg in error_msgs)
+        type_name = getattr(cls, "__name__", str(cls))
+        raise ValueError(f"Failed to convert data to {type_name}:\n{error_text}") from e
+    except Exception as e:
+        # Fallback for other errors
+        type_name = getattr(cls, "__name__", str(cls))
+        raise ValueError(f"Failed to convert data to {type_name}: {e}") from e
+
+
+def _register_unstructure_hooks_recursively(cls: type[Any], visited: set[type[Any]] | None = None) -> None:
+    """
+    Recursively register unstructure hooks for a dataclass and all its nested dataclass types.
+
+    Scenario:
+        Before unstructuring a dataclass, we need to register hooks for it and all
+        nested data classes so that field name transformation works at all levels.
+
+    Expected Outcome:
+        All dataclass types in the object graph have unstructure hooks registered.
+
+    Args:
+        cls: The dataclass type to register hooks for
+        visited: Set of already-visited types to avoid infinite recursion
+    """
+    if visited is None:
+        visited = set()
+
+    # Global persistent guard: each class is registered at most once per process.
+    if cls in _unstructure_hooks_registered:
+        return
+
+    # Local within-call guard: prevents infinite recursion during the traversal.
+    if cls in visited:
+        return
+
+    visited.add(cls)
+
+    # Only process dataclasses
+    if not dataclasses.is_dataclass(cls):
+        return
+
+    # Mark as processing before recursing to prevent cycles.
+    _unstructure_hooks_registered.add(cls)
+
+    # Build the unstructure function lazily on first call, then cache it.
+    # make_dict_unstructure_fn uses static dispatch (captures the converter's hook
+    # map at generation time). Deferring to first call ensures all nested class hooks
+    # are already registered, so field-level dispatch is correct. After the first
+    # call the result is cached in _unstructure_fn_cache — O(1) on every subsequent call.
+    try:
+        captured_cls = cls
+
+        def hook(obj: Any, _captured: type[Any] = captured_cls) -> Any:
+            # Build lazily on first call so make_dict_unstructure_fn runs after all
+            # nested hooks are registered (it uses static dispatch at generation time).
+            if _captured not in _unstructure_fn_cache:
+                _unstructure_fn_cache[_captured] = _make_dataclass_unstructure_fn(_captured)
+            return _unstructure_fn_cache[_captured](obj)
+
+        def predicate(t: type[Any], captured_cls: type[Any] = cls) -> bool:
+            return t is captured_cls
+
+        # Predicate-based registration intentionally used instead of register_unstructure_hook.
+        # Predicate hooks have lower priority than exact hooks, so user-registered hooks
+        # are not overwritten.
+        converter.register_unstructure_hook_func(predicate, hook)
+    except Exception:  # nosec B110
+        pass
+
+    # Traverse nested dataclass fields using the cached type hints.
+    type_hints = _get_type_hints_with_extras(cls)
+
+    for field in dataclasses.fields(cls):
+        field_type = type_hints.get(field.name, field.type)
+
+        if isinstance(field_type, type) and dataclasses.is_dataclass(field_type):
+            _register_unstructure_hooks_recursively(field_type, visited)
+            continue
+
+        _register_hooks_for_nested_types(field_type, visited, _register_unstructure_hooks_recursively)
+
+
+def unstructure_to_dict(instance: Any) -> dict[str, Any]:
+    """
+    Unstructure dataclass instance to dict with automatic field name transformation.
+
+    Scenario:
+        Convert Python dataclass instance (with snake_case fields) into JSON-ready
+        dictionary (with camelCase keys). Works recursively for nested dataclasses.
+
+    Expected Outcome:
+        Dictionary with all field names transformed automatically to match JSON
+        format, including nested objects and lists.
+
+    Args:
+        instance: Dataclass instance
+
+    Returns:
+        Dictionary representation
+    """
+    cls = type(instance)
+
+    # Register unstructure hooks for this dataclass and all nested dataclasses
+    if dataclasses.is_dataclass(cls):
+        _register_unstructure_hooks_recursively(cls)
+
+    result: dict[str, Any] = converter.unstructure(instance)
+    return result
+
+
+__all__ = [
+    "converter",
+    "structure_from_dict",
+    "unstructure_to_dict",
+    "structure_with_base64_bytes",
+    "unstructure_bytes_to_base64",
+    "structure_datetime",
+    "unstructure_datetime",
+    "structure_date",
+    "unstructure_date",
+    "camel_to_snake",
+    "snake_to_camel",
+]

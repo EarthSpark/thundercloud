@@ -1,0 +1,91 @@
+{%- set page_name = "tariff-view" -%}
+{% extends "base.html" %}
+
+{% block title %}
+    {{ icon('tariff') }}
+    {{ _('Tariff') }}
+    <span class="tariff-name"></span>
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('tariff.index')) %}
+        {{ icon('tariff') }} {{ _('Tariffs') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ _('Tariff') }} <span class="tariff-name"></span>
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block top_right %}
+    <div class="action-nav-normal pull-right col-md-9">
+        <div class="row">
+            <div class="col-md-2 action-nav-button" data-action="edit">
+                <a href="edit" title="{{ _('Edit Tariff') }}">
+                    <i class="icon-cog"></i>
+                    <span>{{ _('Edit Tariff') }}</span>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="tariff-details hidden">
+        <div class="row">
+            <div class="col-md-4">
+                {% call render_box(_('Tariff'), box_content_class='padded') %}
+                    <dl class="indented">
+                        <dt>{{ _('Tariff Name') }}:</dt>
+                        <dd class="tariff-name"></dd>
+                        <dt>{{ _('Warning on Low Balance (%(currency)s)', currency=config.CURRENCY) }}:</dt>
+                        <dd class="tariff-warning-on-low-balance"></dd>
+                        <dt>{{ _('Cycle Start Day') }}:</dt>
+                        <dd class="tariff-cycle-start-day-of-month"></dd>
+                        <dt>{{ _('Plan Duration') }}:</dt>
+                        <dd class="tariff-plan-duration"></dd>
+                        <dt>{{ _('Plan Fixed Fee (%(currency)s)', currency=config.CURRENCY) }}:</dt>
+                        <dd class="tariff-plan-fixed-fee"></dd>
+                        <dt>{{ _('Plan Minimum Spend (%(currency)s)', currency=config.CURRENCY) }}:</dt>
+                        <dd class="tariff-plan-price"></dd>
+                        <dt>{{ _('Load Limit Type') }}:</dt>
+                        <dd class="tariff-load-limit-type"></dd>
+                        <dt>{{ _('Load Limit in Watts') }}:</dt>
+                        <dd class="tariff-load-limit"></dd>
+                        <dt>{{ _('TOU Periods') }}:</dt>
+                        <dd class="tariff-tou-periods"></dd>
+                        <dt>{{ _('Tariff Type') }}:</dt>
+                        <dd class="tariff-type"></dd>
+                        <dt class="tariff-blockrates">{{ _('Block rates') }}:</dt>
+                        <dd class="tariff-blockrates"></dd>
+                        <dt class="tariff-flatrate">{{ _('Flat Rate (%(currency)s/kWh)', currency=config.CURRENCY) }}:</dt>
+                        <dd class="tariff-flatrate"></dd>
+                        <dt class="tariff-daily-energy-limit">{{ _('Daily Energy Limit') }}:</dt>
+                        <dd class="tariff-daily-energy-limit"></dd>
+                        <dt class="tariff-daily-energy-limit-reset-hour">{{ _('Daily Energy Limit Reset Time') }}:</dt>
+                        <dd class="tariff-daily-energy-limit-reset-hour"></dd>
+                        <dt class="tariff-daily-energy-limit-value">{{ _('Daily Energy Limit (kWh)') }}:</dt>
+                        <dd class="tariff-daily-energy-limit-value"></dd>
+                    </dl>
+                {% endcall %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-10">
+                {% call render_box(_('Load Limits'), box_content_class='padded') %}
+                    <div class="load-limits-graph"></div>
+                {% endcall %}
+            </div>
+        </div>
+
+        <div class="row tariff-pricing-period hidden">
+            <div class="col-md-10">
+                {% call render_box(_('TOU Pricing'), box_content_class='padded') %}
+                    <div class="tou-graph"></div>
+                {% endcall %}
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}

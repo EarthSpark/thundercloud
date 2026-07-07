@@ -1,0 +1,47 @@
+[
+    {
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "last_modified": "2010-01-01T00:00:00",
+        "name": "debt-payback-percent",
+        "updated_by_id": null,
+        "value": "0.0",
+        "value_type": "percent"
+    },
+    {
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "last_modified": "2010-01-01T00:00:00",
+        "name": "nominal-voltage",
+        "updated_by_id": null,
+        "value": "240.0",
+        "value_type": "voltage"
+    },
+    {
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "last_modified": "2010-01-01T00:00:00",
+        "name": "allow-negative-balance",
+        "updated_by_id": null,
+        "value": "true",
+        "value_type": "bool"
+    },
+    {
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "last_modified": "2010-01-01T00:00:00",
+        "name": "send-set-config-at-startup",
+        "updated_by_id": null,
+        "value": "true",
+        "value_type": "bool"
+    },
+    {
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "last_modified": "2010-01-01T00:00:00",
+        "name": "send-broadcast-signal",
+        "updated_by_id": null,
+        "value": "false",
+        "value_type": "bool"
+    }
+]

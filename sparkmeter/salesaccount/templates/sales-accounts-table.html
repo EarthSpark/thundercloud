@@ -1,0 +1,18 @@
+{% set table_class = "sales-account-list" %}
+{% set in_box = True %}
+{% set box_content_class = "padded" %}
+{% extends "list/base.html" %}
+{% set table_extra = [' data-account-type=', account_type]|join("") %}
+
+{% block toolbar %}
+  <li class="toolbar-link">
+    <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul id="export-menu" class="dropdown-menu">
+      {% if current_user.is_operator() and disable_add is not defined %}
+      <li>
+        <a class="add" href="{{ url_for('sales_account.add', account_type=account_type) }}">{{ icon('add') }} {{ add_label }}</a>
+      </li>
+      {% endif %}
+    </ul>
+  </li>
+{% endblock %}

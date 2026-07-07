@@ -1,0 +1,18 @@
+[
+    {
+        "config_command_code": null,
+        "config_event_type": null,
+        "config_message_type": null,
+        "direction": "in",
+        "event_id": null,
+        "external_id": "external-id",
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "025b0ef9-129e-baa5-01d0-64d22acf4532",
+        "in_reply_to_id": null,
+        "origin": "unknown",
+        "phone_number": "+15555550101",
+        "processed": false,
+        "text": "Hello!",
+        "timestamp": "2016-01-01T00:00:00"
+    }
+]

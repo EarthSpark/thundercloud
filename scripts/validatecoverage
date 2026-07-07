@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+# -*- python -*-
+import sys
+from collections import OrderedDict
+from xml.etree.ElementTree import parse
+
+# This is a list of files that doesn't have 100% coverage
+#
+# You will need to update this list when:
+# - a new file was added without 100% coverage
+# - new lines where added that weren't tested
+# - 100% test coverage was reached for some file
+# - a file got remove/renamed
+
+EXCEPTIONS_PYTHON = OrderedDict((
+    ('sparkmeter/alembic/versions/0.32_merge_sms_tables.py', 93.48),
+    ('sparkmeter/api/historyviews0.py', 18.00),
+    ('sparkmeter/app.py', 97.87),
+    ('sparkmeter/conftest.py', 97.89),
+    ('sparkmeter/controller.py', 43.72),
+    ('sparkmeter/debug_memory.py', 0.00),
+    ('sparkmeter/history/historyview.py', 50.00),
+    ('sparkmeter/managecommands.py', 0.0),
+    ('sparkmeter/sentry_proxy.py', 71.43),
+    ('sparkmeter/sparkmac/bms.py', 70),
+    ('sparkmeter/sparkmac/jsonpacket.py', 71.35),
+    ('sparkmeter/sparkmac/slipstreamj.py', 17.43),
+    ('sparkmeter/transaction/transactionview.py', 99.17),
+    ('sparkmeter/web/unittestutils.py', 98.76),
+))
+
+EXCEPTIONS_JS = OrderedDict((
+    ('assets/javascripts/backend.js', 56.10),
+    ('assets/javascripts/datatables.js', 84.62),
+    ('assets/javascripts/modal-item-service.js', 24.32),
+    ('assets/javascripts/startup.js', 58.93),
+    ('sparkmeter/config/js/config-pages.js', 84.00),
+    ('sparkmeter/config/js/sms.directives.js', 14.29),
+    ('sparkmeter/config/js/smsconfigmessages.controller.js', 15.38),
+    ('sparkmeter/config/js/smsconfigmessages.js', 9.38),
+    ('sparkmeter/config/js/smseventtypes.js', 65.22),
+    ('sparkmeter/config/js/smstemplate.js', 3.64),
+    ('sparkmeter/dashboard/js/dashboard-pages.js', 50.00),
+    ('sparkmeter/event/js/event-pages.js', 50.00),
+    ('sparkmeter/ground/js/ground-pages.js', 27.78),
+    ('sparkmeter/homepage/js/homepage.js', 20.00),
+    ('sparkmeter/meter/js/meter-pages.js', 33.33),
+    ('sparkmeter/meter/js/meter-view.js', 49.12),
+    ('sparkmeter/reading/js/reading-pages.js', 50.00),
+    ('sparkmeter/salesaccount/js/sales-account-list.js', 93.18),
+    ('sparkmeter/salesaccount/js/salesaccount-pages.js', 42.86),
+    ('sparkmeter/tariff/js/tariff-domain.js', 3.70),
+    ('sparkmeter/tariff/js/tariff-form.js', 7.69),
+    ('sparkmeter/tariff/js/tariff-pages.js', 40.00),
+    ('sparkmeter/transaction/js/transaction-pages.js', 38.46),
+    ('sparkmeter/user/js/user-pages.js', 33.33),
+))
+
+# Make sure that the list of exceptions is sorted
+for e in [EXCEPTIONS_JS, EXCEPTIONS_PYTHON]:
+    for a, b in zip(e, sorted(e)):
+        if a != b:
+            raise AssertionError("keep EXCEPTIONS_JS & EXCEPTIONS_PYTHON sorted")
+
+_errors = []
+
+def _error(msg):
+    _errors.append(msg)
+
+tool = "scripts/validatecoverage"
+
+if sys.argv[1] == '--python':
+    exceptions = EXCEPTIONS_PYTHON
+elif sys.argv[1] == '--js':
+    exceptions = EXCEPTIONS_JS
+else:
+    raise SystemExit('first argument must be --js or --python')
+root = parse(open(sys.argv[2]))
+fixes = []
+modules = {}
+
+for module in sorted(root.findall('.//class')):
+    filename = module.attrib['filename']
+    if filename.endswith('__init__.py'):
+        continue
+    modules[filename] = module
+    current = float(module.attrib.get('line-rate')) * 100
+    if current != 100 and filename not in exceptions:
+        _error("2: %s has a coverage of %s%%, but expected 100%%, "
+               "add it to %s:" % (
+            filename, current, tool))
+        fixes.append("    ('%s', %.2f)," % (filename, current))
+        continue
+
+    expect = exceptions.get(filename, 100)
+    if current == 100 and expect == 100:
+        continue
+
+    if int(current + 1) < int(expect):
+        _error("1: %s has a coverage of %.2f%%, but expected %.2f%%, "
+               "add more tests or update %s" % (
+            filename, float(current), float(expect), tool))
+        continue
+    if current == 100 and expect < 100:
+        _error("3: %s reached 100%%, remove it from %s" % (
+            filename, tool))
+        continue
+
+for filename in exceptions:
+    if not filename in modules:
+        _error("4: %s not found, remove it from %s" % (
+            filename, tool))
+        continue
+
+for error in sorted(_errors):
+    print 'ERROR:', error
+
+if fixes:
+    print "FIXES:"
+    for fix in sorted(fixes):
+        print fix
+
+sys.exit(len(_errors))

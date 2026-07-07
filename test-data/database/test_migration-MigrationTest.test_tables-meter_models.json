@@ -1,0 +1,146 @@
+[
+    {
+        "continuous_limit": 20.0,
+        "enabled": false,
+        "id": "14ba3b88-800f-6537-0aef-bf702a631a4d",
+        "inrush_limit": 50.0,
+        "name": "SM20XR",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 20.0,
+        "enabled": true,
+        "id": "180fd59d-3c7e-727a-546d-593210b1b6b2",
+        "inrush_limit": 20.0,
+        "name": "SM20R",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "41cdf0f9-b55d-e282-63d6-d3e3a4da2ea3",
+        "inrush_limit": 101.0,
+        "name": "SMRPIRF",
+        "phase_count": 3,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "4f5ebf05-af1a-b695-28fc-95a0166d199f",
+        "inrush_limit": 81.0,
+        "name": "SMRSD",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 100.0,
+        "enabled": true,
+        "id": "52103b85-8b17-d011-cf49-e697921a1642",
+        "inrush_limit": 100.0,
+        "name": "SM100E",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 16.0,
+        "enabled": true,
+        "id": "583e1dcd-f3ba-7ed4-7e18-cd736db5e2a7",
+        "inrush_limit": 19.0,
+        "name": "SM16R",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "7ad678ca-f8f6-d4d7-6674-de45012aeabf",
+        "inrush_limit": 61.0,
+        "name": "SM60R",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "81fa75b2-1f41-9394-faa9-a9eb27892cee",
+        "inrush_limit": 101.0,
+        "name": "SMRPIPLC",
+        "phase_count": 3,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "91944708-6ec6-0988-9f48-00d4c78ea9a7",
+        "inrush_limit": 81.0,
+        "name": "SMRSDPLC",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 200.0,
+        "enabled": true,
+        "id": "9295e90c-cd1a-fb69-8d3d-4d1307fd1420",
+        "inrush_limit": 200.0,
+        "name": "SM200E",
+        "phase_count": 1,
+        "scalars_id": "7d2ec3b0-3bb0-6582-7164-eb47cc7dc37b"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "932eab33-2915-3edb-77e2-7394da4539d8",
+        "inrush_limit": 61.0,
+        "name": "SM60RP",
+        "phase_count": 3,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 20.0,
+        "enabled": true,
+        "id": "ad4e2b68-2eea-b3b7-c439-f8456b3f334f",
+        "inrush_limit": 20.0,
+        "name": "SM15R",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 6.0,
+        "enabled": false,
+        "id": "b17f0934-1f96-37a1-2d7b-788b0652f70b",
+        "inrush_limit": 12.0,
+        "name": "SM5XR",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "b8a20a4c-513d-c199-49cd-b6d9627f6abb",
+        "inrush_limit": 81.0,
+        "name": "SMRSDRF",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 61.0,
+        "enabled": true,
+        "id": "cdba3ef6-bceb-752d-e57c-de68b90c630f",
+        "inrush_limit": 101.0,
+        "name": "SMRPI",
+        "phase_count": 3,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    },
+    {
+        "continuous_limit": 6.0,
+        "enabled": true,
+        "id": "fc9f3a8a-da7c-af19-6a03-c76e2bc901dd",
+        "inrush_limit": 12.0,
+        "name": "SM5R",
+        "phase_count": 1,
+        "scalars_id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4"
+    }
+]

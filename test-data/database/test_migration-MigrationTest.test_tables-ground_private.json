@@ -1,0 +1,10 @@
+[
+    {
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "4663cc21-c81a-0b50-2517-018c54f8ffba",
+        "max_capacity": 100000,
+        "override_meter_state": false,
+        "override_meter_state_modified": null,
+        "secret_key": "DEMOSECRETKEY00000001"
+    }
+]

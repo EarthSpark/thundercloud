@@ -1,0 +1,35 @@
+{%- set title = _('Basic Information') -%}
+{%- set box_content_class = "padded" -%}
+
+{%- extends "components/box/base-box.html" -%}
+
+{% block toolbar %}
+  {% if can_edit('ground') %}
+    <li class="toolbar-link">
+      <a href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+      <ul class="dropdown-menu">
+        <li>
+          <a href="{{ url_for('ground.edit', ground_serial=ground.serial) }}" title="{{ _('Edit Ground') }}">
+            <i class="icon-pencil"></i> {{ _('Edit') }}
+          </a>
+        </li>
+      </ul>
+    </li>
+  {% endif %}
+{% endblock %}
+
+{% block box_content %}
+  <dl class="dl-horizontal">
+      <dt>{{ _('Name') }}:</dt><dd>{{ ground.name|e }}</dd>
+      <dt>{{ _('Ground Capacity') }}:</dt><dd>{{ _('%(capacity)d watts', capacity=ground.private.max_capacity) }}</dd>
+      <dt>{{ _('WIFI SSID') }}:</dt><dd>{{ config['WIFI_SSID'] }}</dd>
+      <dt>{{ _('WIFI Password') }}:</dt><dd>{{ config['WIFI_PASSWORD'] }}</dd>
+      <dt>{{ _('GPS Coordinates') }}:</dt><dd>{# TODO ground.coords|e #}</dd>
+      <dt>{%- if config['HEROKU'] -%}
+        {{ _('Last Sync to ground') }}
+      {%- else -%}
+        {{ _('Last Sync to cloud') }}
+      {%- endif -%}
+      :</dt><dd>{{ ground.get_last_sync_date() }}</dd>
+  </dl>
+{% endblock box_content %}

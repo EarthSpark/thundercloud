@@ -1,0 +1,58 @@
+{%- if account_type == 'global' -%}
+    {%- if form.mode == 'edit' -%}
+        {%- set title = _('Edit Global Sales Account %(name)s', name=sales_account.name) -%}
+    {%- else %}
+        {%- set title = _('Add a Global Sales Account') -%}
+    {%- endif -%}
+{%- else -%}
+    {%- if form.mode == 'edit' -%}
+        {%- set title = _('Edit Restricted Sales Account %(name)s', name=sales_account.name) -%}
+    {%- else %}
+        {%- set title = _('Add a Restricted Sales Account') -%}
+    {%- endif -%}
+{%- endif -%}
+
+{%- from "_macros.html" import form_error %}
+
+{% extends "base.html" %}
+
+{%- if form.mode == 'edit' -%}
+{% block title %}{{ icon('money') }} {{ title }}{% endblock %}
+{%- endif -%}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('sales_account.index')) %}
+        {{ icon('sales-account') }} {{ _('Sales Accounts') }}
+    {% endcall %}
+    {%- if form.mode == 'edit' -%}
+        {% call breadcrumb(url=url_for('sales_account.view', sales_account_id=sales_account.id)) %}
+          {{ icon('sales-account') }} {{ sales_account.name|e }}
+        {% endcall %}
+    {%- endif -%}
+    {% call breadcrumb() %}
+        {%- if form.mode == 'edit' -%}
+          {{ icon('edit') }} {{ _('Edit') }}
+        {%- else -%}
+          {{ icon('add') }} {{ title }}
+        {%- endif -%}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-10">
+            {% call render_box(title, box_content_class="padded") %}
+                <form class="form form-horizontal" role="form" method="POST">
+                    {{ form.hidden_tag() }}
+                    {{ addon_form_field(form.name, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                    {{ addon_form_field(form.active, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                    {%- if account_type == 'restricted' -%}
+                        {{ addon_form_field(form.markup, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                        {{ addon_form_field(form.ground, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                    {%- endif -%}
+                    {{ addon_form_field(form.save_button, form_type="horizontal", horizontal_columns=('lg', 1, 11), button_map={'save_button': 'primary'}) }}
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}

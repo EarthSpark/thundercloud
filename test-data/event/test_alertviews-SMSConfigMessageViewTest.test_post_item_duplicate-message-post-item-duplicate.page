@@ -1,0 +1,19 @@
+> POST /alert/config/smsmessages/e2cb3e47-194f-684f-69fc-417e7146dd25 HTTP/1.1
+> Content-Length: 2
+> Content-Type: application/json
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {}
+
+< HTTP/1.1 409 CONFLICT
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "message already exists",
+  "status": "failure"
+}

@@ -1,0 +1,31 @@
+> PUT /api/v0/sms/mark-delivered HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 93
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"messages": ["%% FILTERED BY UNITTEST %%","cafebabe0-0000-0000-0001-00000000000"]}
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "messages": [
+    {
+      "id": "%% FILTERED BY UNITTEST %%",
+      "status": "removed"
+    },
+    {
+      "id": "cafebabe-0000-0000-0000-100000000000",
+      "status": "not-found"
+    }
+  ],
+  "status": "success"
+}

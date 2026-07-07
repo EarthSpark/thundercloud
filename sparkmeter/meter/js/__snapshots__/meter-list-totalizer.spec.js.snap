@@ -1,0 +1,89 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TotalizerMeterList Totalizer meter csv export should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "SM15R-01-00000001",
+      "strëet, street1, city, state",
+      "",
+      "tag1",
+      true,
+      "test_grid_1",
+    ],
+    Array [
+      "SM15R-01-00000002",
+      "strëet, street2, city, state",
+      "0, 0",
+      "tag1 tag2",
+      true,
+      "test_grid_2",
+    ],
+    Array [
+      "SM15R-01-00000003",
+      "",
+      "",
+      "",
+      true,
+      "test_grid_3",
+    ],
+    Array [
+      "SM15R-01-00000004",
+      "strëet, street4, city, state",
+      "0, 0",
+      "",
+      false,
+      "test_grid_1",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "Serial",
+    "Address",
+    "Coords",
+    "Tags",
+    "Active",
+    "Ground",
+  ],
+}
+`;
+
+exports[`TotalizerMeterList Totalizer meter should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/meter/SM15R-01-00000001/\\">SM15R-01-00000001</i></a>",
+      "",
+      "<a href=\\"#\\" data-toggle=\\"tooltip\\" title=\\"All tags: tag1\\"><span class=\\"label label-blue tag\\">tag1</span></a>",
+      "test_grid_1",
+    ],
+    Array [
+      "<a href=\\"/meter/SM15R-01-00000002/\\">SM15R-01-00000002</i></a>",
+      "0, 0",
+      "<a href=\\"#\\" data-toggle=\\"tooltip\\" title=\\"All tags: tag1,tag2\\"><span class=\\"label label-blue tag\\">tag1</span><span class=\\"label label-blue tag\\">tag2</span></a>",
+      "test_grid_2",
+    ],
+    Array [
+      "<a href=\\"/meter/SM15R-01-00000003/\\">SM15R-01-00000003</i></a>",
+      "",
+      "<a href=\\"#\\" data-toggle=\\"tooltip\\" title=\\"All tags: \\"><span class=\\"label label-blue tag\\"></span></a>",
+      "test_grid_3",
+    ],
+    Array [
+      "<a href=\\"/meter/SM15R-01-00000004/\\">SM15R-01-00000004</i></a>",
+      "0, 0",
+      "<a href=\\"#\\" data-toggle=\\"tooltip\\" title=\\"All tags: \\"><span class=\\"label label-blue tag\\"></span></a>",
+      "test_grid_1",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "Serial",
+    "Coords",
+    "Tags",
+    "Ground",
+  ],
+}
+`;
+
+exports[`TotalizerMeterList list summarization should work 1`] = `"Showing meters 1 to 10 (of a total of 40) "`;

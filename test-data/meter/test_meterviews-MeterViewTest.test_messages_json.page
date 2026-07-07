@@ -1,0 +1,48 @@
+> GET /meter/SM15R-01-00000001/messages.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "draw": 1,
+  "messages": [
+    {
+      "alert_label": null,
+      "code": null,
+      "customer_name": "str\u00ebet",
+      "direction": "in",
+      "event_type": null,
+      "ground_name": null,
+      "ground_serial": null,
+      "message_type": null,
+      "origin": "command",
+      "phone_number": "+18008000001",
+      "processed": false,
+      "text": "sms m\u00e9\u015b\u015b\u00e1ge text 01",
+      "timestamp": "2013-01-01T01:01:01"
+    },
+    {
+      "alert_label": null,
+      "code": null,
+      "customer_name": "str\u00ebet",
+      "direction": "out",
+      "event_type": null,
+      "ground_name": null,
+      "ground_serial": null,
+      "message_type": null,
+      "origin": "command",
+      "phone_number": "+18008000001",
+      "processed": false,
+      "text": "sms m\u00e9\u015b\u015b\u00e1ge text 02",
+      "timestamp": "2013-01-01T01:01:01"
+    }
+  ],
+  "total": 2
+}

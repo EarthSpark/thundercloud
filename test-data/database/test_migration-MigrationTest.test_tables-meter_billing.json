@@ -1,0 +1,38 @@
+[
+    {
+        "id": "112dea91-84b5-3095-0a65-c6b3be30f206",
+        "is_running_plan": false,
+        "last_cycle_start": "2015-09-01T00:00:00",
+        "last_daily_energy_limit_reset_datetime": null,
+        "last_daily_energy_limit_reset_value": null,
+        "last_plan_expiration_date": null,
+        "last_plan_payment_date": null,
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "tariff_id": "0fa21714-f2c8-486f-8cd0-66885473ff76",
+        "total_cycle_energy": 0.6816250000000005
+    },
+    {
+        "id": "954a7c38-b170-f42a-1f8d-803fe754e802",
+        "is_running_plan": false,
+        "last_cycle_start": "2015-09-01T00:00:00",
+        "last_daily_energy_limit_reset_datetime": null,
+        "last_daily_energy_limit_reset_value": null,
+        "last_plan_expiration_date": null,
+        "last_plan_payment_date": null,
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "tariff_id": "0ecfb15c-9d6b-4583-bafa-954604685b1b",
+        "total_cycle_energy": 0.332406249999998
+    },
+    {
+        "id": "d3a98c6e-bf23-87d9-c805-18c762e49b36",
+        "is_running_plan": false,
+        "last_cycle_start": "2015-09-01T00:00:00",
+        "last_daily_energy_limit_reset_datetime": null,
+        "last_daily_energy_limit_reset_value": null,
+        "last_plan_expiration_date": null,
+        "last_plan_payment_date": null,
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "tariff_id": "ce245985-8fe0-4e93-a0c1-2e27df13a99e",
+        "total_cycle_energy": 2.24309374999999
+    }
+]

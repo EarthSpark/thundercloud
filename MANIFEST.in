@@ -1,0 +1,33 @@
+include Makefile
+include assets/stylesheets/*.scss
+include assets/stylesheets/bootstrap/*.scss
+include assets/stylesheets/datatables/*.scss
+recursive-include assets/javascripts *.js
+
+include deploy/*.ini
+include git-version
+
+include scripts/config/*.mk
+include scripts/config/babel.cfg
+include scripts/config/typings.json
+include scripts/config/webpack.config.js
+include scripts/*.sh
+include scripts/requirements/prod.txt
+include scripts/requirements/setup.txt
+include scripts/requirements/test.txt
+
+include sparkmeter/alembic/alembic.ini
+include sparkmeter/database/schemas/base.sql
+include sparkmeter/database/schemas/meterschema.sql
+include sparkmeter/database/schemas/transactionschema.sql
+recursive-include sparkmeter *.html *.js
+recursive-include sparkmeter/translations *.po *.mo
+
+include static/fonts/*
+include static/images/*.gif
+include static/images/*.png
+include static/images/datatables/*.png
+include static/images/flags/flags-iso/flat/32/*.png
+include static/images/flags/flags-iso/flat/32/*.png
+include static/logo/*
+include static/swf/*.swf

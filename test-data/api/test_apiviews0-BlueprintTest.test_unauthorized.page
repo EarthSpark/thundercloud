@@ -1,0 +1,16 @@
+> GET /api/v0/system-info HTTP/1.1
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 401 UNAUTHORIZED
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Vary: Cookie
+<
+{
+  "error": "unauthorized",
+  "status": "failure"
+}

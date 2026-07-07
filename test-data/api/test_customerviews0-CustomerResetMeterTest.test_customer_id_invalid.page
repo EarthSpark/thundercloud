@@ -1,0 +1,14 @@
+> POST /api/v0/customers/invalid-customer-id/reset-meter HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 404 NOT FOUND
+< Content-Type: application/json
+< Vary: Cookie
+<
+{
+  "error": "no such api",
+  "status": "failure"
+}

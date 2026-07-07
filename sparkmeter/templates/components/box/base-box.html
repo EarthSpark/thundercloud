@@ -1,0 +1,17 @@
+
+<div class="box">
+    <div class="box-header">
+        <span class="title">{{ title }}</span>
+        <ul class="box-toolbar">
+          {%- block toolbar %}{% endblock -%}
+        </ul>
+    </div> <!-- class="box-header" -->
+    <div class="box-content {{ box_content_class }}">
+        {%- block box_content %}{% endblock -%}
+    </div> <!-- class="box-content" -->
+    {%- if has_footer %}
+      <div class="box-footer padded">
+        {%- block box_footer %}{% endblock -%}
+      </div> <!-- class="box-footer" -->
+    {%- endif %}
+</div> <!-- class="box" -->

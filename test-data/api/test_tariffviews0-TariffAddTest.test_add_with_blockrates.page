@@ -1,0 +1,58 @@
+> POST /api/v0/tariffs HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 294
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"blockrates": [{"lower": 0,"upper": 20,"value": 1},{"lower": 20,"upper": 40,"value": 2},{"lower": 40,"upper": 0,"value": 3.5}],"cycle_start_day_of_month": 1,"flat_load_limit": 150,"flat_price": 4,"load_limit_type": "flat","name": "TARIFF BLOCKRATES","plan_price": 0,"tariff_type": "blockrate"}
+
+< HTTP/1.1 201 CREATED
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "tariff": {
+    "blockrates": [
+      {
+        "lower": 0,
+        "upper": 20,
+        "value": 1
+      },
+      {
+        "lower": 20,
+        "upper": 40,
+        "value": 2
+      },
+      {
+        "lower": 40,
+        "upper": 0,
+        "value": 3.5
+      }
+    ],
+    "cycle_start_day_of_month": 1,
+    "daily_energy_limit_enabled": false,
+    "daily_energy_limit_reset_hour": 0,
+    "daily_energy_limit_value": 0.0,
+    "flat_load_limit": 150,
+    "flat_price": 4.0,
+    "id": "%% FILTERED BY UNITTEST %%",
+    "load_limit_type": "flat",
+    "load_limits": [],
+    "low_balance_threshold": 0.0,
+    "name": "TARIFF BLOCKRATES",
+    "plan_duration": "1m",
+    "plan_enabled": false,
+    "plan_fixed_fee": 0.0,
+    "plan_price": 0.0,
+    "tariff_type": "blockrate",
+    "tou_enabled": false,
+    "tous": []
+  }
+}

@@ -1,0 +1,18 @@
+> GET /api/v0/customers HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{"customers":[
+{"code": "customer code 1","credit_balance": 0.0,"debt_balance": 0.0,"ground": {"id": "00000002-0000-0000-0000-000000000001","name": "test micr\u00f8grid 1"},"id": "0000000c-0000-0000-0000-000000000001","meters": [{"active": true,"address": "str\u00ebet, street2, city, 12345, state, usa","bootloader": "def456","city": "city","coords": "42.5646975,-71.2708356","country": "usa","current_daily_energy": null,"current_tariff_name": "tar\u00efff01","firmware": "abc1234","is_running_plan": false,"last_config_datetime": "2013-01-01T01:01:01","last_cycle_start": null,"last_energy": 0.0,"last_energy_datetime": "2013-01-01T01:01:01","last_meter_state_code": 1,"last_plan_expiration_date": null,"last_plan_payment_date": null,"model": "SM25R","operating_mode": 2,"plan_balance": 0.0,"postalcode": "12345","serial": "SM15R-01-00000001","state": "state","street1": "str\u00ebet","street2": "street2","tags": [],"total_cycle_energy": 0.0}],"name": "Customer #1","phone_number": "+18008000001","phone_number_verified": true},
+{"code": "customer code 2","credit_balance": 0.0,"debt_balance": 0.0,"ground": {"id": "00000002-0000-0000-0000-000000000001","name": "test micr\u00f8grid 1"},"id": "0000000c-0000-0000-0000-000000000002","meters": [{"active": true,"address": "str\u00ebet, street2, city, 12345, state, usa","bootloader": "def456","city": "city","coords": "42.5646975,-71.2708356","country": "usa","current_daily_energy": null,"current_tariff_name": "tar\u00efff01","firmware": "abc1234","is_running_plan": false,"last_config_datetime": "2013-01-01T01:01:01","last_cycle_start": null,"last_energy": 0.0,"last_energy_datetime": "2013-01-01T01:01:01","last_meter_state_code": 1,"last_plan_expiration_date": null,"last_plan_payment_date": null,"model": "SM25R","operating_mode": 2,"plan_balance": 0.0,"postalcode": "12345","serial": "SM15R-01-00000002","state": "state","street1": "str\u00ebet","street2": "street2","tags": [],"total_cycle_energy": 0.0}],"name": "Customer #2","phone_number": "+18008000002","phone_number_verified": true}
+], "error": null, "status": "success"}

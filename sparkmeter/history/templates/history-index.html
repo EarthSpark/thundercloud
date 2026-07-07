@@ -1,0 +1,323 @@
+{%- set page_name = 'history-index' -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('download') }} {{ _('Historical Data') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        <i class="icon-download"></i> {{ _('Historical Data') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <strong>{{ _('What is Parquet?') }}</strong>
+            {{ _('These files are stored in Apache Parquet format, a columnar storage format optimized for analytics.') }}
+            <a href="#parquet-help" data-toggle="collapse" class="alert-link">
+                {{ _('Learn how to read and query Parquet files') }} <i class="icon-chevron-down"></i>
+            </a>
+            <div id="parquet-help" class="collapse" style="margin-top: 10px;">
+                <hr>
+                <h4>{{ _('Reading Parquet Files with DuckDB') }}</h4>
+                <p>{{ _('DuckDB is a fast in-process SQL database that can query Parquet files directly. Install it from') }} <a href="https://duckdb.org/docs/installation/" target="_blank">duckdb.org</a></p>
+
+                <h5>{{ _('Readings Data Schema') }}</h5>
+                <p>{{ _('Each readings file contains meter data with columns including:') }}</p>
+                <ul style="font-size: 0.9em; margin-left: 20px;">
+                    <li><code>serial</code> - Meter serial number</li>
+                    <li><code>heartbeat_start</code>, <code>heartbeat_end</code> - Reading time window</li>
+                    <li><code>kilowatt_hours</code> - Energy consumed during the period</li>
+                    <li><code>voltage_avg</code>, <code>voltage_min</code>, <code>voltage_max</code> - Voltage measurements</li>
+                    <li><code>current_avg</code>, <code>current_min</code>, <code>current_max</code> - Current measurements</li>
+                    <li><code>power_factor_avg</code>, <code>true_power_avg</code> - Power metrics</li>
+                    <li><code>state</code> - Meter state (integer): 0=Off, 1=On, 3=Error, 6=Throttle, 13=Tamper</li>
+                    <li><code>acct_credit</code>, <code>acct_debt</code>, <code>cost</code> - Account balance info</li>
+                </ul>
+
+                <h5>{{ _('Example Queries') }}</h5>
+                <pre id="example-queries" style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 0.85em;">
+<strong># View first 10 readings with key columns</strong>
+duckdb -c "SELECT serial, heartbeat_start, kilowatt_hours, voltage_avg, state
+           FROM '<span class="example-filename">your_file.parquet</span>' LIMIT 10"
+
+<strong># Count readings per meter</strong>
+duckdb -c "SELECT serial, COUNT(*) as reading_count
+           FROM '<span class="example-filename">your_file.parquet</span>'
+           GROUP BY serial ORDER BY reading_count DESC"
+
+<strong># Total energy consumption by meter</strong>
+duckdb -c "SELECT serial, SUM(kilowatt_hours) as total_kwh, AVG(voltage_avg) as avg_voltage
+           FROM '<span class="example-filename">your_file.parquet</span>'
+           GROUP BY serial"
+
+<strong># Filter readings where meter was on (state=1) with good voltage</strong>
+duckdb -c "SELECT * FROM '<span class="example-filename">your_file.parquet</span>'
+           WHERE state = 1 AND voltage_avg > 200"
+
+<strong># Count readings by state</strong>
+duckdb -c "SELECT state, COUNT(*) as count
+           FROM '<span class="example-filename">your_file.parquet</span>'
+           GROUP BY state ORDER BY state"
+
+<strong># Export filtered data to CSV</strong>
+duckdb -c "COPY (SELECT serial, heartbeat_start, kilowatt_hours, voltage_avg, current_avg, state
+           FROM '<span class="example-filename">your_file.parquet</span>')
+           TO 'readings.csv' (HEADER, DELIMITER ',')"</pre>
+
+                <h5>{{ _('Interactive Web UI Mode') }}</h5>
+                <p>{{ _('DuckDB includes a web-based UI for exploring data interactively. Start it with:') }}</p>
+                <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 0.85em;">
+<strong># Open DuckDB UI and load a Parquet file</strong>
+duckdb <span class="example-filename">your_file.parquet</span> --ui
+</pre>
+                <p>{{ _('This opens a web interface at') }} <code>http://localhost:3000</code> {{ _('where you can write SQL queries, visualize results, and export data with a graphical interface.') }}</p>
+
+                <p>{{ _('You can also use Python with pandas or pyarrow, or any other tool that supports Parquet files.') }}</p>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    {{ icon('download') }} {{ _('Historical Data') }}
+                    <small class="text-muted">{{ _('Site') }}: {{ site_serial }}</small>
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div id="export-loading" class="text-center" style="display: none;">
+                    <i class="icon-spinner icon-spin"></i> {{ _('Loading files...') }}
+                </div>
+                <div id="export-error" class="alert alert-danger" style="display: none;"></div>
+                <div id="export-content">
+                    <div id="export-tree">
+                        <!-- Tree structure will be populated here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.export-tree {
+    font-family: monospace;
+}
+.export-folder {
+    margin: 2px 0;
+}
+.export-folder-header {
+    cursor: pointer;
+    padding: 5px;
+    user-select: none;
+}
+.export-folder-header:hover {
+    background-color: #f5f5f5;
+}
+.export-folder-icon {
+    margin-right: 5px;
+}
+.export-folder-content {
+    margin-left: 20px;
+    display: none;
+}
+.export-folder.expanded > .export-folder-content {
+    display: block;
+}
+.export-file {
+    padding: 5px;
+    margin: 2px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.export-file:hover {
+    background-color: #f5f5f5;
+}
+.export-file-info {
+    flex-grow: 1;
+}
+.export-file-name {
+    font-weight: bold;
+}
+.export-file-meta {
+    color: #666;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+</style>
+
+<script>
+(function() {
+    'use strict';
+
+    var apiEndpoint = '/history/list.json';
+    var downloadEndpoint = '/history/download/';
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        var k = 1024;
+        var sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    function formatDate(dateString) {
+        var date = new Date(dateString);
+        return date.toLocaleString();
+    }
+
+    function showError(message) {
+        $('#export-error').text(message).show();
+        $('#export-loading').hide();
+        $('#export-content').hide();
+    }
+
+    function buildFileTree(files) {
+        var tree = {};
+
+        files.forEach(function(file) {
+            var parts = file.filename.split('/');
+            var current = tree;
+
+            // Build nested structure
+            for (var i = 0; i < parts.length - 1; i++) {
+                var part = parts[i];
+                if (!current[part]) {
+                    current[part] = { _isFolder: true, _children: {} };
+                }
+                current = current[part]._children;
+            }
+
+            // Add file
+            var filename = parts[parts.length - 1];
+            current[filename] = {
+                _isFolder: false,
+                _data: file
+            };
+        });
+
+        return tree;
+    }
+
+    function renderTree(tree, container, path) {
+        path = path || '';
+        var keys = Object.keys(tree).sort();
+
+        keys.forEach(function(key) {
+            var item = tree[key];
+            var currentPath = path ? path + '/' + key : key;
+
+            if (item._isFolder) {
+                // Render folder
+                var folderDiv = $('<div>').addClass('export-folder');
+                var folderHeader = $('<div>').addClass('export-folder-header');
+                var folderIcon = $('<i>').addClass('icon-folder-close export-folder-icon');
+                folderHeader.append(folderIcon).append(key);
+                var folderContent = $('<div>').addClass('export-folder-content');
+
+                folderDiv.append(folderHeader);
+                folderDiv.append(folderContent);
+
+                // Toggle folder on click - use a closure to capture the correct elements
+                (function(div, header, content, icon) {
+                    header.css('cursor', 'pointer');
+                    header.click(function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Folder clicked:', key, 'Current expanded:', div.hasClass('expanded'));
+                        div.toggleClass('expanded');
+                        if (div.hasClass('expanded')) {
+                            icon.removeClass('icon-folder-close').addClass('icon-folder-open');
+                            console.log('Expanded folder');
+                        } else {
+                            icon.removeClass('icon-folder-open').addClass('icon-folder-close');
+                            console.log('Collapsed folder');
+                        }
+                    });
+                })(folderDiv, folderHeader, folderContent, folderIcon);
+
+                container.append(folderDiv);
+
+                // Recursively render children
+                renderTree(item._children, folderContent, currentPath);
+            } else {
+                // Render file
+                var file = item._data;
+                var fileDiv = $('<div class="export-file">');
+                var fileInfo = $('<div class="export-file-info">');
+                fileInfo.html(
+                    '<span class="export-file-name"><i class="icon-file"></i> ' + key + '</span>' +
+                    '<span class="export-file-meta">' + formatBytes(file.size) + ' - ' + formatDate(file.last_modified) + '</span>'
+                );
+
+                var downloadLink = $('<a>')
+                    .addClass('btn btn-sm btn-primary')
+                    .attr('href', downloadEndpoint + encodeURIComponent(file.filename))
+                    .attr('target', '_blank')
+                    .html('<i class="icon-download"></i> {{ _("Download") }}');
+
+                fileDiv.append(fileInfo);
+                fileDiv.append(downloadLink);
+                container.append(fileDiv);
+            }
+        });
+    }
+
+    function loadExportFiles() {
+        $('#export-loading').show();
+        $('#export-error').hide();
+        $('#export-content').hide();
+
+        $.ajax({
+            url: apiEndpoint,
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                $('#export-loading').hide();
+
+                if (response.error) {
+                    showError('{{ _("Error loading files") }}: ' + response.error);
+                    return;
+                }
+
+                var files = response.files || [];
+                var treeContainer = $('#export-tree');
+                treeContainer.empty();
+
+                if (files.length === 0) {
+                    treeContainer.html('<div class="text-center text-muted">{{ _("No historical data files found for this site.") }}</div>');
+                } else {
+                    var tree = buildFileTree(files);
+                    renderTree(tree, treeContainer);
+
+                    // Update example queries with first file
+                    if (files.length > 0) {
+                        var firstFile = files[0];
+                        var displayName = firstFile.filename.split('/').pop();
+                        $('.example-filename').text(displayName);
+                    }
+                }
+
+                $('#export-content').show();
+            },
+            error: function(xhr, status, error) {
+                var errorMsg = '{{ _("Failed to load historical data files") }}';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg += ': ' + xhr.responseJSON.message;
+                } else {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    // Load files when page is ready
+    $(document).ready(function() {
+        loadExportFiles();
+    });
+})();
+</script>
+{% endblock %}

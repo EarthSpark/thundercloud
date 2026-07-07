@@ -1,0 +1,39 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Sales Accounts List Global renders properly 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/sales-account/00000000-0000-0000-0000-000000000001/\\">Sales Account #1</i></a>",
+      "10 transactions ($1,024.00) in the last 30 days",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "Name",
+    "Transaction history",
+  ],
+}
+`;
+
+exports[`Sales Accounts List Restricted my rendering should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/sales-account/00000000-0000-0000-0000-000000000001/\\">Sales Account #1</i></a>",
+      "Ground",
+      0.05,
+      0,
+      0,
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "Name",
+    "Ground",
+    "Markup",
+    "Credit",
+    "Debt",
+  ],
+}
+`;

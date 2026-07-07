@@ -1,0 +1,19 @@
+> PUT /alert/config/smsmessages/00000000-0003-0000-0000-000000000001 HTTP/1.1
+> Content-Length: 65
+> Content-Type: application/json
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"message_type": "invalid","template": "message t\u00e9mplate 1"}
+
+< HTTP/1.1 400 BAD REQUEST
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "bad message-type: invalid is not a valid value",
+  "status": "failure"
+}

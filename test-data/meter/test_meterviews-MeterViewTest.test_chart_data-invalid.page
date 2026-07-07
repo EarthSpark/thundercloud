@@ -1,0 +1,15 @@
+> GET /meter/SM15R-01-00000001/chart/data.invalid?group_by=none&group_by_function=sum&fields=true_power_inst&start=2015-03-9&end=2015-03-11 HTTP/1.1
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 400 BAD REQUEST
+< Content-Type: text/html; charset=utf-8
+<
+<!doctype html>
+<html lang=en>
+<title>400 Bad Request</title>
+<h1>Bad Request</h1>
+<p>The browser (or proxy) sent a request that this server could not understand.</p>
+

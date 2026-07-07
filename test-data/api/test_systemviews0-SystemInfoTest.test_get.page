@@ -1,0 +1,28 @@
+> GET /api/v0/system-info HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "grids": [
+    {
+      "id": "00000002-0000-0000-0000-000000000001",
+      "last_sync_date": null,
+      "name": "test micr\u00f8grid 1",
+      "override_meter_state": false,
+      "override_meter_state_modified": null,
+      "serial": "groundserial1"
+    }
+  ],
+  "status": "success"
+}

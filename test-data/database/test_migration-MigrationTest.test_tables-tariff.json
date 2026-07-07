@@ -1,0 +1,132 @@
+[
+    {
+        "blockrates": [],
+        "cycle_start_day_of_month": 1,
+        "daily_energy_limit_enabled": false,
+        "daily_energy_limit_reset_hour": 0,
+        "daily_energy_limit_value": 0.0,
+        "flat_load_limit": 30,
+        "flat_price": 50.0,
+        "id": "0ecfb15c-9d6b-4583-bafa-954604685b1b",
+        "load_limit_type": "flat",
+        "load_limits": [],
+        "low_balance_threshold": 0.0,
+        "name": "LIMYE",
+        "plan_duration_span": 1,
+        "plan_duration_unit": "m",
+        "plan_enabled": false,
+        "plan_fixed_fee": 0.0,
+        "plan_price": 0.0,
+        "tariff_type": "flat",
+        "tou_enabled": true,
+        "tous": [
+            {
+                "end": "08:00",
+                "start": "00:00",
+                "value": 120.0
+            },
+            {
+                "end": "00:00",
+                "start": "18:00",
+                "value": 120.0
+            },
+            {
+                "end": "18:00",
+                "start": "08:00",
+                "value": 80.0
+            }
+        ]
+    },
+    {
+        "blockrates": [
+            {
+                "lower": 5,
+                "upper": 20,
+                "value": 45.0
+            },
+            {
+                "lower": 0,
+                "upper": 5,
+                "value": 50.0
+            },
+            {
+                "lower": 20,
+                "upper": 65535,
+                "value": 40.0
+            }
+        ],
+        "cycle_start_day_of_month": 1,
+        "daily_energy_limit_enabled": false,
+        "daily_energy_limit_reset_hour": 0,
+        "daily_energy_limit_value": 0.0,
+        "flat_load_limit": 180,
+        "flat_price": 50.0,
+        "id": "0fa21714-f2c8-486f-8cd0-66885473ff76",
+        "load_limit_type": "flat",
+        "load_limits": [],
+        "low_balance_threshold": 0.0,
+        "name": "TV 180",
+        "plan_duration_span": 1,
+        "plan_duration_unit": "m",
+        "plan_enabled": false,
+        "plan_fixed_fee": 0.0,
+        "plan_price": 0.0,
+        "tariff_type": "flat",
+        "tou_enabled": true,
+        "tous": [
+            {
+                "end": "00:00",
+                "start": "18:00",
+                "value": 120.0
+            },
+            {
+                "end": "08:00",
+                "start": "00:00",
+                "value": 120.0
+            },
+            {
+                "end": "18:00",
+                "start": "08:00",
+                "value": 80.0
+            }
+        ]
+    },
+    {
+        "blockrates": [],
+        "cycle_start_day_of_month": 1,
+        "daily_energy_limit_enabled": false,
+        "daily_energy_limit_reset_hour": 0,
+        "daily_energy_limit_value": 0.0,
+        "flat_load_limit": 360,
+        "flat_price": 37.5,
+        "id": "ce245985-8fe0-4e93-a0c1-2e27df13a99e",
+        "load_limit_type": "flat",
+        "load_limits": [],
+        "low_balance_threshold": 0.0,
+        "name": "FREEZER",
+        "plan_duration_span": 1,
+        "plan_duration_unit": "m",
+        "plan_enabled": false,
+        "plan_fixed_fee": 0.0,
+        "plan_price": 0.0,
+        "tariff_type": "flat",
+        "tou_enabled": true,
+        "tous": [
+            {
+                "end": "08:00",
+                "start": "00:00",
+                "value": 120.0
+            },
+            {
+                "end": "00:00",
+                "start": "18:00",
+                "value": 120.0
+            },
+            {
+                "end": "18:00",
+                "start": "08:00",
+                "value": 80.0
+            }
+        ]
+    }
+]

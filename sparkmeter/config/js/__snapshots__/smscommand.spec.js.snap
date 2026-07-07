@@ -1,0 +1,70 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SMSCommandsService method: createEmpty() should create an empty 1`] = `
+Object {
+  "code": "",
+  "id": null,
+  "template": "",
+}
+`;
+
+exports[`SMSCommandsService method: fillModalScope() should populate with a commands from the response 1`] = `
+Object {
+  "code": "ABC",
+  "id": 123,
+}
+`;
+
+exports[`SMSCommandsService method: objectCreated() should update list of commands  1`] = `
+Object {
+  "commands": Array [
+    Object {
+      "id": 123,
+    },
+  ],
+}
+`;
+
+exports[`SMSCommandsService method: objectDeleted() should delete an item  1`] = `
+Object {
+  "commands": Array [
+    Object {
+      "id": 100,
+      "template": "T100",
+    },
+    Object {
+      "id": 150,
+      "template": "T150",
+    },
+  ],
+}
+`;
+
+exports[`SMSCommandsService method: objectUpdated() should update list of commands  1`] = `
+Object {
+  "commands": Array [
+    Object {
+      "id": 100,
+      "template": "T100",
+    },
+    Object {
+      "id": 123,
+      "template": "T123 after",
+    },
+    Object {
+      "id": 150,
+      "template": "T150",
+    },
+  ],
+}
+`;
+
+exports[`SMSCommandsService method: populateListScope() should populate with a commands from the response 1`] = `
+Object {
+  "commands": Array [
+    Object {
+      "id": 123,
+    },
+  ],
+}
+`;

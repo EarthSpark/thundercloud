@@ -1,0 +1,992 @@
+msgid "Sparkmac Forwarding"
+msgstr ""
+
+msgid "Sparkmac Routing Enabled"
+msgstr ""
+
+msgid "Sparkmac Flooding Subnets"
+msgstr ""
+
+msgid "Sparkmac TTL"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Customer Number"
+msgstr ""
+
+msgid "Street1"
+msgstr ""
+
+msgid "Street2"
+msgstr ""
+
+msgid "City"
+msgstr ""
+
+msgid "State"
+msgstr ""
+
+msgid "Postal code"
+msgstr ""
+
+msgid "Country"
+msgstr ""
+
+msgid "Coordinates"
+msgstr ""
+
+msgid "Override"
+msgstr ""
+
+msgid "Last Long Energy"
+msgstr ""
+
+msgid "Last Long Energy Datetime"
+msgstr ""
+
+msgid "Hidden"
+msgstr ""
+
+msgid "Packet Request"
+msgstr ""
+
+msgid "Packet Response"
+msgstr ""
+
+msgid "Firmware Version"
+msgstr ""
+
+msgid "Bootloader Version"
+msgstr ""
+
+msgid "Meter Subnet"
+msgstr ""
+
+msgid "Current State"
+msgstr ""
+
+#, python-format
+msgid "%(microgrid)s, Meter %(code)d"
+msgstr ""
+
+msgid "Off"
+msgstr ""
+
+msgid "On"
+msgstr ""
+
+#, python-format
+msgid "Auto (%(state)s)"
+msgstr ""
+
+msgid "Unknown"
+msgstr ""
+
+#, python-format
+msgid "Meter %(code)d"
+msgstr ""
+
+msgid "Static Routes"
+msgstr ""
+
+msgid "Forwarding"
+msgstr ""
+
+msgid "Routing Enabled"
+msgstr ""
+
+msgid "Code"
+msgstr ""
+
+msgid "Tariff level"
+msgstr ""
+
+msgid "Auto"
+msgstr ""
+
+msgid "Subnet"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Start Date"
+msgstr ""
+
+msgid "End Date"
+msgstr ""
+
+msgid "Group By"
+msgstr ""
+
+msgid "Group By Function"
+msgstr ""
+
+msgid "Sum"
+msgstr ""
+
+msgid "Minimum"
+msgstr ""
+
+msgid "Average"
+msgstr ""
+
+msgid "Maximum"
+msgstr ""
+
+msgid "Fields"
+msgstr ""
+
+msgid "Meter created"
+msgstr ""
+
+msgid "Meter updated"
+msgstr ""
+
+msgid "Sending reset command"
+msgstr ""
+
+msgid "Add Meter"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Microgrids"
+msgstr ""
+
+msgid "Chart"
+msgstr ""
+
+msgid "loading"
+msgstr ""
+
+msgid "Chart Parameters"
+msgstr ""
+
+msgid "edit"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Tariff Level"
+msgstr ""
+
+msgid "Customer Name"
+msgstr ""
+
+msgid "Credit"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "Customer Meter List"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Add a meter"
+msgstr ""
+
+#, python-format
+msgid "View %(num)d hidden meter"
+msgid_plural "View %(num)d hidden meters"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Make Payment"
+msgstr ""
+
+msgid "Power"
+msgstr ""
+
+msgid "Edit Meter"
+msgstr ""
+
+msgid "Meter Charts"
+msgstr ""
+
+msgid "Operator Charts"
+msgstr ""
+
+msgid "Reset Error"
+msgstr ""
+
+msgid "Information"
+msgstr ""
+
+msgid "Coords"
+msgstr ""
+
+msgid "Debt"
+msgstr ""
+
+msgid "Id"
+msgstr ""
+
+msgid "Customer"
+msgstr ""
+
+msgid "Number"
+msgstr ""
+
+msgid "Tariff"
+msgstr ""
+
+msgid "Price"
+msgstr ""
+
+msgid "Power Limit"
+msgstr ""
+
+msgid "Network"
+msgstr ""
+
+msgid "Flooding Subnets"
+msgstr ""
+
+msgid "Flooding Macs"
+msgstr ""
+
+msgid "Max capacity"
+msgstr ""
+
+msgid "Secret Key"
+msgstr ""
+
+msgid "Microgrid updated"
+msgstr ""
+
+msgid "Edit Microgrid"
+msgstr ""
+
+msgid "Status Charts"
+msgstr ""
+
+msgid "Output Charts"
+msgstr ""
+
+msgid "Financial Charts"
+msgstr ""
+
+msgid "Latest Readings"
+msgstr ""
+
+msgid "Hidden Meters"
+msgstr ""
+
+msgid "subtitle"
+msgstr ""
+
+msgid "Serial"
+msgstr ""
+
+msgid "Capacity"
+msgstr ""
+
+msgid "View"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "CPU"
+msgstr ""
+
+msgid "Memory Usage"
+msgstr ""
+
+msgid "Boot Time"
+msgstr ""
+
+msgid "Load"
+msgstr ""
+
+msgid "Disk Usage"
+msgstr ""
+
+msgid "Micorgrid Transactions"
+msgstr ""
+
+msgid "Micorgrid Transactions and Transfers"
+msgstr ""
+
+msgid "Transactions"
+msgstr ""
+
+msgid "Last Update"
+msgstr ""
+
+msgid "Needs Sync"
+msgstr ""
+
+msgid "Last Sync"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Poweron"
+msgstr ""
+
+msgid "Startup"
+msgstr ""
+
+msgid "Throttle"
+msgstr ""
+
+msgid "Throttle Check"
+msgstr ""
+
+msgid "Throttle Error"
+msgstr ""
+
+msgid "Protect"
+msgstr ""
+
+msgid "ID"
+msgstr ""
+
+msgid "Heartbeat Start"
+msgstr ""
+
+msgid "Heartbeat End"
+msgstr ""
+
+msgid "Kilowatt Hours"
+msgstr ""
+
+msgid "Kilowatt Hours Period"
+msgstr ""
+
+msgid "Cost"
+msgstr ""
+
+msgid "Transmitted"
+msgstr ""
+
+msgid "Meter"
+msgstr ""
+
+msgid "Min Voltage"
+msgstr ""
+
+msgid "Max Voltage"
+msgstr ""
+
+msgid "Avg Voltage"
+msgstr ""
+
+msgid "Avg Power Factor"
+msgstr ""
+
+msgid "Avg True Power"
+msgstr ""
+
+msgid "Min Current"
+msgstr ""
+
+msgid "Max Current"
+msgstr ""
+
+msgid "Avg Current"
+msgstr ""
+
+msgid "Frequency"
+msgstr ""
+
+msgid "Instantaneous True Power"
+msgstr ""
+
+msgid "Energy"
+msgstr ""
+
+msgid "Uptime"
+msgstr ""
+
+msgid "User Power Limit"
+msgstr ""
+
+msgid "Avg Apparent Power"
+msgstr ""
+
+msgid "MAC"
+msgstr ""
+
+msgid "Frequency (Hz)"
+msgstr ""
+
+msgid "Avg Voltage (V)"
+msgstr ""
+
+msgid "True Power (W)"
+msgstr ""
+
+msgid "Energy (kWh)"
+msgstr ""
+
+msgid "Uptime (s)"
+msgstr ""
+
+msgid "Power Limit (W)"
+msgstr ""
+
+msgid "Age (s)"
+msgstr ""
+
+msgid "PRR"
+msgstr ""
+
+msgid "Color"
+msgstr ""
+
+msgid "Auto-refresh"
+msgstr ""
+
+msgid "the last reading received from each meter"
+msgstr ""
+
+msgid "The lower value of a block rate must not be empty."
+msgstr ""
+
+msgid "The lower value of a block rate must be a number."
+msgstr ""
+
+msgid "The lower value of a block rate must be a positive number."
+msgstr ""
+
+msgid "The upper value of a block rate must not be empty."
+msgstr ""
+
+msgid "The upper value of a block rate must be a number."
+msgstr ""
+
+msgid "The upper value of a block rate must be a positive number."
+msgstr ""
+
+#, python-format
+msgid "Block rate lower (%(lower)d) must be different from upper (%(upper)s)"
+msgstr ""
+
+#, python-format
+msgid "Block rate upper (%(upper)d) must be higher than lower (%(lower)s)"
+msgstr ""
+
+msgid "The block rate value must not be empty."
+msgstr ""
+
+msgid "The block rate value must be a number."
+msgstr ""
+
+msgid "The block rate value must be a positive number."
+msgstr ""
+
+msgid "Please add some block rates."
+msgstr ""
+
+#, python-format
+msgid "Block rate %(s1)d to %(e1)d overlaps with Block rate %(s2)d to %(e2)d"
+msgstr ""
+
+#, python-format
+msgid "Block rates contain at least one gap, between %(start)d and %(end)d"
+msgstr ""
+
+msgid "The start value of a TOU period must not be empty."
+msgstr ""
+
+msgid "The start value of a TOU period must be a valid time."
+msgstr ""
+
+msgid "The end value of a TOU period must not be empty."
+msgstr ""
+
+msgid "The end value of a TOU period must be a valid time."
+msgstr ""
+
+#, python-format
+msgid "TOU period start (%(start)s) must be different from end (%(end)s)"
+msgstr ""
+
+msgid "The TOU period modifier must not be empty."
+msgstr ""
+
+msgid "The TOU period modifier must be a number."
+msgstr ""
+
+msgid "The TOU period modifier must be a positive number."
+msgstr ""
+
+msgid "Please add some TOU periods."
+msgstr ""
+
+#, python-format
+msgid "TOU period %(s1)s to %(e1)s overlaps with TOU period %(s2)s to %(e2)s"
+msgstr ""
+
+#, python-format
+msgid "%(min)s to %(max)s"
+msgstr ""
+
+#, python-format
+msgid "%(min)d%% to %(max)d%%"
+msgstr ""
+
+msgid "You must enter a tariff name"
+msgstr ""
+
+msgid "The name of this tariff, must be unique"
+msgstr ""
+
+msgid "Monthly plan"
+msgstr ""
+
+msgid ""
+"Turning on Monthly Plan allows the utility to charge customers a minimum "
+"monthly fee for electricity to be used during the current month. Payment "
+"for consumption of electricity during the current month is charged from "
+"the Monthly Plan balance at the tariff price until the balance reaches "
+"zero. Any consumption of electricity in the current month beyond this is "
+"charged from pre-pay credits that may have been purchased by the customer"
+" during the month. At the end of the month, a new Monthly Plan balance is"
+" automatically filled for customers who have more pre-pay credit in their"
+" account than the Monthly Plan minimum fee."
+msgstr ""
+
+msgid "Plan minimum spend"
+msgstr ""
+
+msgid "Load limit"
+msgstr ""
+
+msgid "Must be higher than 0 and lower than 4800"
+msgstr ""
+
+msgid "Flat price"
+msgstr ""
+
+msgid "Tariff type"
+msgstr ""
+
+msgid "Block rate"
+msgstr ""
+
+msgid "Time of Use (TOU)"
+msgstr ""
+
+#, python-format
+msgid "Tariff name must be unique, %(name)s is already taken"
+msgstr ""
+
+msgid "Please enter a monthly plan minimum spend"
+msgstr ""
+
+msgid "Please set a flat price"
+msgstr ""
+
+#, python-format
+msgid "Tariff %(link)s created."
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+#, python-format
+msgid "Tariff %(link)s updated."
+msgstr ""
+
+msgid "min total. energy (kWh)"
+msgstr ""
+
+msgid "max total. energy (kWh)"
+msgstr ""
+
+#, python-format
+msgid "%(currency)s per kWh"
+msgstr ""
+
+msgid "Add a tariff block rate"
+msgstr ""
+
+msgid "Minimum total energy"
+msgstr ""
+
+msgid "in kWh"
+msgstr ""
+
+msgid "Maximum total energy"
+msgstr ""
+
+#, python-format
+msgid "in %(currency)s per kWh"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Add a new tariff"
+msgstr ""
+
+msgid "Edit block rate"
+msgstr ""
+
+msgid "Edit time of use"
+msgstr ""
+
+msgid "in watts"
+msgstr ""
+
+#, python-format
+msgid "in %(currency)s"
+msgstr ""
+
+msgid "Flat"
+msgstr ""
+
+msgid "Block rates"
+msgstr ""
+
+msgid "TOU Periods"
+msgstr ""
+
+msgid "Load Limit"
+msgstr ""
+
+msgid "Monthly Plan"
+msgstr ""
+
+msgid "Electricity Rate"
+msgstr ""
+
+msgid "TOU Pricing"
+msgstr ""
+
+msgid "Watts"
+msgstr ""
+
+#, python-format
+msgid "%(currency)s/month"
+msgstr ""
+
+#, python-format
+msgid "%(currency)s/kWh"
+msgstr ""
+
+#, python-format
+msgid "%% of normal tariff"
+msgstr ""
+
+msgid "Tariff List"
+msgstr ""
+
+msgid "Add a tariff"
+msgstr ""
+
+msgid "End"
+msgstr ""
+
+msgid "Modifier"
+msgstr ""
+
+msgid "Add a tariff time of use"
+msgstr ""
+
+msgid "Add a TOU period"
+msgstr ""
+
+msgid "Start time"
+msgstr ""
+
+msgid "End time"
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+msgid "True"
+msgstr ""
+
+msgid "False"
+msgstr ""
+
+msgid "SparkMeter Cloud Manager"
+msgstr ""
+
+msgid "SparkMeter SparkCentral"
+msgstr ""
+
+msgid "Reset Demo Data"
+msgstr ""
+
+msgid "Reset Demo"
+msgstr ""
+
+msgid "View microgrids"
+msgstr ""
+
+msgid "Manage users"
+msgstr ""
+
+msgid "Users"
+msgstr ""
+
+msgid "Profile"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Logout"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Basic Information"
+msgstr ""
+
+#, python-format
+msgid "%(capacity)d watts"
+msgstr ""
+
+msgid "Microgrid Capacity"
+msgstr ""
+
+msgid "WIFI SSID"
+msgstr ""
+
+msgid "WIFI Password"
+msgstr ""
+
+msgid "GPS Coordinates"
+msgstr ""
+
+msgid "Last Sync to cloud"
+msgstr ""
+
+msgid "Sparkcentral Status"
+msgstr ""
+
+msgid "view status page"
+msgstr ""
+
+msgid "Network Information"
+msgstr ""
+
+msgid "Heartbeat Period"
+msgstr ""
+
+#, python-format
+msgid "%(hb)d minutes"
+msgstr ""
+
+msgid "Routing Algorithm"
+msgstr ""
+
+msgid "Version Information"
+msgstr ""
+
+msgid "Hardware UUID"
+msgstr ""
+
+msgid "SparkCentral Version"
+msgstr ""
+
+msgid "SparkMAC version"
+msgstr ""
+
+msgid "Config"
+msgstr ""
+
+msgid "Custom Settings"
+msgstr ""
+
+msgid ""
+"Warning: Editing this file can have adverse effects on the system. Please"
+" do not modify unless instructed to do so."
+msgstr ""
+
+msgid "Network Usage"
+msgstr ""
+
+msgid "Phase"
+msgstr ""
+
+msgid "Usage"
+msgstr ""
+
+msgid "Smart Sensor List"
+msgstr ""
+
+msgid "Supervisor"
+msgstr ""
+
+msgid "Confirm Reset"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "Change Password"
+msgstr ""
+
+msgid "Login"
+msgstr ""
+
+msgid "email address"
+msgstr ""
+
+msgid "password"
+msgstr ""
+
+msgid "Demo Logins"
+msgstr ""
+
+msgid "Confirm Payment"
+msgstr ""
+
+#, python-format
+msgid ""
+"Are you sure you want to make a <span id=\"transaction_amt\">x</span> "
+"<span id=\"source_name\">x</span> transfer of <span "
+"id=\"acct_type_display\">x</span> from %(from)s to <span "
+"id=\"vendor_name\">%(to)s</span>?"
+msgstr ""
+
+msgid "NOTE: This action can not be undone."
+msgstr ""
+
+msgid "Go Back"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Created"
+msgstr ""
+
+msgid "Details"
+msgstr ""
+
+msgid "Transaction History"
+msgstr ""
+
+msgid "export"
+msgstr ""
+
+msgid "Transaction Source"
+msgstr ""
+
+msgid "Add Transaction Source"
+msgstr ""
+
+msgid "Edit Transaction Source"
+msgstr ""
+
+msgid "Transaction Source List"
+msgstr ""
+
+msgid "Add a Transaction Source"
+msgstr ""
+
+msgid "Make transaction"
+msgstr ""
+
+msgid "Vendor Bonus"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "Monetary"
+msgstr ""
+
+msgid "Metadata"
+msgstr ""
+
+msgid "Processed"
+msgstr ""
+
+msgid "Amount"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "To"
+msgstr ""
+
+msgid "Reference"
+msgstr ""
+
+msgid "External ID"
+msgstr ""
+
+msgid "Memo"
+msgstr ""
+
+msgid "Source"
+msgstr ""
+
+msgid "Processing Error"
+msgstr ""
+
+msgid "Children"
+msgstr ""
+
+msgid "From Vendor"
+msgstr ""
+
+msgid "Bonus rate"
+msgstr ""
+
+msgid "Transaction Added"
+msgstr ""
+
+msgid "Transaction Source Added"
+msgstr ""
+
+msgid "Transaction Source Updated"
+msgstr ""
+
+msgid "Operators"
+msgstr ""
+
+msgid "Sales Account List"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "Username"
+msgstr ""
+
+msgid "Markup"
+msgstr ""
+
+msgid "Locale"
+msgstr ""
+
+msgid "User updated"
+msgstr ""
+
+#, python-format
+msgid "Successfully logged in as %(username)s"
+msgstr ""
+
+msgid "Saved custom settings file."
+msgstr ""

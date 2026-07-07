@@ -1,0 +1,22 @@
+{%- set page_name = "tariff-list" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('tariff') }} {{ _('Tariffs') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator') %}
+        {{ icon('tariff') }} {{ _('Tariffs') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="tariffs">
+            {% with %}
+            {% set title = _('Tariffs') %}
+            {% set add_label = _('Add a tariff') %}
+            {% include "tariff-list-table.html" %}
+            {% endwith %}
+        </div>
+    </div>
+{% endblock %}

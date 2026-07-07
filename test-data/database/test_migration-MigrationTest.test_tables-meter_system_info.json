@@ -1,0 +1,38 @@
+[
+    {
+        "bootloader": "A32DA92C9C",
+        "current_state": 1,
+        "current_user_power_limit": null,
+        "firmware": "4CD1AAFEBA",
+        "id": "b4531342-b1c0-473f-81ac-5d60ae4ac59a",
+        "last_config_datetime": null,
+        "last_energy": 106.04290625,
+        "last_energy_datetime": "2015-09-02T15:00:00",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "reading_id": "eb1a56cf-4125-4779-a154-f9c15043432c"
+    },
+    {
+        "bootloader": "A32DA92C9C",
+        "current_state": 0,
+        "current_user_power_limit": null,
+        "firmware": "4CD1AAFEBA",
+        "id": "ca48c54c-c608-4a02-8c89-b7d8936f8d2f",
+        "last_config_datetime": null,
+        "last_energy": 5.0670625,
+        "last_energy_datetime": "2015-09-08T21:00:00",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "reading_id": "35e5f74d-5abe-4429-92a7-06ed9f084af7"
+    },
+    {
+        "bootloader": "A32DA92C9C",
+        "current_state": 1,
+        "current_user_power_limit": null,
+        "firmware": "4CD1AAFEBA",
+        "id": "f5006d87-5ec1-4a8a-8891-8cda9ad7f393",
+        "last_config_datetime": null,
+        "last_energy": 29.31815625,
+        "last_energy_datetime": "2015-09-04T22:30:00",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "reading_id": "39a4b4b3-274d-4cd7-b3c3-c739ebbf78a4"
+    }
+]

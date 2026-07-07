@@ -1,0 +1,30 @@
+[
+    {
+        "created_by_id": null,
+        "environment": {
+            "credits_balance": 10.0,
+            "current_tariff_name": "tar\u00efff01",
+            "customer_code": "customer code 1",
+            "customer_name": "str\u00ebet",
+            "debt_balance": 0.0,
+            "is_running_plan": false,
+            "last_energy": 0.0,
+            "meter": "00000001-0000-0000-0000-000000000001",
+            "operating_mode": "Auto (On)",
+            "plan_balance": 0.0,
+            "serial": "SM15R-01-00000001",
+            "total_cycle_energy": 0.0,
+            "wallet_balance": 10.0,
+            "wallet_type": "credit"
+        },
+        "event_type": "customer-wallet-zero-requested",
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "object_id": "0000000a-0000-0000-0000-000000000001",
+        "object_table": "wallet",
+        "processed": false,
+        "processed_timestamp": null,
+        "snapshot_id": "e5defdf5-5bd1-a297-05f4-854584ab1caa",
+        "timestamp": "%% FILTERED BY UNITTEST %%"
+    }
+]

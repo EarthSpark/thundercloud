@@ -1,0 +1,26 @@
+{% raw %}
+<div ng-controller="SMSConfigMessagesController as vm">
+  <table id="sms-message" class="table table-bordered table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="col-sm-2">Message type</th>
+        <th class="col-sm-4">Outbound text</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="message in vm.messages | orderBy: 'label'">
+        <td class="col-sm-2" ng-cloak>{{ vm.messageLabels[message.message_type] }}</td>
+        <td class="col-sm-4">
+          {{ message.template }}
+          <div class="btn-group pull-right">
+            <button class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i></button>
+            <ul class="dropdown-menu">
+              <li><a ng-click="vm.openModal('Edit', message)" data-action="edit">Edit</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endraw %}

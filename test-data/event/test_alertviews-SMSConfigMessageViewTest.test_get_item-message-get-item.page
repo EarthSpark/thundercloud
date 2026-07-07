@@ -1,0 +1,21 @@
+> GET /alert/config/smsmessages/e2cb3e47-194f-684f-69fc-417e7146dd25 HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "message": {
+    "id": "e2cb3e47-194f-684f-69fc-417e7146dd25",
+    "message_type": "no-such-number",
+    "template": "This phone number is not recognized by SparkMeter."
+  },
+  "status": "success"
+}

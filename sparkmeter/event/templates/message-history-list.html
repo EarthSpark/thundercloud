@@ -1,0 +1,28 @@
+{% set table_id = "message-list" %}
+{% set thead_class = "grey-background" %}
+{% set in_box = True %}
+{% set title = _('Message History') %}
+{% set box_content_class = "padded" %}
+
+{% extends "list/base.html" %}
+
+{% block toolbar %}
+    <li>
+        {% if config['HEROKU'] and with_dropdown %}
+            <label for="messages" class="select-filter-label">Ground:</label>
+            <select id="messages" class="select-filter messages">
+                <option value="">All</option>
+            </select>
+        {% endif %}
+    </li>
+    <li class="toolbar-link">
+        <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+        <ul id="export-menu" class="dropdown-menu">
+            <li>
+                <a id="message-list-export-all" data-href="{{ export_url }}" download>
+                    <i class="icon-download-alt"></i> Export all results (CSV)
+                </a>
+            </li>
+        </ul>
+    </li>
+{% endblock %}

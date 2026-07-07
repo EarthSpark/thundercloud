@@ -1,0 +1,61 @@
+> GET /readings/latest.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "heartbeat_seconds": 900,
+  "readings": [
+    {
+      "address": "str\u00ebet street2 city state",
+      "age": "",
+      "current_avg": "",
+      "current_max": "",
+      "current_min": "",
+      "customer_code": "customer code 1",
+      "customer_name": "str\u00ebet",
+      "energy": "",
+      "frequency": "",
+      "ground_name": "test micr\u00f8grid 1",
+      "ground_serial": "groundserial1",
+      "heartbeat_end": "",
+      "serial": "SM15R-01-00000001",
+      "state": "",
+      "true_power_inst": "",
+      "uptime": "",
+      "user_power_limit": "",
+      "voltage_avg": "",
+      "voltage_max": "",
+      "voltage_min": ""
+    },
+    {
+      "address": "str\u00ebet street2 city state",
+      "age": "",
+      "current_avg": "",
+      "current_max": "",
+      "current_min": "",
+      "customer_code": null,
+      "customer_name": null,
+      "energy": "",
+      "frequency": "",
+      "ground_name": "test micr\u00f8grid 1",
+      "ground_serial": "groundserial1",
+      "heartbeat_end": "",
+      "serial": "SM200E-01-00000011",
+      "state": "",
+      "true_power_inst": "",
+      "uptime": "",
+      "user_power_limit": "",
+      "voltage_avg": "",
+      "voltage_max": "",
+      "voltage_min": ""
+    }
+  ]
+}

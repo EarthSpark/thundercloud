@@ -1,0 +1,18 @@
+> POST /api/v0/customers/0000000c-0000-0000-0000-000000000001/reset-meter HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 403 FORBIDDEN
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "invalid meter type. Only customer meters can be reset",
+  "status": "failure"
+}

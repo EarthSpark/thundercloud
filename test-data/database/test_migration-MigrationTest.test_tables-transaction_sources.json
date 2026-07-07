@@ -1,0 +1,20 @@
+[
+    {
+        "id": "38030730-2af8-4b4e-9777-f6322fd7c98e",
+        "monetary": false,
+        "name": "bonus",
+        "transaction_metadata": ""
+    },
+    {
+        "id": "db61cdf2-dd2b-461d-82d0-9ecc59eb3716",
+        "monetary": true,
+        "name": "Payroll",
+        "transaction_metadata": ""
+    },
+    {
+        "id": "e2562db7-5070-4289-8ee4-17089a61aedf",
+        "monetary": true,
+        "name": "Cash",
+        "transaction_metadata": ""
+    }
+]

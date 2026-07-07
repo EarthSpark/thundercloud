@@ -1,0 +1,42 @@
+> POST /api/v0/tariffs HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 227
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"cycle_start_day_of_month": 4,"flat_load_limit": 150,"flat_price": 4,"load_limit_type": "flat","name": "TARIFF","plan_duration": "1m","plan_enabled": true,"plan_fixed_fee": 3.0,"plan_price": 1,"tariff_type": "flat","tous": []}
+
+< HTTP/1.1 201 CREATED
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "tariff": {
+    "blockrates": [],
+    "cycle_start_day_of_month": 4,
+    "daily_energy_limit_enabled": false,
+    "daily_energy_limit_reset_hour": 0,
+    "daily_energy_limit_value": 0.0,
+    "flat_load_limit": 150,
+    "flat_price": 4.0,
+    "id": "%% FILTERED BY UNITTEST %%",
+    "load_limit_type": "flat",
+    "load_limits": [],
+    "low_balance_threshold": 0.0,
+    "name": "TARIFF",
+    "plan_duration": "1m",
+    "plan_enabled": true,
+    "plan_fixed_fee": 3.0,
+    "plan_price": 1.0,
+    "tariff_type": "flat",
+    "tou_enabled": false,
+    "tous": []
+  }
+}

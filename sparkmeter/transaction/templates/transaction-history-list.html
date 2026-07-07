@@ -1,0 +1,57 @@
+{% set table_id = "transaction-list" %}
+{% set thead_class = "grey-background" %}
+{% set in_box = True %}
+{% set title = _('Transaction History') %}
+{% set box_content_class = "padded" %}
+{% set page_name = "transaction-history-list" %}
+
+{% extends "list/base.html" %}
+
+{% block toolbar %}
+    <li>
+    {% if config['HEROKU'] %}
+        <label for="transaction" class="select-filter-label">Ground:</label>
+        <select id="transaction" class="select-filter transactions">
+            <option value="">All</option>
+        </select>
+    {% endif %}
+    </li>
+  <li class="toolbar-link">
+    <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul id="export-menu" class="dropdown-menu">
+        <li>
+            <a id="transaction-list-export-all" data-href="{{ export_url }}" download>
+                <i class="icon-download-alt"></i> Export all results (CSV)
+            </a>
+        </li>
+    </ul>
+  </li>
+{% endblock %}
+
+{% block box_content %}
+  {{ super() }}
+    <!-- Transaction Reverse Modal -->
+    <div class="modal fade" id="reverse-modal" tabindex="-1" role="dialog" aria-labelledby="reverse-title" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close goback" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="reverse-title">{{ _('Reverse transaction') }}</h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                      {{ _('Are you sure you want to reverse this transaction?') }}
+                    </p>
+                    <p id="reverse-help">
+                    </p>
+                    <p><b>{{ _('NOTE: This action can not be undone.') }}</b></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default goback" data-dismiss="modal">{{ _('Go Back') }}</button>
+                    <a href="#" id="reverse-link" class="btn btn-primary">{{ _('Reverse') }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock box_content %}

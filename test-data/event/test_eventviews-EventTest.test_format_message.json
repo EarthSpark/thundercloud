@@ -1,0 +1,83 @@
+{
+    "messages": {
+        "draw": 1,
+        "messages": [
+            {
+                "alert_label": null,
+                "code": null,
+                "customer_name": "str\u00ebet",
+                "direction": "in",
+                "event_type": null,
+                "ground_name": null,
+                "ground_serial": null,
+                "message_type": null,
+                "origin": "unknown",
+                "phone_number": "+12345",
+                "processed": true,
+                "text": "Not recognized message",
+                "timestamp": "2010-01-01T12:05:00"
+            },
+            {
+                "alert_label": "Low balance",
+                "code": null,
+                "customer_name": "str\u00ebet",
+                "direction": "out",
+                "event_type": "customer-low-balance",
+                "ground_name": "test micr\u00f8grid 1",
+                "ground_serial": "groundserial1",
+                "message_type": null,
+                "origin": "alert",
+                "phone_number": "+12345",
+                "processed": false,
+                "text": "Low on alert 0.00",
+                "timestamp": "2010-01-01T12:04:00"
+            },
+            {
+                "alert_label": null,
+                "code": null,
+                "customer_name": "str\u00ebet",
+                "direction": "out",
+                "event_type": null,
+                "ground_name": null,
+                "ground_serial": null,
+                "message_type": "verify-number",
+                "origin": "system",
+                "phone_number": "+12345",
+                "processed": false,
+                "text": "Send back CHECK to validate this phone number. This will allow you to receive alerts from SparkMeter.",
+                "timestamp": "2010-01-01T12:03:00"
+            },
+            {
+                "alert_label": null,
+                "code": "CMD",
+                "customer_name": "str\u00ebet",
+                "direction": "out",
+                "event_type": null,
+                "ground_name": "test micr\u00f8grid 1",
+                "ground_serial": "groundserial1",
+                "message_type": null,
+                "origin": "command",
+                "phone_number": "+12345",
+                "processed": true,
+                "text": "Reply!",
+                "timestamp": "2010-01-01T12:02:00"
+            },
+            {
+                "alert_label": null,
+                "code": "CMD",
+                "customer_name": "str\u00ebet",
+                "direction": "in",
+                "event_type": null,
+                "ground_name": null,
+                "ground_serial": null,
+                "message_type": null,
+                "origin": "command",
+                "phone_number": "+12345",
+                "processed": false,
+                "text": "CMD",
+                "timestamp": "2010-01-01T12:01:00"
+            }
+        ],
+        "total": 5
+    }
+}

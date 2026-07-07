@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ icon('ground') }} {{ _('Edit ') }}{{ ground.name }}{{  _(' Basic Information ') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('ground.index')) %}
+        {{ icon('grounds') }} {{ _('Grounds') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('ground') }} {{ ground.name|e }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('edit') }} {{ _('edit') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            {% call render_box(_('Edit'), box_content_class="padded") %}
+                {{ quick_form(form, action="", form_type="horizontal", horizontal_columns=('lg', 1, 11), button_map={'save_button': 'primary'}) }}
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}

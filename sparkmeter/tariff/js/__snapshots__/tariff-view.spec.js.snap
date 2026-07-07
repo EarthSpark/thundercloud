@@ -1,0 +1,425 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TariffView Loading tariff block rate 1`] = `"<table class=\\"tariff-details-table\\"><tbody><tr><th>Min<br>total energy (kWh)</th><th>Max<br>total energy (kWh)</th><th>USD<br>per KWH</th></tr><tr><td>0</td><td>10</td><td>1</td></tr><tr><td>10</td><td>100</td><td>2</td></tr><tr><td>100</td><td>0</td><td>3</td></tr></tbody></table>"`;
+
+exports[`TariffView Loading tariff block rate 2`] = `""`;
+
+exports[`TariffView Loading tariff cycle start day of month 1`] = `"1"`;
+
+exports[`TariffView Loading tariff daily plan enabled 1`] = `"30"`;
+
+exports[`TariffView Loading tariff daily plan enabled 2`] = `"0"`;
+
+exports[`TariffView Loading tariff flat rate 1`] = `""`;
+
+exports[`TariffView Loading tariff flat rate 2`] = `"85"`;
+
+exports[`TariffView Loading tariff load limits 1`] = `"Scheduled"`;
+
+exports[`TariffView Loading tariff load limits 2`] = `"<table class=\\"tariff-details-table\\"><tbody><tr><th>Period start</th><th>Period end</th><th>Limit in watts</th></tr><tr><td>00:00</td><td>10:00</td><td>200</td></tr><tr><td>10:00</td><td>18:00</td><td>300</td></tr><tr><td>18:00</td><td>00:00</td><td>180</td></tr></tbody></table>"`;
+
+exports[`TariffView Loading tariff load limits 3`] = `
+Array [
+  Object {
+    "time": 0,
+    "value": 200,
+  },
+  Object {
+    "time": 1,
+    "value": 200,
+  },
+  Object {
+    "time": 2,
+    "value": 200,
+  },
+  Object {
+    "time": 3,
+    "value": 200,
+  },
+  Object {
+    "time": 4,
+    "value": 200,
+  },
+  Object {
+    "time": 5,
+    "value": 200,
+  },
+  Object {
+    "time": 6,
+    "value": 200,
+  },
+  Object {
+    "time": 7,
+    "value": 200,
+  },
+  Object {
+    "time": 8,
+    "value": 200,
+  },
+  Object {
+    "time": 9,
+    "value": 200,
+  },
+  Object {
+    "time": 10,
+    "value": 300,
+  },
+  Object {
+    "time": 11,
+    "value": 300,
+  },
+  Object {
+    "time": 12,
+    "value": 300,
+  },
+  Object {
+    "time": 13,
+    "value": 300,
+  },
+  Object {
+    "time": 14,
+    "value": 300,
+  },
+  Object {
+    "time": 15,
+    "value": 300,
+  },
+  Object {
+    "time": 16,
+    "value": 300,
+  },
+  Object {
+    "time": 17,
+    "value": 300,
+  },
+  Object {
+    "time": 18,
+    "value": 180,
+  },
+  Object {
+    "time": 19,
+    "value": 180,
+  },
+  Object {
+    "time": 20,
+    "value": 180,
+  },
+  Object {
+    "time": 21,
+    "value": 180,
+  },
+  Object {
+    "time": 22,
+    "value": 180,
+  },
+  Object {
+    "time": 23,
+    "value": 180,
+  },
+]
+`;
+
+exports[`TariffView Loading tariff load limits crossing midnight 1`] = `"Scheduled"`;
+
+exports[`TariffView Loading tariff load limits crossing midnight 2`] = `"<table class=\\"tariff-details-table\\"><tbody><tr><th>Period start</th><th>Period end</th><th>Limit in watts</th></tr><tr><td>22:00</td><td>02:00</td><td>200</td></tr><tr><td>08:00</td><td>10:00</td><td>300</td></tr><tr><td>18:00</td><td>20:00</td><td>180</td></tr></tbody></table>"`;
+
+exports[`TariffView Loading tariff load limits crossing midnight 3`] = `
+Array [
+  Object {
+    "time": 0,
+    "value": 200,
+  },
+  Object {
+    "time": 1,
+    "value": 200,
+  },
+  Object {
+    "time": 2,
+  },
+  Object {
+    "time": 3,
+  },
+  Object {
+    "time": 4,
+  },
+  Object {
+    "time": 5,
+  },
+  Object {
+    "time": 6,
+  },
+  Object {
+    "time": 7,
+  },
+  Object {
+    "time": 8,
+    "value": 300,
+  },
+  Object {
+    "time": 9,
+    "value": 300,
+  },
+  Object {
+    "time": 10,
+  },
+  Object {
+    "time": 11,
+  },
+  Object {
+    "time": 12,
+  },
+  Object {
+    "time": 13,
+  },
+  Object {
+    "time": 14,
+  },
+  Object {
+    "time": 15,
+  },
+  Object {
+    "time": 16,
+  },
+  Object {
+    "time": 17,
+  },
+  Object {
+    "time": 18,
+    "value": 180,
+  },
+  Object {
+    "time": 19,
+    "value": 180,
+  },
+  Object {
+    "time": 20,
+  },
+  Object {
+    "time": 21,
+  },
+  Object {
+    "time": 22,
+    "value": 200,
+  },
+  Object {
+    "time": 23,
+    "value": 200,
+  },
+]
+`;
+
+exports[`TariffView Loading tariff monthly plan disabled 1`] = `"N/A"`;
+
+exports[`TariffView Loading tariff monthly plan disabled 2`] = `"N/A"`;
+
+exports[`TariffView Loading tariff monthly plan enabled 1`] = `"30"`;
+
+exports[`TariffView Loading tariff monthly plan enabled 2`] = `"0"`;
+
+exports[`TariffView Loading tariff name 1`] = `"tarïff01"`;
+
+exports[`TariffView Loading tariff tou periods 1`] = `
+Array [
+  Object {
+    "time": 0,
+    "value": 50,
+  },
+  Object {
+    "time": 1,
+    "value": 50,
+  },
+  Object {
+    "time": 2,
+    "value": 50,
+  },
+  Object {
+    "time": 3,
+    "value": 50,
+  },
+  Object {
+    "time": 4,
+    "value": 50,
+  },
+  Object {
+    "time": 5,
+    "value": 50,
+  },
+  Object {
+    "time": 6,
+    "value": 50,
+  },
+  Object {
+    "time": 7,
+    "value": 50,
+  },
+  Object {
+    "time": 8,
+    "value": 50,
+  },
+  Object {
+    "time": 9,
+    "value": 50,
+  },
+  Object {
+    "time": 10,
+    "value": 80,
+  },
+  Object {
+    "time": 11,
+    "value": 80,
+  },
+  Object {
+    "time": 12,
+    "value": 80,
+  },
+  Object {
+    "time": 13,
+    "value": 80,
+  },
+  Object {
+    "time": 14,
+    "value": 80,
+  },
+  Object {
+    "time": 15,
+    "value": 80,
+  },
+  Object {
+    "time": 16,
+    "value": 80,
+  },
+  Object {
+    "time": 17,
+    "value": 80,
+  },
+  Object {
+    "time": 18,
+    "value": 100,
+  },
+  Object {
+    "time": 19,
+    "value": 100,
+  },
+  Object {
+    "time": 20,
+    "value": 100,
+  },
+  Object {
+    "time": 21,
+    "value": 100,
+  },
+  Object {
+    "time": 22,
+    "value": 100,
+  },
+  Object {
+    "time": 23,
+    "value": 100,
+  },
+]
+`;
+
+exports[`TariffView Loading tariff tou periods crossing midnight 1`] = `
+Array [
+  Object {
+    "time": 0,
+    "value": 50,
+  },
+  Object {
+    "time": 1,
+    "value": 50,
+  },
+  Object {
+    "time": 2,
+    "value": 100,
+  },
+  Object {
+    "time": 3,
+    "value": 100,
+  },
+  Object {
+    "time": 4,
+    "value": 100,
+  },
+  Object {
+    "time": 5,
+    "value": 100,
+  },
+  Object {
+    "time": 6,
+    "value": 100,
+  },
+  Object {
+    "time": 7,
+    "value": 100,
+  },
+  Object {
+    "time": 8,
+    "value": 120,
+  },
+  Object {
+    "time": 9,
+    "value": 120,
+  },
+  Object {
+    "time": 10,
+    "value": 100,
+  },
+  Object {
+    "time": 11,
+    "value": 100,
+  },
+  Object {
+    "time": 12,
+    "value": 100,
+  },
+  Object {
+    "time": 13,
+    "value": 100,
+  },
+  Object {
+    "time": 14,
+    "value": 100,
+  },
+  Object {
+    "time": 15,
+    "value": 100,
+  },
+  Object {
+    "time": 16,
+    "value": 100,
+  },
+  Object {
+    "time": 17,
+    "value": 100,
+  },
+  Object {
+    "time": 18,
+    "value": 80,
+  },
+  Object {
+    "time": 19,
+    "value": 80,
+  },
+  Object {
+    "time": 20,
+    "value": 100,
+  },
+  Object {
+    "time": 21,
+    "value": 100,
+  },
+  Object {
+    "time": 22,
+    "value": 50,
+  },
+  Object {
+    "time": 23,
+    "value": 50,
+  },
+]
+`;
+
+exports[`TariffView Loading tariff warning on low balance 1`] = `"20"`;
+
+exports[`TariffView Loading tariff warning on low balance turned off 1`] = `"Off"`;

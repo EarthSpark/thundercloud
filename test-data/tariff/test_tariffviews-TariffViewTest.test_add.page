@@ -1,0 +1,564 @@
+> GET /tariff/add HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+< X-Form-Errors: {"flat_load_limit": ["Must be higher than 0"],"name": ["You must enter a tariff name"]}
+<
+
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+        <meta itemprop="config-currency" content="USD">
+        <meta itemprop="config-username" content="testüser-001">
+        <meta itemprop="config-vendor" content="false">
+        <meta itemprop="config-ground" content="test micr\u00f8grid 1">
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter GroundBolt</title>
+
+        <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
+        <script src="%% VENDOR_JS %%" type="text/javascript"></script>
+        <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/static/logo/apple-touch-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/static/logo/apple-touch-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/static/logo/apple-touch-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/static/logo/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/static/logo/apple-touch-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/static/logo/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon-180x180.png">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-32x32.png" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-194x194.png" sizes="194x194">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-96x96.png" sizes="96x96">
+        <link rel="icon" type="image/png" href="/static/logo/android-chrome-192x192.png" sizes="192x192">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-16x16.png" sizes="16x16">
+        <link rel="manifest" href="/static/logo/manifest.json">
+        <link rel="mask-icon" href="/static/logo/safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body data-page-name="tariff-form">
+
+        <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">
+                    GroundBolt - operator</a>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-top">
+                    <span class="sr-only">Toggle Top Navigation</span>
+                    <i class="icon-align-justify"></i>
+                </button>
+
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-collapse-top">
+                <div class="navbar-right">
+                    <ul class="nav navbar-nav navbar-left">
+                            <li class="cdrop  " title="View ground"><a href="/ground/" data-name="ground"><i class="icon-th"></i>Ground Info</a></li>
+    <li class="cdrop  " title="View tariffs"><a href="/tariff/" data-name="tariffs"><i class="icon-money"></i>Tariffs</a></li>
+                            <li class="cdrop  " title="View sales accounts"><a href="/sales-account/" data-name="salesaccounts"><i class="icon-credit-card"></i>Sales Accounts</a></li>
+    <li class="cdrop  " title="Manage users"><a href="/user/" data-name="users"><i class="icon-group"></i>Users</a></li>
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="settings-menu">
+                                   <span>Global Settings<i class="icon-caret-down"></i></span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="/config/billing" data-name="billing-config">
+                                            <span>Billing</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/config/meters" data-name="meter-config">
+                                            <span>Meters</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/config/sms" data-name="sms-config">
+                                            <span>SMS</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="user-menu">
+                                   <span>
+                                       <span data-name="current-username">testüser-001 <i class="icon-caret-down"></i></span>
+                                   </span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li class="with-image">
+                                      <span>testüser-001</span>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/user/test%C3%BCser-001/" data-action="user-profile">
+                                            <i class="icon-user"></i> <span>Profile</span>
+                                        </a>
+                                    </li>
+                                        <li>
+                                            <a href="/user/test%C3%BCser-001/edit" data-action="settings">
+                                                <i class="icon-cog"></i> <span>Settings</span>
+                                            </a>
+                                        </li>
+                                    <li>
+                                        <a href="/logout" data-action="logout">
+                                            <i class="icon-off"></i> <span>Logout</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li style="text-align:center;">
+                                        <div id="locales" class="btn-group">
+                                                <a class="btn btn-primary" href="/user/test%C3%BCser-001/en_US">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/US.png">
+                                                </a>
+                                                <a class="btn " href="/user/test%C3%BCser-001/fr_FR">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/FR.png">
+                                                </a>
+                                        </div>
+                                    </li>
+                                    <li style="text-align:center;">
+                                      <h6>%% APP_VERSION %% <small>%% GIT_VERSION %%</small></h6>
+                                    </li>
+                                </ul>
+                            </li>
+                    </ul>
+                </div>
+            </div><!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="main-content">
+            <div class="container">
+                <div class="row">
+                    <div class="area-top clearfix">
+                        <div class="pull-left header">
+                            <h3 class="title">
+<i class="icon-money"></i> Add a New Tariff                            </h3>
+                            <h5></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    <div class="alerts">
+                    </div> <!-- class="alerts"-->
+
+                    <div id="breadcrumbs">
+        <a class="breadcrumb-button blue" href="/">
+                <span class="breadcrumb-label">
+                                                <i class="icon-home"></i> Home
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+        <a class="breadcrumb-button " href="/tariff/">
+                <span class="breadcrumb-label">
+                            <i class="icon-money"></i> Tariffs
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+        <div class="breadcrumb-button " >
+                <span class="breadcrumb-label">
+                    
+
+        <i class="icon-plus"></i> Add a New Tariff
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </div>
+                    </div> <!-- id="breadcrumbs"-->
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+  <div id="tariff-form-params"
+       data-blockrates="[]"
+       data-blockrates-title="&#34;Edit block rate&#34;"
+       data-tous="[]"
+       data-tous-title="&#34;Edit time of use&#34;"
+       data-load-limits="[]"
+       data-load-limits-title="&#34;Edit scheduled load limits of use&#34;">
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+    <div class="box">
+        <div class="box-header">
+            <span class="title">Add</span>
+        </div>
+        <div class="box-content padded">
+                  <form class="form form-horizontal tariff" method="POST">
+        <input id="id" name="id" type="hidden" value="">
+<input id="blockrates" name="blockrates" type="hidden" value="[]">
+<input id="tous" name="tous" type="hidden" value="[]">
+<input id="load_limits" name="load_limits" type="hidden" value="[]">        <div class="form-group" title="The name of this tariff">
+          <label class="control-label col-lg-2" for="name">Name</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control" id="name" name="name" required type="text" value="">
+          </div>
+        </div>
+          <div class="form-group" style="padding-left: 20px; margin-top: -10px">
+    <span class="col-lg-offset-2 help-block note">
+    <i class="icon-warning-sign"></i>
+      You must enter a tariff name
+    </span>
+  </div>
+
+
+        <div class="form-group cycle-start-day-of-month"
+             title="The plan duration and start day defines the duration of the billing cycle, and what day of month the billing cycle will reset for this tariff. The block rate calculation resets on this day, as well as the monthly plan if a plan is enabled.">
+          <label class="control-label col-lg-2" for="plan_duration_and_start_day">Plan Duration and Start Day</label>
+          <div class="input-group col-lg-3">
+            <select class="form-control numeric no-negative" id="plan_duration_and_start_day" name="plan_duration_and_start_day"><option value="1d1">1 day</option><option selected value="1m1">1 month, starting day 1</option><option value="1m2">1 month, starting day 2</option><option value="1m3">1 month, starting day 3</option><option value="1m4">1 month, starting day 4</option><option value="1m5">1 month, starting day 5</option><option value="1m6">1 month, starting day 6</option><option value="1m7">1 month, starting day 7</option><option value="1m8">1 month, starting day 8</option><option value="1m9">1 month, starting day 9</option><option value="1m10">1 month, starting day 10</option><option value="1m11">1 month, starting day 11</option><option value="1m12">1 month, starting day 12</option><option value="1m13">1 month, starting day 13</option><option value="1m14">1 month, starting day 14</option><option value="1m15">1 month, starting day 15</option><option value="1m16">1 month, starting day 16</option><option value="1m17">1 month, starting day 17</option><option value="1m18">1 month, starting day 18</option><option value="1m19">1 month, starting day 19</option><option value="1m20">1 month, starting day 20</option><option value="1m21">1 month, starting day 21</option><option value="1m22">1 month, starting day 22</option><option value="1m23">1 month, starting day 23</option><option value="1m24">1 month, starting day 24</option><option value="1m25">1 month, starting day 25</option><option value="1m26">1 month, starting day 26</option><option value="1m27">1 month, starting day 27</option><option value="1m28">1 month, starting day 28</option></select>
+          </div>
+        </div>
+                <div class="form-group">
+          <label class="control-label col-lg-2" for="load_limit_type">Load Limit Type</label>
+          <div id="radio-group load_limit_type" class="btn-group col-lg-10" data-toggle="buttons">
+            <label class="btn btn-primary active">
+              <input type="radio" name="load_limit_type" id="load_limit_type" value="flat" checked>Flat
+            </label>
+            <label class="btn btn-primary">
+              <input type="radio" name="load_limit_type" id="load_limit_type" value="scheduled">Scheduled
+            </label>
+          </div>
+        </div>
+                <div class="form-group load_limit_type flat">
+          <label class="control-label col-lg-2" for="flat_load_limit">Load Limit</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control numeric no-negative" id="flat_load_limit" max="4800" min="1" name="flat_load_limit" type="number" value="0">
+            <span class="input-group-addon">in watts</span>
+          </div>
+        </div>
+          <div class="form-group form-group load_limit_type" style="padding-left: 20px; margin-top: -10px">
+    <span class="col-lg-offset-2 help-block note">
+    <i class="icon-warning-sign"></i>
+      Must be higher than 0
+    </span>
+  </div>
+        <div class="form-group load_limit_type scheduled hide">
+          <label class="control-label col-lg-2">Load Limit Periods</label>
+          <div class="col-md-5" data-box="tariff-load-limits">
+  <table id="tariff-load-limits" class='table table-striped table-bordered table-hover table-normal dataTable '>
+      <thead class="">
+      <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Load Limit in watts</th>
+          <th></th>
+      </tr>    </thead>
+    <tfoot><tr>
+  <td colspan="4">
+        <button type="button" class="btn btn-default" id="add-modal" href="#" data-toggle="modal" data-target="#loadLimitModal" data-title="Add a new load limit period" data-object="{}"> Add a load limit period</button>
+  </td>
+</tr>
+</tfoot>
+    <tbody></tbody>
+  </table>
+
+<div class="modal" id="loadLimitModal" tabindex="-1" role="dialog" aria-labelledby="loadLimitModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="loadLimitModalLabel"></h4>
+      </div>
+      <div class="modal-body">
+        <div style="display:none;">
+          <input id="id" name="id" type="hidden" value="">
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="start">Start time</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control timepicker" id="start" name="start" type="text">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="end">End time</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control timepicker" id="end" name="end" type="text">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="value">Load limit</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control numeric" id="value" name="value" type="text">
+            <span class="input-group-addon">in watts</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button id="save" type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+          </div>
+        </div>
+                <div class="form-group" title="An alert can be sent if available credits go under this threshold.">
+          <label class="control-label col-lg-2" for="low_balance_threshold">Warning On Low Balance</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control numeric" id="low_balance_threshold" name="low_balance_threshold" type="text" value="0.0">
+            <span class="input-group-addon">in USD</span>
+          </div>
+        </div>
+                <div class="form-group" title="Turning on a Plan allows the utility to charge customers a minimum monthly fee for electricity to be used during the current period of time. This charge may include a fixed fee and a minimum spend on energy consumption. A plan automatically renews at the start day every month (if monthly) or at the start of the next day (if daily) if the meter is in On mode, or in Auto and the customer has enough credits to pay for the full plan (fixed fee + minimum spend). Payment for consumption of electricity during the current plan period is charged from the Plan balance at the tariff rate until the balance reaches zero. Any consumption of electricity in the current period beyond this is charged from pre-pay credits that may have been purchased by the customer during the period. At the end of the period, a new Plan balance is automatically filled for customers who have more pre-pay credit in their account than the Plan minimum spend + fixed fee.">
+          <label class="control-label col-lg-2" for="plan_enabled">Plan</label>
+          <div class="input-group col-lg-3">
+            <div class="btn-group" data-toggle="buttons">
+              <label class="iButton">
+                <input id="plan_enabled" name="plan_enabled" type="checkbox" value="y">
+              </label>
+            </div>
+          </div>
+        </div>
+        
+
+
+        <div class="form-group plan-fixed-fee hide"
+             title="The fixed fee is deducted from the customer's credits wallet when the plan is purchased and is not converted to electricity.">
+          <label class="control-label col-lg-2" for="plan_fixed_fee">Plan Fixed Fee</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control numeric no-negative" id="plan_fixed_fee" name="plan_fixed_fee" type="text" value="0">
+            <span class="input-group-addon">in USD</span>
+          </div>
+        </div>
+        
+
+        <div class="form-group plan-price hide"
+             title="The minimum spend is transferred from the customer's credit wallet to the plan when the plan is purchased and is used to pay for electricity consumption at the tariff price until the plan balance reaches zero or its expiration date is reached.">
+          <label class="control-label col-lg-2" for="plan_price">Plan Minimum Spend</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control numeric no-negative" id="plan_price" name="plan_price" type="text" value="0">
+            <span class="input-group-addon">in USD</span>
+          </div>
+        </div>
+                <div class="form-group">
+          <label class="control-label col-lg-2" for="tariff_type">Tariff Type</label>
+          <div id="radio-group tariff_type" class="btn-group col-lg-10" data-toggle="buttons">
+            <label class="btn btn-primary active">
+              <input type="radio" name="tariff_type" id="tariff_type" value="flat" checked>Flat
+            </label>
+            <label class="btn btn-primary">
+              <input type="radio" name="tariff_type" id="tariff_type" value="blockrate">Block rate
+            </label>
+          </div>
+        </div>
+                <div class="form-group tariff_type flat">
+          <label class="control-label col-lg-2" for="flat_price">Flat Rate</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control numeric no-negative" id="flat_price" name="flat_price" type="text" value="0.0">
+            <span class="input-group-addon">in USD per kWh</span>
+          </div>
+        </div>
+                <div class="form-group tariff_type blockrate hide">
+          <label class="control-label col-lg-2">Block rates</label>
+          <div class="col-md-5" data-box="tariff-blockrates">
+
+  <table id="tariff-blockrates" class='table table-striped table-bordered table-hover table-normal dataTable '>
+      <thead class="">
+      <tr>
+          <th>min total. energy (kWh)</th>
+          <th>max total. energy (kWh)</th>
+          <th>USD per kWh</th>
+          <th></th>
+      </tr>    </thead>
+    <tfoot><tr data-object="{}">
+  <td colspan="4">
+      <button type="button" class="btn btn-default" id="add-modal" href="#" data-toggle="modal" data-target="#blockrateModal" data-title="Add a tariff block rate"> Add a tariff block rate</button>
+  </td>
+</tr>
+</tfoot>
+    <tbody></tbody>
+  </table>
+
+<div class="modal" id="blockrateModal" tabindex="-1" role="dialog" aria-labelledby="blockrateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="blockrateModalLabel"></h4>
+      </div>
+      <div class="modal-body">
+        <div style="display:none;">
+          <input id="id" name="id" type="hidden" value="">
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="lower">Minimum total energy</label>
+          <div class="input-group col-lg-6">
+            <input class="form-control numeric" id="lower" name="lower" type="text" value="">
+            <span class="input-group-addon">in kWh</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="upper">Maximum total energy</label>
+          <div class="input-group col-lg-6">
+            <input class="form-control numeric" id="upper" name="upper" type="text" value="">
+            <span class="input-group-addon">in kWh</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="value">Price</label>
+          <div class="input-group col-lg-6">
+            <input class="form-control numeric" id="value" name="value" type="text" value="">
+            <span class="input-group-addon">in USD per kWh</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button id="save" type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+          </div>
+        </div>
+                <div class="form-group">
+          <label class="control-label col-lg-2" for="tou_enabled">Time of Use (TOU) Pricing</label>
+          <div class="input-group col-lg-10">
+            <div class="btn-group" data-toggle="buttons">
+              <label class="iButton">
+                <input id="tou_enabled" name="tou_enabled" type="checkbox" value="y">
+              </label>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="form-group tou hide">
+          <label class="control-label col-lg-2">TOU Periods</label>
+          <div class="col-md-5" data-box="tariff-tous">
+  <table id="tariff-tous" class='table table-striped table-bordered table-hover table-normal dataTable '>
+      <thead class="">
+      <tr>
+          <th>Start</th>
+          <th>End</th>
+          <th>Modifier</th>
+          <th></th>
+      </tr>    </thead>
+    <tfoot><tr>
+  <td colspan="4">
+        <button type="button" class="btn btn-default" id="add-modal" href="#" data-toggle="modal" data-target="#touModal" data-title="Add a tariff time of use" data-object="{}"> Add a TOU period</button>
+  </td>
+</tr>
+</tfoot>
+    <tbody></tbody>
+  </table>
+
+<div class="modal" id="touModal" tabindex="-1" role="dialog" aria-labelledby="touModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="touModalLabel"></h4>
+      </div>
+      <div class="modal-body">
+        <div style="display:none;">
+          <input id="id" name="id" type="hidden" value="">
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="start">Start time</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control timepicker" id="start" name="start" type="text">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="end">End time</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control timepicker" id="end" name="end" type="text">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="value">Modifier</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control numeric" id="value" name="value" type="text">
+            <span class="input-group-addon">% of normal tariff</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button id="save" type="button" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+          </div>
+        </div>
+                <div class="form-group">
+          <label class="control-label col-lg-2" for="daily_energy_limit_enabled">Daily Energy Limit</label>
+          <div class="input-group col-lg-10">
+            <div class="btn-group" data-toggle="buttons">
+              <label class="iButton">
+                <input id="daily_energy_limit_enabled" name="daily_energy_limit_enabled" type="checkbox" value="y">
+              </label>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="form-group daily-energy-limit-reset-hour hide"
+             title="The Daily Energy Limit Reset Hour defines when the counter will reset for this meter's Daily Energy Limit">
+          <label class="control-label col-lg-2" for="daily_energy_limit_reset_hour">Daily Energy Limit Reset Hour</label>
+          <div class="input-group col-lg-3">
+            <select class="form-control" id="daily_energy_limit_reset_hour" name="daily_energy_limit_reset_hour"><option selected value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select>
+          </div>
+        </div>
+
+
+        <div class="form-group daily-energy-limit-value hide"
+             title="The maximum amount of energy that can be consumed in a day.">
+          <label class="control-label col-lg-2" for="daily_energy_limit_value">Daily Energy Limit</label>
+          <div class="input-group col-lg-3">
+            <input class="form-control numeric no-negative" id="daily_energy_limit_value" name="daily_energy_limit_value" type="text" value="0.0">
+            <span class="input-group-addon">in kWh</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-lg-offset-2 col-lg-10">
+            <input class="btn btn-primary" id="save_button" name="save_button" type="submit" value="Save">
+          </div>
+        </div>
+
+      </form>
+
+        </div> <!-- class="box-content" -->
+    </div> <!-- class="box" -->
+    </div>
+  </div>
+                </div>
+            </div>
+
+        </div> <!-- class="main-content"-->
+    </body>
+</html>

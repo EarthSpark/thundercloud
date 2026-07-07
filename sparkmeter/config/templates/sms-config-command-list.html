@@ -1,0 +1,32 @@
+{% raw %}
+<div ng-controller="SMSCommandsController as vm">
+  <table class="table table-bordered table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="col-sm-2">Code in inbound SMS</th>
+        <th class="col-sm-4">Outbound message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="command in vm.commands | orderBy: 'code'">
+        <td class="col-sm-2" ng-cloak>{{ command.code }}</td>
+        <td class="col-sm-4">
+          {{ command.template }}
+          <div class="btn-group pull-right">
+            <button class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown">
+              <i class="icon-cog"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a ng-click="vm.openModal('Edit', command)" data-action="edit">Edit</a></li>
+              <li class="divider"></li>
+              <li><a ng-click="vm.openModal('Delete', command)">Delete</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="btn btn-default" ng-click="vm.openModal('Add')"
+          data-action="add">Add a two-way SMS type</button>
+</div>
+{% endraw %}

@@ -1,0 +1,27 @@
+> GET /user/sales-account/restricted.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "sales_accounts": [
+    {
+      "active": true,
+      "credit": 0.0,
+      "debt": 0.0,
+      "ground_name": "test micr\u00f8grid 1",
+      "ground_serial": "groundserial1",
+      "id": "0000000a-0000-0000-0000-000000000001",
+      "markup": 0.05,
+      "name": "Restricted Ground #1",
+      "negative_permitted": false
+    }
+  ]
+}

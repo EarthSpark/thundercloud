@@ -1,0 +1,25 @@
+> GET /alert/config/smscommands HTTP/1.1
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+<
+{
+  "commands": [
+    {
+      "code": "CHECK",
+      "id": "8c46d8d9-d340-2788-403e-2f6911153089",
+      "template": "Thank you! This phone number has been added to {customer_name} in SparkMeter."
+    },
+    {
+      "code": "NEW",
+      "id": "00000000-0002-0000-0000-000000000001",
+      "template": "updated t\u00e9mplate"
+    }
+  ],
+  "error": null,
+  "status": "success"
+}

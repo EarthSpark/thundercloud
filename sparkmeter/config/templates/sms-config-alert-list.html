@@ -1,0 +1,32 @@
+{% raw %}
+<div ng-controller="SMSAlertsController as vm">
+  <table id="sms-alert" class="table table-bordered table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="col-sm-2">Event type</th>
+        <th class="col-sm-4">Outbound message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="alert in vm.alerts | orderBy: 'label'">
+        <td class="col-sm-2" ng-cloak>{{ alert.label }}</td>
+        <td class="col-sm-4" style="word-break: break-all" ng-cloak>
+          {{ alert.template }}
+          <div class="btn-group pull-right">
+            <button class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i></button>
+            <ul class="dropdown-menu">
+              <li><a ng-click="vm.openModal('Edit', alert)" data-action="edit">Edit</a></li>
+              <li class="divider"></li>
+              <li><a ng-click="vm.openModal('Delete', alert)">Delete</a></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="btn btn-default"
+          ng-disabled="vm.alerts.length === vm.eventTypes.length"
+          ng-click="vm.openModal('Add')"
+          data-action="add">Add an alert type</button>
+</div>
+{% endraw %}

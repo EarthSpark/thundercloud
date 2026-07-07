@@ -1,0 +1,54 @@
+[
+    {
+        "account_all_access": false,
+        "active": true,
+        "api_sales_account_id": null,
+        "email": "api-vendor@example.com",
+        "fs_uniquifier": "%% FILTERED BY UNITTEST %%",
+        "ground_all_access": true,
+        "id": "2231141d-d172-fd95-19eb-47364c20ef23",
+        "locale": "en_US",
+        "password": "$2a$12$5dvgOSHS3.St0vlrffQ2JOSabs4fLF1R1V3oQ6o/nESp4fYbC2uju",
+        "portal_id": null,
+        "username": "api-vendor"
+    },
+    {
+        "account_all_access": false,
+        "active": true,
+        "api_sales_account_id": null,
+        "email": "test-vendor@sparkmeter.io",
+        "fs_uniquifier": "%% FILTERED BY UNITTEST %%",
+        "ground_all_access": true,
+        "id": "42f9bd80-fa6d-11e4-a575-00617b7c44e1",
+        "locale": "en_US",
+        "password": "$2a$12$mV3Ky/odGZOGFcJb2EQsNexppNuiaUIVvjTbq/vB9gwY695e5BaNa",
+        "portal_id": null,
+        "username": "vendor"
+    },
+    {
+        "account_all_access": false,
+        "active": true,
+        "api_sales_account_id": "1fd2160d-f88e-4b85-b153-3b82b1013368",
+        "email": null,
+        "fs_uniquifier": "%% FILTERED BY UNITTEST %%",
+        "ground_all_access": true,
+        "id": "6f839389-2dc1-efa9-e5c0-f7d32f9ea0ab",
+        "locale": "en_US",
+        "password": "$2a$12$5dvgOSHS3.St0vlrffQ2JOSabs4fLF1R1V3oQ6o/nESp4fYbC2uju",
+        "portal_id": null,
+        "username": "api-user"
+    },
+    {
+        "account_all_access": true,
+        "active": true,
+        "api_sales_account_id": null,
+        "email": "test-operator@sparkmeter.io",
+        "fs_uniquifier": "%% FILTERED BY UNITTEST %%",
+        "ground_all_access": true,
+        "id": "84ecab80-fff9-11e4-b8d3-00617b7c6bff",
+        "locale": "en_US",
+        "password": "$2a$12$JUxyLv.vAtRtGDd2K/sFiOhKTMTG1InlE5ECQDv/jotviUOoqmC0C",
+        "portal_id": null,
+        "username": "operator"
+    }
+]

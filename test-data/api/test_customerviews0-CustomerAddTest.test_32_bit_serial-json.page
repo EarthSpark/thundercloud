@@ -1,0 +1,23 @@
+> POST /api/v0/customer/ HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 242
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"address": "123 Main Street","code": "customer code","meter_tariff_name": "Tariff","name": "customer name","operating_mode": "auto","phone_number": "+4632112345","serial": "SM5R-00-00010001","starting_credit_balance": 123,"tariff": "Tariff"}
+
+< HTTP/1.1 201 CREATED
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Location: /api/v0/customers/%% FILTERED BY UNITTEST %%
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "customer_id": "%% FILTERED BY UNITTEST %%",
+  "error": null,
+  "status": "success"
+}

@@ -1,0 +1,21 @@
+> POST /crudview/tests HTTP/1.1
+> Content-Length: 2
+> Content-Type: application/json
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {}
+
+< HTTP/1.1 201 CREATED
+< Content-Type: application/json
+< Location: /crudview/tests/00000000-0000-0000-0000-100000000123
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "test_id": "00000000-0000-0000-0000-100000000123"
+}

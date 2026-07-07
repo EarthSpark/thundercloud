@@ -1,0 +1,127 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`API User Box export CSV should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "api-user-1",
+      "",
+      "",
+    ],
+    Array [
+      "api-user-2",
+      "Sales Account #1",
+      "Can sell electricity",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "User name",
+    "Sales Accounts",
+    "Permissions",
+  ],
+}
+`;
+
+exports[`API User Box rendering should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/user/api-user-1/\\" data-username=\\"api-user-1\\">api-user-1</a>",
+      "",
+      "",
+    ],
+    Array [
+      "<a href=\\"/user/api-user-2/\\" data-username=\\"api-user-2\\">api-user-2</a>",
+      "<a href=\\"/sales-account/00000000-0000-0000-0000-000000000003/\\" data-name=\\"Sales Account #1\\">Sales Account #1</a>",
+      "Can sell electricity",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "User name",
+    "Sales Accounts",
+    "Permissions",
+  ],
+}
+`;
+
+exports[`Operator Box export CSV should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "operator-1",
+      "",
+      "operator@earthsparkinternational.org",
+      "Yes",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "User name",
+    "Sales Accounts",
+    "Email",
+    "Active",
+  ],
+}
+`;
+
+exports[`Operator Box rendering should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/user/operator-1/\\" data-username=\\"operator-1\\">operator-1</a>",
+      "",
+      "operator@earthsparkinternational.org",
+      "Yes",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "User name",
+    "Sales Accounts",
+    "Email",
+    "Active",
+  ],
+}
+`;
+
+exports[`Vendor Box export CSV should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "vendor-1",
+      "",
+      "vendor@earthsparkinternational.org",
+      "No",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "User name",
+    "Sales Accounts",
+    "Email",
+    "Active",
+  ],
+}
+`;
+
+exports[`Vendor Box rendering should work 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/user/vendor-1/\\" data-username=\\"vendor-1\\">vendor-1</a>",
+      "",
+      "vendor@earthsparkinternational.org",
+      "No",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    "User name",
+    "Sales Accounts",
+    "Email",
+    "Active",
+  ],
+}
+`;

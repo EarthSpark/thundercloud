@@ -1,0 +1,175 @@
+> GET /login HTTP/1.1
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter GroundBolt</title>
+
+        <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
+        <script src="%% VENDOR_JS %%" type="text/javascript"></script>
+        <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/static/logo/apple-touch-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/static/logo/apple-touch-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/static/logo/apple-touch-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/static/logo/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/static/logo/apple-touch-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/static/logo/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon-180x180.png">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-32x32.png" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-194x194.png" sizes="194x194">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-96x96.png" sizes="96x96">
+        <link rel="icon" type="image/png" href="/static/logo/android-chrome-192x192.png" sizes="192x192">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-16x16.png" sizes="16x16">
+        <link rel="manifest" href="/static/logo/manifest.json">
+        <link rel="mask-icon" href="/static/logo/safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body>
+
+        <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">
+                    GroundBolt</a>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-top">
+                    <span class="sr-only">Toggle Top Navigation</span>
+                    <i class="icon-align-justify"></i>
+                </button>
+
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-collapse-top">
+                <div class="navbar-right">
+                    <ul class="nav navbar-nav navbar-left">
+                    </ul>
+                </div>
+            </div><!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="main-content">
+            <div class="container">
+                <div class="row">
+                    <div class="area-top clearfix">
+                        <div class="pull-left header">
+                            <h3 class="title">
+                                    <i class="icon-dashboard"></i>
+                                    Dashboard
+                            </h3>
+                            <h5></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    <div class="alerts">
+                    </div> <!-- class="alerts"-->
+
+                    <div id="breadcrumbs">
+        <a class="breadcrumb-button blue" href="/">
+                <span class="breadcrumb-label">
+                                                <i class="icon-home"></i> Home
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+                    </div> <!-- id="breadcrumbs"-->
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+<div class="container">
+    <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+    <div class="box">
+        <div class="box-header">
+            <span class="title">Login</span>
+        </div>
+        <div class="box-content padded">
+                            <form action="/login" method="POST" name="login_user_form" role="form">
+                    <input id="next" name="next" type="hidden" value="">
+                    
+
+                    
+  <div class="form-group ">
+
+                <div class="input-group">
+
+                    <span class="input-group-addon">
+<i class="icon-user"></i>                    </span>
+                <input autocomplete="email" class="form-control" id="email" name="email" placeholder="email address" required type="email" value="">
+
+
+                </div>
+
+  </div>
+
+                    
+  <div class="form-group ">
+
+                <div class="input-group">
+
+                    <span class="input-group-addon">
+<i class="icon-key"></i>                    </span>
+                <input autocomplete="current-password" class="form-control" id="password" name="password" placeholder="password" required type="password" value="">
+
+
+                </div>
+
+  </div>
+
+
+                    
+
+    <div class="checkbox">
+      <label>
+        <input id="remember" name="remember" type="checkbox" value="y"> Remember Me
+      </label>
+    </div>
+
+
+
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">
+                            Login <i class="icon-signin"></i>
+                        </button>
+                    </div>
+                </form>
+            <h6 style="text-align: right">%% APP_VERSION %% <small>%% GIT_VERSION %%</small></h6>
+
+        </div> <!-- class="box-content" -->
+    </div> <!-- class="box" -->
+        </div>
+    </div>
+</div>
+                </div>
+            </div>
+
+        </div> <!-- class="main-content"-->
+    </body>
+</html>

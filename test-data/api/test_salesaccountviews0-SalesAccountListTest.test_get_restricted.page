@@ -1,0 +1,28 @@
+> GET /api/v0/sales-accounts?type=restricted HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "accounts": [
+    {
+      "account_type": "restricted",
+      "active": true,
+      "credit": 1000.0,
+      "id": "0000000a-0000-0000-0000-000000000001",
+      "markup": 0.05,
+      "name": "sales \u00e5cc\u00f6\u00fcnt 1"
+    }
+  ],
+  "error": null,
+  "status": "success"
+}

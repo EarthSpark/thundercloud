@@ -1,0 +1,69 @@
+{% raw %}
+<script type="text/ng-template" id="sms-config-alert-modal.html">
+  <div ng-show="vm.title != 'Delete'">
+    <div data-dialog="sms-config-alert">
+      <div class="modal-header">
+        <h3 class="modal-title" ng-cloak>{{ vm.title }} Alert</h3>
+      </div>
+      <div class="modal-body">
+        <form name="form" class="form form-horizontal" role="form">
+          <div class="form-group form-group-lg">
+            <label class="control-label col-sm-3" for="event-type">Event type</label>
+            <div class="input-group col-sm-6">
+              <select class="form-control" name="event-type" id="event-type"
+                      ng-model="alert.event_type"
+                      ng-hide="vm.title == 'Edit' || unusedEventTypes.length == 1"
+                      ng-attr-autofocus="unusedEventTypes.length > 1">
+                <option ng-repeat="et in unusedEventTypes" value="{{ et.value }}" ng-cloak>{{ et.label }}</option>
+              </select>
+              <p class="form-control-static"
+                 ng-show="vm.title == 'Edit' || unusedEventTypes.length == 1">{{ alert.label }}</p>
+            </div>
+          </div>
+          <div class="form-group form-group-lg" ng-class="{ 'has-error': form.template.$invalid }">
+            <label class="control-label col-sm-3" for="template">Outbound text</label>
+            <div class="input-group col-sm-6">
+              <div sm-sms-template
+                   completion-type="alert"
+                   name="template"
+                   ng-model="alert.template"/>
+            </div>
+          </div>
+          <div class="form-group form-group-lg" ng-show="alert.template">
+            <label class="control-label col-sm-3" for="template">Example</label>
+            <div class="input-group col-sm-6">
+              <p class="form-control-static">
+                {{ alert.template | templateExampleRenderer: alert.event_type }}
+              </p>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+                data-action="cancel">Cancel</button>
+        <button class="btn btn-primary" type="button" ng-click="vm.save(alert)"
+                ng-disabled="form.$invalid"
+                data-action="save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div ng-show="vm.title == 'Delete'">
+    <div class="modal-header">
+        <h3 class="modal-title" ng-cloak>{{ vm.title }} Alert</h3>
+      </div>
+    <div class="modal-body delete-text">
+      <span>Are you sure you want to delete:</span>
+      <span>{{alert.label}}</span>
+      <span>This action cannot be undone.</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+              data-action="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" ng-click="vm.remove(alert)" data-action="delete">Delete</button>
+    </div>
+  </div>
+</script>
+{% endraw %}

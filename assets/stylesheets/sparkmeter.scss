@@ -1,0 +1,310 @@
+@import "bootstrap/variables";
+
+
+// Tariff
+form.tariff .input-group-addon {
+    min-width: 130px;
+    text-align: left;
+}
+
+.tariff-details-container {
+    border: 1px solid #CDCDCD;
+    margin-left: 15px;
+}
+
+.graph-label {
+    font-weight: bold;
+    margin: 50px 0 5px 0;
+}
+
+.tariff-details-container.graph-container {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.tariff-details-container > div {
+    background-color: #f1f1f1;
+}
+
+.tariff-details-table {
+    margin: 5px 0 15px 0;
+}
+.tariff-details-table td, .tariff-details-table th {
+    border: 1px solid #000;
+    font-weight: normal;
+    text-align: center;
+    padding: 5px;
+    width: 33%;
+}
+
+.tariff-details-table th {
+    font-weight: bold;
+}
+
+// Demo
+
+.demo-container {
+    box-sizing: border-box;
+    width: 850px;
+    height: 450px;
+    padding: 20px 15px 15px 15px;
+    margin: 15px auto 30px auto;
+    border: 1px solid #ddd;
+    background: #fff;
+    background: linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    -o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.demo-placeholder {
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+    line-height: 1.2em;
+}
+
+.legend table {
+    border-spacing: 5px;
+}
+
+.axisLabel {
+    position: absolute;
+    text-align: center;
+    font-size: 12px;
+}
+
+.yaxisLabel {
+    top: 50%;
+    left: 2px;
+    transform: rotate(-90deg);
+    -o-transform: rotate(-90deg);
+    -ms-transform: rotate(-90deg);
+    -moz-transform: rotate(-90deg);
+    -webkit-transform:  rotate(-90deg);
+    transform-origin: 0 0;
+    -o-transform-origin: 0 0;
+    -ms-transform-origin: 0 0;
+    -moz-transform-origin: 0 0;
+    -webkit-transform-origin: 0 0;
+}
+
+.ie7 .yaxisLabel, .ie8 .yaxisLabel {
+    top: 40%;
+    font-size: 36px;
+    filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.0, M12=0.33, M21=-0.33, M22=0.0,sizingMethod='auto expand');
+}
+
+dl.indented dd {
+    margin-left: 15px;
+}
+
+#locales a { padding: 0 5px; }
+
+.hidden-details {
+    display: none;
+}
+
+.pie-box {
+    display: inline-block;
+}
+
+.pie-label {
+    font-weight: 600;
+}
+
+.grey-background {
+    background-color: #FBFBFB;
+}
+
+.select2-container { padding: 0 !important; }
+
+$heartbeat-green:               #dff0d8 !default;
+$heartbeat-current:           darken(adjust-hue($heartbeat-green, -10), 5%) !default;
+$heartbeat-lost:               #fcf8e3 !default;
+$heartbeat-hour-old:                #f2dede !default;
+$heartbeat-last: lighten(adjust-hue($heartbeat-green, -10), 6%);
+
+tr.heartbeat-never td {
+    background-color: #11161a;
+    color: lightgrey;
+}
+
+tr.heartbeat-current td {
+    background-color: $heartbeat-current;
+}
+
+tr.heartbeat-day-old td {
+    background-color: lightgrey;
+}
+
+tr.heartbeat-hour-old td {
+    background-color: $heartbeat-hour-old;
+}
+
+tr.heartbeat-last td {
+    background-color: $heartbeat-last;
+}
+
+tr.heartbeat-lost td {
+    background-color: $heartbeat-lost;
+}
+
+.datatable-small {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+
+}
+
+
+/* for tables that have a second header row for units values */
+
+thead.double-header {
+
+    tr:first-child th{
+        padding-bottom: 0;
+        border-bottom-width: 0;
+    }
+
+    tr:not(:first-child) th{
+        padding-top: 0;
+        border-top-width: 0;
+        font-size: 95%;
+        font-style: italic;
+        color: $text-muted;
+    }
+}
+
+/* edit icons after links */
+a i.icon-edit {
+    padding-left: 2px;
+    position: relative;
+    top: 1px;
+}
+
+/* Tag in meter list and meter view page */
+td .tag, dd a .tag {
+    margin: 0.3em;
+}
+
+/* List of tags in the meter view page */
+dd.tags {
+    margin: 0.5em;
+}
+
+.config.row {
+    margin-bottom: 2em;
+}
+
+.textcomplete-wrapper {
+    display: block !important;
+}
+
+.textcomplete-wrapper .dropdown-menu li a {
+    font-size: 12px;
+    font-weight: normal;
+    text-shadow: none;
+}
+
+.textcomplete-wrapper .dropdown-menu li a .column {
+    float: left;
+    width: 18em;
+}
+
+.textcomplete-wrapper .dropdown-menu li a .description {
+    font-size: 10px;
+}
+
+.icon-primary {
+    color: $brand-primary;
+}
+
+.icon-success {
+    color: $brand-success;
+}
+
+.icon-info {
+    color: $brand-info;
+}
+
+.icon-warning {
+    color: $brand-warning;
+}
+
+.icon-danger {
+    color: $brand-danger;
+}
+
+/* Styles to fix new form field alignment */
+
+.indented-form > label:first-child {
+    margin: 40px 0 0 0;
+}
+
+.indented-form > div:first-of-type {
+    width: 100%;
+    margin: 30px 0 0 0;
+}
+
+
+/* Styles for Dashboard Dropdown */
+
+.dashboard-filter-container {
+  position: relative;
+
+    div {
+        position: absolute;
+        right: 40px;
+        top: 8px;
+
+        .select-filter {
+            display: inline-block;
+        }
+
+        .select-filter-label {
+            display: inline-block;
+        }
+    }
+}
+
+.override-banner {
+    padding: 20px;
+    background-color: #ff0000;
+    color: #ffffff;
+}
+
+.help-block {
+    border: 1px solid #ff0000;
+    background-color: #f2dede;
+    width: 275px;
+    padding: 10px;
+    color: #ff0000;
+}
+
+/* Styles for Load Shedding Override */
+
+.override-container {
+    text-align: center;
+}
+
+.override-button {
+    display: block;
+    cursor: pointer;
+    padding: 10px 20px;
+    color: #fff;
+    background-color: #00b3ee;
+    width: 200px;
+    height: 60px;
+    margin: 20px auto 0;
+    text-align: center;
+}
+
+#override-modal a {
+    color: #ffffff;
+}

@@ -1,0 +1,25 @@
+{%- set page_name = "ground-index" -%}
+{% extends "base.html" %}
+{% block title %}{{ _('Ground Info Page') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('grounds') }} {{ _('Grounds') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+    {% for ground in grounds %}
+    <div class="row">
+        <div class="col-md-9" data-box="basic-information">
+            {% include "components/box/ground-basic-info.html" %}
+        </div>
+
+        <div class="col-md-3" data-box="capacity">
+            {% include "components/box/ground-capacity.html" %}
+        </div>
+    </div>
+    {% endfor %}
+
+{% endblock %}

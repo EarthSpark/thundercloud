@@ -1,0 +1,16 @@
+> GET /microgrid/groundserial1/SM15R-01-00000001/some/url HTTP/1.1
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 301 MOVED PERMANENTLY
+< Content-Type: text/html; charset=utf-8
+< Location: /meter/SM15R-01-00000001/some/url
+<
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/meter/SM15R-01-00000001/some/url">/meter/SM15R-01-00000001/some/url</a>. If not, click the link.
+

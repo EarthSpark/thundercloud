@@ -1,0 +1,21 @@
+> PUT /api/v0/config/allow-negative-balance HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 16
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"value": false}
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success"
+}

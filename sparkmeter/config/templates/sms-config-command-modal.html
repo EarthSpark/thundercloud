@@ -1,0 +1,81 @@
+{% raw %}
+<script type="text/ng-template" id="sms-config-command-modal.html">
+
+  <!-- If the modal is not Delete-->
+  <div ng-show="vm.title != 'Delete'">
+    <div class="modal-header">
+      <h3 class="modal-title" ng-cloak>{{ vm.title }} Command</h3>
+    </div>
+    <div class="modal-body">
+      <form name="form" class="form form-horizontal" role="form" novalidate>
+        <div class="form-group form-group-lg" ng-class="{ 'has-error': form.code.$invalid }">
+          <label class="control-label col-sm-3" for="code">Code in SMS</label>
+          <div class="input-group col-sm-2">
+            <input class="form-control" name="code" id="code" autocomplete="off" autofocus
+                   sm-force-uppercase
+                   maxlength="8"
+                   ng-model="command.code"
+                   ng-required="true"
+                   ng-maxlength="8"
+                   ng-pattern="/^[A-z]+$/">
+            </input>
+          </div>
+          <div class="col-sm-offset-3 col-sm-9">
+            <p class="help-block" ng-show="form.code.$error.required">
+              Code cannot be empty.
+            </p>
+            <p class="help-block" ng-show="form.code.$error.duplicate">
+              That code has already been used, pick another one.
+            </p>
+            <p class="help-block" ng-show="form.code.$error.pattern">
+              Code can only contain upper case letters.
+            </p>
+          </div>
+        </div>
+        <div class="form-group form-group-lg" ng-class="{ 'has-error': form.template.$invalid }">
+          <label class="control-label col-sm-3" for="template">Outbound text</label>
+          <div class="input-group col-sm-6">
+            <div name="template"
+                 ng-model="command.template"
+                 sm-sms-template
+                 completion-type="customer-low-balance"/>
+          </div>
+        </div>
+        <div class="form-group form-group-lg" ng-show="command.template">
+          <label class="control-label col-sm-3" for="template">Example</label>
+          <div class="input-group col-sm-6">
+            <p class="form-control-static">
+              {{ command.template | templateExampleRenderer: 'customer-low-balance' }}
+            </p>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+              data-action="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" ng-click="vm.save(command)"
+              ng-disabled="form.$invalid"
+              data-action="save">Save</button>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div ng-show="vm.title == 'Delete'">
+    <div class="modal-header">
+        <h3 class="modal-title" ng-cloak>{{ vm.title }} Command</h3>
+      </div>
+    <div class="modal-body delete-text">
+      <span>Are you sure you want to delete:</span>
+      <span>{{command.code}}</span>
+      <span>This action cannot be undone.</span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+              data-action="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" ng-click="vm.remove(command)" data-action="delete">Delete</button>
+    </div>
+  </div>
+</script>
+{% endraw %}

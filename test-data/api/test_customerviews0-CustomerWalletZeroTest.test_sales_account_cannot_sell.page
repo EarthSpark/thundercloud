@@ -1,0 +1,18 @@
+> POST /api/v0/customers/0000000c-0000-0000-0000-000000000001/wallet/credit/zero-balance HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 400 BAD REQUEST
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "permission-denied-user 'test\u00fcser-001' cannot sell from sales account 'System': api user can only sell to 'sales \u00e5cc\u00f6\u00fcnt 1'.",
+  "status": "failure"
+}

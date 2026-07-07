@@ -1,0 +1,441 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`BackendAPI get(/foo) no token 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "method": "GET",
+      "url": "/user/token.json",
+    },
+    Object {
+      "headers": Object {
+        "Authentication-Token": "my-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/foo",
+    },
+  ],
+  "response": Object {
+    "foo-response": true,
+  },
+  "storage": Object {},
+}
+`;
+
+exports[`BackendAPI get(/foo) with bad token 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "headers": Object {
+        "Authentication-Token": "new-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/foo",
+    },
+    Object {
+      "method": "GET",
+      "url": "/user/token.json",
+    },
+    Object {
+      "headers": Object {
+        "Authentication-Token": "new-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/foo",
+    },
+  ],
+  "response": Object {
+    "foo-response": true,
+  },
+  "storage": Object {
+    "token": "bad-token",
+  },
+}
+`;
+
+exports[`BackendAPI get(/foo, value) 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "headers": Object {
+        "Authentication-Token": "new-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/foo",
+    },
+  ],
+  "response": Object {
+    "foo-response": true,
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getCustomerMeters() 1`] = `
+Object {
+  "requests": Array [
+    "/meter/meters.json?meter_type=customer",
+  ],
+  "response": "meters",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getGrounds() 1`] = `
+Object {
+  "requests": Array [
+    "/user/grounds.json",
+  ],
+  "response": "grounds",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getLatestReadings() 1`] = `
+Object {
+  "requests": Array [
+    "latest.json",
+  ],
+  "response": Object {
+    "status": "success",
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getMessages() 1`] = `
+Object {
+  "requests": Array [
+    "messages.json",
+  ],
+  "response": Object {
+    "data": "messages",
+    "draw": 1,
+    "recordsFiltered": 7,
+    "recordsTotal": 7,
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getSalesAccounts(all, operator) 1`] = `
+Object {
+  "requests": Array [
+    "/sales-account/operator.json",
+  ],
+  "response": "accounts",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getSalesAccounts(all, vendor) 1`] = `
+Object {
+  "requests": Array [
+    "/sales-account/vendor.json",
+  ],
+  "response": "accounts",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getSalesAccounts(my, operator) 1`] = `
+Object {
+  "requests": Array [
+    "/user/sales-account/operator.json",
+  ],
+  "response": "accounts",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getSalesAccounts(my, vendor) 1`] = `
+Object {
+  "requests": Array [
+    "/user/sales-account/vendor.json",
+  ],
+  "response": "accounts",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getSalesAccounts(user, operator) 1`] = `
+Object {
+  "requests": Array [
+    "sales-account/operator.json",
+  ],
+  "response": "accounts",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getSalesAccounts(user, vendor) 1`] = `
+Object {
+  "requests": Array [
+    "sales-account/vendor.json",
+  ],
+  "response": "accounts",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getTariff() 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "headers": Object {
+        "Authentication-Token": "new-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/tariff/tariff",
+    },
+  ],
+  "response": Object {
+    "blockrates": undefined,
+    "cycle_start_day_of_month": undefined,
+    "daily_energy_limit_enabled": undefined,
+    "daily_energy_limit_reset_hour": undefined,
+    "daily_energy_limit_value": undefined,
+    "flat_load_limit": undefined,
+    "flat_rate": undefined,
+    "id": undefined,
+    "load_limit_type": undefined,
+    "load_limits": undefined,
+    "low_balance_threshold": undefined,
+    "name": undefined,
+    "plan_duration_span": undefined,
+    "plan_duration_unit": undefined,
+    "plan_enabled": undefined,
+    "plan_fixed_fee": undefined,
+    "plan_price": undefined,
+    "tariff_type": undefined,
+    "tou_enabled": undefined,
+    "tous": undefined,
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getTariffs() 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "headers": Object {
+        "Authentication-Token": "new-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/tariffs",
+    },
+  ],
+  "response": Array [
+    Object {
+      "blockrates": undefined,
+      "cycle_start_day_of_month": undefined,
+      "daily_energy_limit_enabled": undefined,
+      "daily_energy_limit_reset_hour": undefined,
+      "daily_energy_limit_value": undefined,
+      "flat_load_limit": undefined,
+      "flat_rate": undefined,
+      "id": undefined,
+      "load_limit_type": undefined,
+      "load_limits": undefined,
+      "low_balance_threshold": undefined,
+      "name": undefined,
+      "plan_duration_span": undefined,
+      "plan_duration_unit": undefined,
+      "plan_enabled": undefined,
+      "plan_fixed_fee": undefined,
+      "plan_price": undefined,
+      "tariff_type": undefined,
+      "tou_enabled": undefined,
+      "tous": undefined,
+    },
+  ],
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getTotalizerMeters() 1`] = `
+Object {
+  "requests": Array [
+    "/meter/meters.json?meter_type=totalizer",
+  ],
+  "response": "meters",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getTransactions() 1`] = `
+Object {
+  "requests": Array [
+    "transactions.json",
+  ],
+  "response": Object {
+    "data": "transactions",
+    "draw": 1,
+    "recordsFiltered": 7,
+    "recordsTotal": 7,
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI getUsersByRole(operator) 1`] = `
+Object {
+  "requests": Array [
+    "/users.json?role=operator",
+  ],
+  "response": "users",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI listConfigParameters() 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "headers": Object {
+        "Authentication-Token": "new-token",
+      },
+      "method": "GET",
+      "url": "/api/v0/config/",
+    },
+  ],
+  "response": "parameters",
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI put(/foo, value) 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "data": "\\"value\\"",
+      "headers": Object {
+        "Authentication-Token": "new-token",
+        "Content-Type": "application/json",
+      },
+      "method": "PUT",
+      "url": "/api/v0/foo",
+    },
+  ],
+  "response": Object {
+    "foo-response": true,
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI resetCurrentCredentials() 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "contentType": "application/json; charset=utf-8",
+      "dataType": "json",
+      "type": "POST",
+      "url": "reset-credentials.json",
+    },
+  ],
+  "response": Object {
+    "status": "success",
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI saveConfigParameter(config, value) 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "data": "{\\"value\\":\\"value\\"}",
+      "headers": Object {
+        "Authentication-Token": "new-token",
+        "Content-Type": "application/json",
+      },
+      "method": "PUT",
+      "url": "/api/v0/config/config",
+    },
+  ],
+  "response": Object {
+    "status": "success",
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI setMeterState(off) 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "contentType": "application/json; charset=utf-8",
+      "data": "{\\"state\\":\\"off\\"}",
+      "dataType": "json",
+      "type": "POST",
+      "url": "set-state",
+    },
+  ],
+  "response": Object {
+    "status": "success",
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;
+
+exports[`BackendAPI verifyPhoneNumber( 1`] = `
+Object {
+  "requests": Array [
+    Object {
+      "dataType": "json",
+      "type": "PUT",
+      "url": "verify-phone-number",
+    },
+  ],
+  "response": Object {
+    "status": "success",
+  },
+  "storage": Object {
+    "token": "existing-token",
+  },
+}
+`;

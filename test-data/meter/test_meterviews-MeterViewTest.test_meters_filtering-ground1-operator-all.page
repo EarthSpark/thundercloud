@@ -1,0 +1,39 @@
+> GET /meter/meters.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "meters": [
+    {
+      "address_city": "city",
+      "address_coords": "42.5646975,-71.2708356",
+      "address_state": "state",
+      "address_street1": "str\u00ebet",
+      "address_street2": "street2",
+      "customer_code": "customer code 1",
+      "customer_name": "str\u00ebet",
+      "customer_phone_number": "+18008000001",
+      "customer_phone_number_verified": true,
+      "ground_name": "test micr\u00f8grid 1",
+      "ground_serial": "groundserial1",
+      "meter_active": true,
+      "meter_credit_value": 0.0,
+      "meter_debt_value": 0.0,
+      "meter_is_running_plan": false,
+      "meter_plan_value": 0.0,
+      "meter_serial": "SM15R-01-00000001",
+      "meter_state": 2,
+      "meter_tags": "",
+      "tariff_name": "tar\u00efff01",
+      "tariff_plan_enabled": false
+    }
+  ]
+}

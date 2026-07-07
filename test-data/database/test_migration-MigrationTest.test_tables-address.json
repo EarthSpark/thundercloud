@@ -1,0 +1,46 @@
+[
+    {
+        "city": "",
+        "coords": null,
+        "country": null,
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "277949b6-37bd-4499-9e9a-83bf4a67a21d",
+        "postalcode": "",
+        "state": "",
+        "street1": "",
+        "street2": ""
+    },
+    {
+        "city": "Demo City",
+        "coords": null,
+        "country": null,
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "2f225faf-97ad-4c80-814f-1dd62a3cc53b",
+        "postalcode": "",
+        "state": "old_grid",
+        "street1": "TV4",
+        "street2": "Downtown"
+    },
+    {
+        "city": "Demo City",
+        "coords": null,
+        "country": null,
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "34064b04-44c1-4108-b257-69f6a765d30f",
+        "postalcode": "",
+        "state": "old_grid",
+        "street1": "TV9",
+        "street2": "Downtown"
+    },
+    {
+        "city": "Demo City",
+        "coords": null,
+        "country": null,
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "7117dc24-26cc-4f68-bad2-6f3dc6615ccc",
+        "postalcode": null,
+        "state": "old_grid",
+        "street1": "CL2",
+        "street2": "Downtown"
+    }
+]

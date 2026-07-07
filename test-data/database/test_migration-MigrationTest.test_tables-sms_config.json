@@ -1,0 +1,34 @@
+[
+    {
+        "alerts": {},
+        "commands": {
+            "CHECK": {
+                "active": true,
+                "code": "CHECK",
+                "id": "694e73e0-71af-ba98-dfd4-d696d691dbe1",
+                "template": "Thank you! This phone number has been added to {customer_name} in SparkMeter."
+            }
+        },
+        "id": "3d14a294-a1ac-e6a3-9968-5acab8b16eba",
+        "messages": {
+            "no-such-number": {
+                "active": true,
+                "id": "e1a7378d-3a87-c805-2260-90a9ee04b6e0",
+                "message_type": "no-such-number",
+                "template": "This phone number is not recognized by SparkMeter."
+            },
+            "verify-number": {
+                "active": true,
+                "id": "acfa06db-ad5e-ee48-097a-9183461670ff",
+                "message_type": "verify-number",
+                "template": "Send back CHECK to validate this phone number. This will allow you to receive alerts from SparkMeter."
+            },
+            "wrong-code": {
+                "active": true,
+                "id": "3824831f-dd66-b1ec-d913-cee018e0ce1e",
+                "message_type": "wrong-code",
+                "template": "This SMS code is not recognized by SparkMeter."
+            }
+        }
+    }
+]

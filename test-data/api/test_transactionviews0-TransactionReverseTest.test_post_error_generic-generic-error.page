@@ -1,0 +1,18 @@
+> POST /api/v0/transaction/00000007-0000-0000-0000-000000000001/reverse HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 400 BAD REQUEST
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "error: unhandled error",
+  "status": "failure"
+}

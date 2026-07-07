@@ -1,0 +1,22 @@
+[
+    {
+        "current_scalar": 0.002,
+        "energy_scalar": 3.125e-05,
+        "frequency_scalar": 0.01,
+        "id": "2204c2b4-d60a-e2fd-5279-ec54cfaed2a4",
+        "name": "2x",
+        "power_factor_scalar": 0.001,
+        "power_scalar": 2.0,
+        "voltage_scalar": 0.01
+    },
+    {
+        "current_scalar": 0.004,
+        "energy_scalar": 3.125e-05,
+        "frequency_scalar": 0.01,
+        "id": "7d2ec3b0-3bb0-6582-7164-eb47cc7dc37b",
+        "name": "4x",
+        "power_factor_scalar": 0.001,
+        "power_scalar": 4.0,
+        "voltage_scalar": 0.01
+    }
+]

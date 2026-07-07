@@ -1,0 +1,113 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TariffList CSV export 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "Normal flat",
+      "100",
+      "----",
+      "10",
+      "----",
+      "----",
+    ],
+    Array [
+      "Monthly plan",
+      "100",
+      "1 month for 20 USD",
+      "10",
+      "----",
+      "----",
+    ],
+    Array [
+      "Scheduled Load limits",
+      "1 to 3",
+      "----",
+      "10",
+      "----",
+      "----",
+    ],
+    Array [
+      "Block rates",
+      "100",
+      "----",
+      "1 to 3",
+      "----",
+      "----",
+    ],
+    Array [
+      "TOUs",
+      "100",
+      "----",
+      "10",
+      "1% to 100%",
+      "----",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  ],
+}
+`;
+
+exports[`TariffList Rendering 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "<a href=\\"/tariff/00000004-0000-0000-0000-000000000001/\\" data-name=\\"Normal flat\\">Normal flat</a>",
+      "100",
+      "----",
+      "10",
+      "----",
+      "----",
+    ],
+    Array [
+      "<a href=\\"/tariff/00000004-0000-0000-0000-000000000002/\\" data-name=\\"Monthly plan\\">Monthly plan</a>",
+      "100",
+      "1 month for 20 USD",
+      "10",
+      "----",
+      "----",
+    ],
+    Array [
+      "<a href=\\"/tariff/00000004-0000-0000-0000-000000000003/\\" data-name=\\"Scheduled Load limits\\">Scheduled Load limits</a>",
+      "1 to 3",
+      "----",
+      "10",
+      "----",
+      "----",
+    ],
+    Array [
+      "<a href=\\"/tariff/00000004-0000-0000-0000-000000000004/\\" data-name=\\"Block rates\\">Block rates</a>",
+      "100",
+      "----",
+      "1 to 3",
+      "----",
+      "----",
+    ],
+    Array [
+      "<a href=\\"/tariff/00000004-0000-0000-0000-000000000005/\\" data-name=\\"TOUs\\">TOUs</a>",
+      "100",
+      "----",
+      "10",
+      "1% to 100%",
+      "----",
+    ],
+  ],
+  "footer": null,
+  "header": Array [
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  ],
+}
+`;

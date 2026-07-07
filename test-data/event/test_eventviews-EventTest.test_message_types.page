@@ -1,0 +1,38 @@
+> GET /event/message-types HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "message_labels": {
+    "no-such-number": "No such number",
+    "verify-number": "Verify number",
+    "wrong-code": "Wrong code"
+  },
+  "message_types": [
+    {
+      "description": "This message is sent back if the phone number of an inbound message is not recognized.\nThe message will appear to the recipient exactly as typed (no keywords used).",
+      "label": "No such number",
+      "value": "no-such-number"
+    },
+    {
+      "description": "This message is sent when a phone number is added to the system. Customers must reply to this message with code CHECK and should be instructed to do so in this message is not recognized.\nThe message will appear to the recipient exactly as typed (no keywords used).",
+      "label": "Verify number",
+      "value": "verify-number"
+    },
+    {
+      "description": "This message is sent back if the code in an inbound message is not recognized.\nThe message will appear to the recipient exactly as typed (no keywords used).",
+      "label": "Wrong code",
+      "value": "wrong-code"
+    }
+  ],
+  "status": "success"
+}

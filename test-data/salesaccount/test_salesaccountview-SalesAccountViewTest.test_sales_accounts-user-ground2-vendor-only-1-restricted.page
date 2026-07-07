@@ -1,0 +1,12 @@
+> GET /user/vendor-only-1/sales-account/restricted.json HTTP/1.1
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+<
+{
+  "sales_accounts": []
+}

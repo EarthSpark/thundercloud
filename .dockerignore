@@ -1,0 +1,12 @@
+.coverage
+*.pyc
+Dockerfile
+dist
+scripts/config/node_modules
+venv
+.venv
+_notes
+# Locally-generated, gitignored test fixtures (mirror of .gitignore) — keep
+# them out of the build context so `COPY test-data` bakes only the committed
+# baseline, not per-machine cruft.
+test-data/site-packages/

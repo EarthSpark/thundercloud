@@ -1,0 +1,46 @@
+{%- set page_name = "user-list" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('users') }} {{ _('Users') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator') %}
+        {{ icon('users') }} {{ _('Users') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="operators">
+        {% with %}
+          {% set title = _('Operators') %}
+          {% set role = 'operator' %}
+          {% set add_label = _('Add an operator') %}
+          {% include "user-list-table.html" %}
+        {% endwith %}
+      </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="vendors">
+        {% with %}
+          {% set title = _('Vendors') %}
+          {% set role = 'vendor' %}
+          {% set add_label = _('Add a vendor') %}
+          {% include "user-list-table.html" %}
+        {% endwith %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="api-users">
+        {% with %}
+            {% set title = _('API users') %}
+            {% set role = 'api' %}
+            {% set add_label = _('Add an API user') %}
+            {% include "user-list-table.html" %}
+          {% endwith %}
+        </div>
+    </div>
+
+{% endblock %}

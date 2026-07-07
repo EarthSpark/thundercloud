@@ -1,0 +1,21 @@
+> PUT /api/v0/customers/0000000c-0000-0000-0000-000000000001 HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 34
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"meter_tariff_name": "not-found"}
+
+< HTTP/1.1 404 NOT FOUND
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "no such tariff",
+  "status": "failure"
+}

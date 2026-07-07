@@ -1,0 +1,56 @@
+{% set table_id = "tariff-load-limits" %}
+{% set headers = [_('Start'),_('End'),_('Load Limit in watts'),''] %}
+{% extends "list/base.html" %}
+
+{% block tfoot %}
+{% if can_add('tariff') %}
+<tr>
+  <td colspan="{{ headers|length }}">
+        <button type="button" class="btn btn-default" id="add-modal" href="#" data-toggle="modal" data-target="#loadLimitModal" data-title="{{ _('Add a new load limit period') }}" data-object="{}"> {{ _('Add a load limit period') }}</button>
+  </td>
+</tr>
+{% endif %}
+{% endblock tfoot %}
+
+{% block list_footer %}
+<div class="modal" id="loadLimitModal" tabindex="-1" role="dialog" aria-labelledby="loadLimitModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="loadLimitModalLabel"></h4>
+      </div>
+      <div class="modal-body">
+        <div style="display:none;">
+          <input id="id" name="id" type="hidden" value="">
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="start">{{ _('Start time') }}</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control timepicker" id="start" name="start" type="text">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="end">{{ _('End time') }}</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control timepicker" id="end" name="end" type="text">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="value">{{ _('Load limit') }}</label>
+          <div class="input-group col-lg-5">
+            <input class="form-control numeric" id="value" name="value" type="text">
+            <span class="input-group-addon">{{ _('in watts') }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">{{ _('Close') }}</button>
+        <button id="save" type="button" class="btn btn-primary">{{ _('Save') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock list_footer %}

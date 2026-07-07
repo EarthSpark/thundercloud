@@ -1,0 +1,1639 @@
+# French translations for Sparkmeter.
+# Copyright (C) 2013 Sparkmeter
+# This file is distributed under the same license as the Sparkmeter project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2013.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Sparkmeter 1.0\n"
+"Report-Msgid-Bugs-To: tristan@sparkmeter.io\n"
+"PO-Revision-Date: 2015-05-07 21:38+0000\n"
+"Last-Translator: Arthur <arthur@sparkmeter.io>\n"
+"Language-Team: fr <LL@li.org>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Pootle 2.5.1\n"
+"Generated-By: Babel 1.3\n"
+"X-POOTLE-MTIME: 1431034684.562285\n"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Customer Number"
+msgstr "Numéro client"
+
+msgid "Sparkmac Static Routes"
+msgstr "Routes Statiques SparkMAC"
+
+msgid "Sparkmac Forwarding"
+msgstr "Acheminement SparkMAC"
+
+msgid "Sparkmac Routing Enabled"
+msgstr "Routage SparkMAC Activé"
+
+msgid "Sparkmac Flooding Subnets"
+msgstr "Sous-réseaux d'acheminement SparkMAC"
+
+msgid "Sparkmac Flooding Macs"
+msgstr "MACs pour Acheminement SparkMAC"
+
+msgid "Sparkmac TTL"
+msgstr "TTL SparkMAC"
+
+msgid "Name"
+msgstr "Nom"
+
+#, fuzzy
+msgid "Customer Number"
+msgstr "Numéro du client"
+
+msgid "Street1"
+msgstr "Adresse 1"
+
+msgid "Street2"
+msgstr "Adresse 2"
+
+msgid "City"
+msgstr "Ville"
+
+msgid "State"
+msgstr "État"
+
+msgid "Postal code"
+msgstr "Code postal"
+
+msgid "Country"
+msgstr "Pays"
+
+msgid "Coordinates"
+msgstr "Coordonnées"
+
+msgid "Override"
+msgstr "Override"
+
+msgid "Last Long Energy"
+msgstr "Dernière Lecture Energie"
+
+msgid "Last Long Energy Datetime"
+msgstr "Date Dernière Lecture Energie"
+
+msgid "Hidden"
+msgstr "Invisible"
+
+msgid "Packet Request"
+msgstr "Paquet Requête"
+
+msgid "Packet Response"
+msgstr "Paquet Réponse"
+
+msgid "Firmware Version"
+msgstr "Version du Firmware"
+
+msgid "Bootloader Version"
+msgstr "Version du Bootloader"
+
+msgid "Meter Subnet"
+msgstr "Sous-Réseau du Compteur"
+
+msgid "Current State"
+msgstr "État actuel"
+
+#, python-format
+msgid "%(microgrid)s, Meter %(code)d"
+msgstr "%(microgrid)s, Compteur %(code)d"
+
+msgid "Off"
+msgstr "Off"
+
+msgid "On"
+msgstr "On"
+
+#, python-format
+msgid "Auto (%(state)s)"
+msgstr "Auto (%(state)s)"
+
+msgid "Unknown"
+msgstr "Inconnu"
+
+#, python-format
+msgid "Meter %(code)d"
+msgstr "Compteur %(code)d"
+
+msgid "Postal Code"
+msgstr "Code postal"
+
+msgid "Tariff level"
+msgstr "Niveau de tarif"
+
+#, fuzzy
+msgid "Static Routes"
+msgstr "Routes Statiques"
+
+msgid "Forwarding"
+msgstr "Acheminement"
+
+msgid "Routing Enabled"
+msgstr "Routage Activé"
+
+msgid "Code"
+msgstr "Code"
+
+#, fuzzy
+msgid "Tariff level"
+msgstr "Niveau tarifaire"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "Subnet"
+msgstr "Sous-réseau"
+
+msgid "Save"
+msgstr "Enregistrer"
+
+msgid "Start Date"
+msgstr "Début"
+
+msgid "End Date"
+msgstr "Fin"
+
+msgid "Group By"
+msgstr "Grouper par"
+
+msgid "Group By Function"
+msgstr "Choix de regroupement"
+
+msgid "Sum"
+msgstr "Somme"
+
+msgid "Minimum"
+msgstr "Minimum"
+
+msgid "Average"
+msgstr "Moyenne"
+
+msgid "Maximum"
+msgstr "Maximum"
+
+msgid "Fields"
+msgstr "Champs"
+
+msgid "Meter created"
+msgstr "Compteur créé"
+
+msgid "Meter updated"
+msgstr "Compteur mis à jour"
+
+msgid "Sending reset command"
+msgstr "Envoi de la commande de réinitialisation"
+
+msgid "Add Meter"
+msgstr "Ajouter un Compteur"
+
+msgid "Home"
+msgstr "Accueil"
+
+msgid "Microgrids"
+msgstr "Micro-réseaux"
+
+msgid "Chart"
+msgstr ""
+
+msgid "loading"
+msgstr "chargement"
+
+msgid "Chart Parameters"
+msgstr ""
+
+msgid "edit"
+msgstr "éditer"
+
+msgid "Edit"
+msgstr "Editer"
+
+msgid "Tariff Level"
+msgstr "Niveau tarifaire"
+
+msgid "Customer Name"
+msgstr "Nom du client"
+
+msgid "Credit"
+msgstr "Crédits"
+
+msgid "Address"
+msgstr "Adresse"
+
+#, fuzzy
+msgid "Customer Meter List"
+msgstr "Liste des Compteurs"
+
+msgid "Export"
+msgstr "Exporter"
+
+msgid "Add a meter"
+msgstr "Ajouter un compteur"
+
+#, python-format
+msgid "View %(num)d hidden meter"
+msgid_plural "View %(num)d hidden meters"
+msgstr[0] "Voir %(num)d compteur invisible"
+msgstr[1] "Voir %(num)d compteurs invisibles"
+
+msgid "Make Payment"
+msgstr "Effectuer un paiement"
+
+msgid "Power"
+msgstr "Puissance"
+
+msgid "Edit Meter"
+msgstr "Editer Compteur"
+
+msgid "Meter Charts"
+msgstr "Graphes Compteur"
+
+msgid "Operator Charts"
+msgstr "Graphes Opérateur"
+
+msgid "Reset Error"
+msgstr "RAZ Erreur"
+
+msgid "Information"
+msgstr "Informations"
+
+msgid "Coords"
+msgstr "Coords"
+
+msgid "Debt"
+msgstr "Dette"
+
+msgid "Id"
+msgstr "Id"
+
+msgid "Customer"
+msgstr "Client"
+
+msgid "Number"
+msgstr "Numéro"
+
+msgid "Tariff"
+msgstr "Tarif"
+
+msgid "Price"
+msgstr ""
+
+msgid "Power Limit"
+msgstr "Limite de puissance"
+
+msgid "Network"
+msgstr "Réseau"
+
+msgid "Flooding Subnets"
+msgstr "Sous-réseaux de Diffusion"
+
+msgid "Flooding Macs"
+msgstr "MACs de Diffusion"
+
+msgid "Serial"
+msgstr "Numéro de série"
+
+msgid "Max Capacity"
+msgstr "Capacité Max"
+
+#, fuzzy
+msgid "Max capacity"
+msgstr "Capacité"
+
+msgid "Secret Key"
+msgstr "Clé secrète"
+
+msgid "System Status"
+msgstr "État du système"
+
+msgid "Network Graph JSON"
+msgstr "Graphique Réseau JSON"
+
+msgid "Microgrid updated"
+msgstr "Micro-réseau mis à jour"
+
+msgid "Edit Microgrid"
+msgstr "Editer le micro-réseau"
+
+msgid "Status Charts"
+msgstr "Graphes Réseau"
+
+msgid "Output Charts"
+msgstr "Graphes Outputs"
+
+msgid "Financial Charts"
+msgstr "Graphes Finances"
+
+msgid "Latest Readings"
+msgstr "Dernières données"
+
+msgid "Hidden Meters"
+msgstr "Compteurs invisibles"
+
+msgid "subtitle"
+msgstr "sous-titre"
+
+msgid "Serial"
+msgstr "Numéro de série"
+
+msgid "Capacity"
+msgstr "Capacité"
+
+msgid "View"
+msgstr "Voir"
+
+msgid "Status"
+msgstr "Etat"
+
+msgid "CPU"
+msgstr "CPU"
+
+msgid "Memory Usage"
+msgstr "Utilisation Mémoire"
+
+msgid "Boot Time"
+msgstr "Période d'utilisation"
+
+msgid "Load"
+msgstr "Charge"
+
+msgid "Disk Usage"
+msgstr "Usage disque"
+
+# Not Micorgrid, Microgrid...
+msgid "Micorgrid Transactions"
+msgstr "Transactions Micro-réseau"
+
+msgid "Micorgrid Transactions and Transfers"
+msgstr "Transactions Micro-Réseau"
+
+msgid "Transactions"
+msgstr "Transactions"
+
+msgid "Last Update"
+msgstr "Dernière mise à jour"
+
+msgid "Needs Sync"
+msgstr "Besoin de Sync"
+
+msgid "Last Sync"
+msgstr "Dernière Sync"
+
+msgid "Start"
+msgstr "Allumage"
+
+msgid "Error"
+msgstr "Erreur"
+
+msgid "Poweron"
+msgstr "Mise en route"
+
+msgid "Startup"
+msgstr "Démarrage"
+
+msgid "Throttle"
+msgstr "Dépassement"
+
+msgid "Throttle Check"
+msgstr "Vérif. Dépassement"
+
+msgid "Throttle Error"
+msgstr "Erreur Dépassement"
+
+msgid "Protect"
+msgstr "Protection"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Heartbeat Start"
+msgstr "Début de la Période de Lecture Synchrone"
+
+msgid "Heartbeat End"
+msgstr "Fin de la période de Lecture Synchrone"
+
+msgid "Kilowatt Hours"
+msgstr "kWh"
+
+msgid "Kilowatt Hours Period"
+msgstr "Période kWh"
+
+msgid "Cost"
+msgstr "Coût"
+
+msgid "Transmitted"
+msgstr "Transmis"
+
+msgid "Meter"
+msgstr "Compteur"
+
+msgid "Min Voltage"
+msgstr "Tension Min"
+
+msgid "Max Voltage"
+msgstr "Tension Max"
+
+msgid "Avg Voltage"
+msgstr "Tension Moy."
+
+msgid "Avg Power Factor"
+msgstr "Facteur de Puissance moy."
+
+msgid "Avg True Power"
+msgstr "Puissance moy."
+
+msgid "Min Current"
+msgstr "Courant Min"
+
+msgid "Max Current"
+msgstr "Courant Max"
+
+msgid "Avg Current"
+msgstr "Courant Moy."
+
+msgid "Frequency"
+msgstr "Fréquence"
+
+msgid "Instantaneous True Power"
+msgstr "Puissance instantanée"
+
+msgid "Energy"
+msgstr "Energie"
+
+msgid "Uptime"
+msgstr "Allumé depuis"
+
+msgid "User Power Limit"
+msgstr "Limite de puissance"
+
+msgid "Avg Apparent Power"
+msgstr "Puissance apparente moy"
+
+msgid "MAC"
+msgstr "MAC"
+
+msgid "Frequency (Hz)"
+msgstr "Fréquence (Hz)"
+
+msgid "Avg Voltage (V)"
+msgstr "Tension Moy. (V)"
+
+msgid "True Power (W)"
+msgstr "Puissance (W)"
+
+msgid "Energy (kWh)"
+msgstr "Energie (kWh)"
+
+msgid "Uptime (s)"
+msgstr "Allumé depuis (s)"
+
+msgid "Power Limit (W)"
+msgstr "Limite de puissance (W)"
+
+msgid "Age (s)"
+msgstr "Age (s)"
+
+msgid "PRR"
+msgstr "PRR"
+
+msgid "Color"
+msgstr "Couleur"
+
+msgid "Auto-refresh"
+msgstr "Actualisation auto"
+
+msgid "the last reading received from each meter"
+msgstr "la dernière lecture reçue de chaque compteur"
+
+msgid "The lower value of a block rate must not be empty."
+msgstr "La valeur min ne doit pas être vide"
+
+msgid "The lower value of a block rate must be a number."
+msgstr "La valeur min doit être un nombre"
+
+msgid "The lower value of a block rate must be a positive number."
+msgstr "La valeur min doit être un nombre positif"
+
+msgid "The upper value of a block rate must not be empty."
+msgstr "La valeur max ne doit pas être vide"
+
+msgid "The upper value of a block rate must be a number."
+msgstr "La valeur max doit être un nombre"
+
+msgid "The upper value of a block rate must be a positive number."
+msgstr "La limite maximale doit être un nombre positif"
+
+#, python-format
+msgid "Block rate lower (%(lower)d) must be different from upper (%(upper)s)"
+msgstr ""
+"La limite min. (%(lower)d) doit être différente de la limite max. (%(upper)s)"
+
+#, python-format
+msgid "Block rate upper (%(upper)d) must be higher than lower (%(lower)s)"
+msgstr ""
+"La limite max. (%(upper)d) doit être supérieure à la limite min. (%(lower)s)"
+
+msgid "The block rate value must not be empty."
+msgstr "Le taux ne doit pas être vide"
+
+msgid "The block rate value must be a number."
+msgstr "Le taux doit être un nombre"
+
+msgid "The block rate value must be a positive number."
+msgstr "Le taux doit être un nombre positif"
+
+msgid "Please add some block rates."
+msgstr "Ajoutez des blocs de puissance"
+
+#, python-format
+msgid "Block rate %(s1)d to %(e1)d overlaps with Block rate %(s2)d to %(e2)d"
+msgstr ""
+"Les blocs de puissance %(s1)d - %(e1)d et %(s2)d - %(e2)d sont en conflit"
+
+#, python-format
+msgid "Block rates contain at least one gap, between %(start)d and %(end)d"
+msgstr ""
+"Les blocs de puissance contiennent au moins un trou, entre %(start)d et "
+"%(end)d"
+
+msgid "The start value of a TOU period must not be empty."
+msgstr "L'heure de début ne doit pas être vide"
+
+msgid "The start value of a TOU period must be a valid time."
+msgstr "L'heure de début de doit être une heure valide"
+
+msgid "The end value of a TOU period must not be empty."
+msgstr "L'heure de fin ne doit pas être vide"
+
+msgid "The end value of a TOU period must be a valid time."
+msgstr "L'heure de fin doit être une heure valide"
+
+#, python-format
+msgid "TOU period start (%(start)s) must be different from end (%(end)s)"
+msgstr ""
+"L'heure de début (%(start)s) doit être différente de l'heure de fin (%(end)s)"
+
+msgid "The TOU period modifier must not be empty."
+msgstr "Le modificateur TOU ne doit pas être vide"
+
+msgid "The TOU period modifier must be a number."
+msgstr "Le modificateur TOU doit être un nombre"
+
+msgid "The TOU period modifier must be a positive number."
+msgstr "Le modificateur TOU doit être un nombre positif"
+
+msgid "Please add some TOU periods."
+msgstr "Ajoutez des périodes horaires TOU"
+
+#, python-format
+msgid "TOU period %(s1)s to %(e1)s overlaps with TOU period %(s2)s to %(e2)s"
+msgstr "Les périodes TOU %(s1)s - %(e1)s et %(s2)s - %(e2)s sont en conflit"
+
+#, python-format
+msgid "%(min)s to %(max)s"
+msgstr "%(min)s à %(max)s"
+
+#, python-format
+msgid "%(min)d%% to %(max)d%%"
+msgstr "%(min)d%% à %(max)d%%"
+
+msgid "You must enter a tariff name"
+msgstr "Vous devez renseigner un nom de tarif"
+
+msgid "The name of this tariff, must be unique"
+msgstr "Le nom de tarif doit être unique"
+
+msgid "Monthly plan"
+msgstr "Plan mensuel"
+
+msgid ""
+"Turning on Monthly Plan allows the utility to charge customers a minimum "
+"monthly fee for electricity to be used during the current month. Payment "
+"for consumption of electricity during the current month is charged from "
+"the Monthly Plan balance at the tariff price until the balance reaches "
+"zero. Any consumption of electricity in the current month beyond this is "
+"charged from pre-pay credits that may have been purchased by the customer"
+" during the month. At the end of the month, a new Monthly Plan balance is"
+" automatically filled for customers who have more pre-pay credit in their"
+" account than the Monthly Plan minimum fee."
+msgstr ""
+"Activer le Plan mensuel permet au fournisseur de service de définir un prix "
+"mensuel minimum que les clients doivent acquitter. Le paiement pour la "
+"consommation d'électricité durant le mois en cours est déduite en priorité "
+"des crédits restants sur le Plan mensuel. Toute consommation au-delà du prix "
+"du Plan mensuel est prélevée sur les crédits pré-payés que le client a "
+"disponible.A la fin du mois, le Plan mensuel est à nouveau alimenté avec des "
+"crédits pré-payés si le client a suffisamment de crédits pour cela."
+
+# Here it's not kWh but credits - currency
+msgid "Plan price"
+msgstr "Prix du plan"
+
+msgid "Load limit"
+msgstr "Limite de puissance"
+
+# This is not true...
+msgid "Must be higher than 0 and lower than 4800"
+msgstr "Doit être supérieur à 0 et inférieur à 4800"
+
+# Should be rate and not price
+msgid "Flat price"
+msgstr "Taux fixe"
+
+msgid "Tariff type"
+msgstr "Type de tarif"
+
+msgid "Block rate"
+msgstr "Taux par blocs de puissance"
+
+msgid "Time of Use (TOU)"
+msgstr "Tarification horaire différenciée (Time Of Use - TOU) "
+
+#, python-format
+msgid "Tariff name must be unique, %(name)s is already taken"
+msgstr "Le nom de tarif doit être unique, %(name)s est déjà utilisé"
+
+msgid "Please enter a monthly plan price"
+msgstr "Entrez un prix pour le Plan mensuel"
+
+# should be rate and not price
+msgid "Please set a flat price"
+msgstr "Renseignez un taux fixe"
+
+#, python-format
+msgid "Tariff %(link)s created."
+msgstr "Tarif %(link)s créé"
+
+msgid "Add"
+msgstr "Ajouter"
+
+#, python-format
+msgid "Tariff %(link)s updated."
+msgstr "Tarif %(link)s mis à jour"
+
+msgid "min total. energy (kWh)"
+msgstr ""
+
+msgid "max total. energy (kWh)"
+msgstr ""
+
+#, python-format
+msgid "%(currency)s per kWh"
+msgstr ""
+
+msgid "Add a tariff block rate"
+msgstr ""
+
+msgid "Minimum total energy"
+msgstr ""
+
+msgid "in kWh"
+msgstr ""
+
+msgid "Maximum total energy"
+msgstr ""
+
+#, python-format
+msgid "in %(currency)s per kWh"
+msgstr ""
+
+#, fuzzy
+msgid "Close"
+msgstr "faux"
+
+msgid "Add a new tariff"
+msgstr ""
+
+msgid "Edit block rate"
+msgstr ""
+
+msgid "Edit time of use"
+msgstr ""
+
+msgid "in watts"
+msgstr ""
+
+#, fuzzy, python-format
+msgid "in %(currency)s"
+msgstr "Courant RMS"
+
+msgid "Flat"
+msgstr ""
+
+msgid "Block rates"
+msgstr ""
+
+msgid "TOU Periods"
+msgstr ""
+
+msgid "Load Limit"
+msgstr ""
+
+msgid "Monthly Plan"
+msgstr ""
+
+msgid "Electricity Rate"
+msgstr ""
+
+msgid "TOU Pricing"
+msgstr ""
+
+msgid "Watts"
+msgstr ""
+
+#, python-format
+msgid "%(currency)s/month"
+msgstr ""
+
+#, python-format
+msgid "%(currency)s/kWh"
+msgstr ""
+
+#, python-format
+msgid "%% of normal tariff"
+msgstr ""
+
+#, fuzzy
+msgid "Tariff List"
+msgstr "Tarif mis à jour"
+
+#, fuzzy
+msgid "Add a tariff"
+msgstr "Compteurs invisibles"
+
+msgid "End"
+msgstr ""
+
+msgid "Modifier"
+msgstr ""
+
+msgid "Add a tariff time of use"
+msgstr ""
+
+msgid "Add a TOU period"
+msgstr ""
+
+#, fuzzy
+msgid "Start time"
+msgstr "Dernière mise à jour"
+
+#, fuzzy
+msgid "End time"
+msgstr "Utilisateur mise à jour"
+
+msgid "None"
+msgstr "aucun"
+
+msgid "True"
+msgstr "vrai"
+
+msgid "False"
+msgstr "Faux"
+
+msgid "SparkMeter Cloud Manager"
+msgstr "SparkCloud"
+
+msgid "SparkMeter SparkCentral"
+msgstr "SparkCentral"
+
+msgid "Reset Demo Data"
+msgstr ""
+
+msgid "Reset Demo"
+msgstr "RAZ démonstration"
+
+#, fuzzy
+msgid "View microgrids"
+msgstr "Micro-réseaux"
+
+msgid "Manage users"
+msgstr ""
+
+msgid "Users"
+msgstr "Utilisateurs"
+
+msgid "Profile"
+msgstr ""
+
+#, fuzzy
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Logout"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Basic Information"
+msgstr "Informations générales"
+
+#, python-format
+msgid "%(capacity)d watts"
+msgstr "%(capacity)d watts"
+
+msgid "Microgrid Capacity"
+msgstr "Capacité du Micro-réseau"
+
+msgid "WIFI SSID"
+msgstr "SSID wifi"
+
+msgid "WIFI Password"
+msgstr "Mot de passe wifi"
+
+msgid "GPS Coordinates"
+msgstr "Coordonnées GPS"
+
+msgid "Last Sync to cloud"
+msgstr "Dernière Synchronisation"
+
+msgid "Sparkcentral Status"
+msgstr "Infos SparkCentral"
+
+msgid "view status page"
+msgstr "voir page d'informations"
+
+msgid "Network Information"
+msgstr "Informations sur le réseau"
+
+msgid "Heartbeat Period"
+msgstr "Période de Lecture Synchrone"
+
+#, python-format
+msgid "%(hb)d minutes"
+msgstr "%(hb)d minutes"
+
+msgid "Routing Algorithm"
+msgstr "Algorithme de Routage"
+
+msgid "Version Information"
+msgstr "Version"
+
+msgid "Hardware UUID"
+msgstr "UUID matériel"
+
+msgid "SparkCentral Version"
+msgstr "Version de SparkCentral"
+
+msgid "SparkMAC version"
+msgstr "Version de SparkMAC"
+
+msgid "Config"
+msgstr "Configuration"
+
+msgid "Custom Settings"
+msgstr "Réglages personnalisés"
+
+msgid ""
+"Warning: Editing this file can have adverse effects on the system. Please"
+" do not modify unless instructed to do so."
+msgstr ""
+"Attention : éditer ce fichier peut avoir des conséquences néfastes sur le "
+"système. Ne modifier que sous les instructions de SparkMeter "
+
+msgid "Network Usage"
+msgstr "Usage réseau"
+
+msgid "Phase"
+msgstr "Phase"
+
+msgid "Usage"
+msgstr "Usage"
+
+msgid "Smart Sensor List"
+msgstr "Liste de Compteurs Totaliseurs"
+
+msgid "Supervisor"
+msgstr "Supervisor"
+
+msgid "Confirm Reset"
+msgstr "Confirmer RAZ"
+
+msgid "Reset"
+msgstr "RAZ"
+
+msgid "Change Password"
+msgstr "Changer le mot de passe"
+
+msgid "Login"
+msgstr "Connexion"
+
+msgid "email address"
+msgstr "adresse e-mail"
+
+msgid "password"
+msgstr "mot de passe"
+
+msgid "Demo Logins"
+msgstr "Logins de Démonstration"
+
+msgid "Confirm Payment"
+msgstr "Confirmer le Paiement"
+
+#, python-format
+msgid ""
+"Are you sure you want to make a <span id=\"transaction_amt\">x</span> "
+"<span id=\"source_name\">x</span> transfer of <span "
+"id=\"acct_type_display\">x</span> from %(from)s to <span "
+"id=\"vendor_name\">%(to)s</span>?"
+msgstr ""
+"Etes-vous certain tranférer  $<span id=\"transaction_amt\">x</span> <span id="
+"\"source_name\">x</span> de <span id=\"acct_type_display\">x</span>, de "
+"%(from)s à <span id=\"vendor_name\">%(to)s</span> ?"
+
+msgid "NOTE: This action can not be undone."
+msgstr "NOTE : Cette action ne peut pas être annulée."
+
+msgid "Go Back"
+msgstr "Annuler"
+
+#, fuzzy
+msgid "User"
+msgstr "Utilisateur"
+
+#, fuzzy
+msgid "Created"
+msgstr "Créé le"
+
+msgid "Details"
+msgstr "Détails"
+
+#, fuzzy
+msgid "Transaction History"
+msgstr "Historique des transferts"
+
+msgid "export"
+msgstr "exportation"
+
+msgid "Transaction Source"
+msgstr "Source de Transaction"
+
+msgid "Add Transaction Source"
+msgstr "Ajouter une Source de Transaction"
+
+msgid "Edit Transaction Source"
+msgstr "Editer la Source de Transaction"
+
+#, fuzzy
+msgid "Transaction Source List"
+msgstr "Historique des transferts"
+
+#, fuzzy
+msgid "Add a Transaction Source"
+msgstr "Historique des transferts"
+
+msgid "Make transaction"
+msgstr "Réaliser la Transaction"
+
+msgid "Vendor Bonus"
+msgstr "Bonus revendeur"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Monetary"
+msgstr "Monétaire"
+
+msgid "Metadata"
+msgstr "Métadonnées"
+
+msgid "Processed"
+msgstr "Traité"
+
+msgid "User"
+msgstr "Utilisateur"
+
+#, fuzzy
+msgid "Amount"
+msgstr "Pays"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "From"
+msgstr "Depuis"
+
+msgid "To"
+msgstr "Vers"
+
+msgid "Reference"
+msgstr "Référence"
+
+msgid "External ID"
+msgstr "ID externe"
+
+msgid "Memo"
+msgstr "Mémo"
+
+msgid "Source"
+msgstr "Source"
+
+msgid "Processing Error"
+msgstr "Error de traitement"
+
+msgid "Children"
+msgstr "Dépendances"
+
+msgid "From Vendor"
+msgstr "Depuis Revendeur"
+
+msgid "Bonus Percent"
+msgstr "Pourcentage de bonus"
+
+msgid "Transaction Added"
+msgstr "Transaction Ajoutée"
+
+msgid "Transaction Source Added"
+msgstr "Source de Transaction Ajoutée"
+
+msgid "Transaction Source Updated"
+msgstr "Source de Transaction Mise à Jour"
+
+msgid "Operators"
+msgstr "Opérateurs"
+
+msgid "Sales Account List"
+msgstr "Liste de Revendeurs"
+
+msgid "Role"
+msgstr "Rôle"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Roles"
+msgstr "Rôles"
+
+msgid "Email"
+msgstr "E-mail"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Markup"
+msgstr "Marge"
+
+msgid "Locale"
+msgstr "Localisation"
+
+msgid "User updated"
+msgstr "Utilisateur mise à jour"
+
+msgid "Not a valid choice"
+msgstr "Choix non valide"
+
+#, python-format
+msgid "Successfully logged in as %(username)s"
+msgstr ""
+
+msgid "Saved custom settings file."
+msgstr "Fichier de paramètres sauvegardé"
+
+#~ msgid "Hour"
+#~ msgstr "Heure"
+
+#~ msgid "Amount"
+#~ msgstr "Montant"
+
+#~ msgid "Messages"
+#~ msgstr "Messages"
+
+#~ msgid "User %(username)s"
+#~ msgstr "Utilisateur %(username)s"
+
+#~ msgid "Reading Chart"
+#~ msgstr "Graphes Données"
+
+#~ msgid "Reading Table"
+#~ msgstr "Tableau de données"
+
+#~ msgid "Disable auto-refresh"
+#~ msgstr "Désactiver l'actualisation auto"
+
+#~ msgid "NOTE: displaying last 24 hours of readings"
+#~ msgstr "REMARQUE: affichage des données des dernières 24 heures"
+
+#~ msgid "Enable auto-refresh"
+#~ msgstr "Activer l'actualisation auto"
+
+#~ msgid "Title"
+#~ msgstr "sous-titre"
+
+#~ msgid "X Axis"
+#~ msgstr ""
+
+#~ msgid "Y Axis"
+#~ msgstr ""
+
+#~ msgid "Charts"
+#~ msgstr "Graphiques"
+
+#~ msgid "Edit Chart"
+#~ msgstr "Graphes Données"
+
+#~ msgid "Chart Options"
+#~ msgstr ""
+
+#~ msgid "Summary Table"
+#~ msgstr "Tableau de résumés de lecture"
+
+#~ msgid "Summary"
+#~ msgstr "Résumé"
+
+#~ msgid "Table"
+#~ msgstr "Tableau"
+
+#~ msgid "Meter %(code)s is"
+#~ msgstr "Compteur %(code)s est"
+
+#~ msgid "Debugging Information"
+#~ msgstr "Informations de débogage"
+
+#~ msgid "Chart"
+#~ msgstr "Graphiques"
+
+#~ msgid "Chart Parameters"
+#~ msgstr ""
+
+#~ msgid "Download"
+#~ msgstr ""
+
+#~ msgid "Chart updated"
+#~ msgstr "Tarif mis à jour"
+
+#~ msgid "Avg RMS Current"
+#~ msgstr ""
+
+#~ msgid "Chart Dashboard"
+#~ msgstr "Tableau de bord"
+
+#~ msgid "Voltage"
+#~ msgstr "Tension"
+
+#~ msgid "Average Power Factor"
+#~ msgstr "Facteur de Puissance moyen"
+
+#~ msgid "Consumption Charts"
+#~ msgstr "Graphes Conso"
+
+#~ msgid "Average True Power"
+#~ msgstr "Puissance moyenne"
+
+#~ msgid "Hourly Energy (24 hours)"
+#~ msgstr "Énergie horaire (24 heures)"
+
+#~ msgid "Daily Energy (1 month)"
+#~ msgstr "Énergie quotidienne (1 mois)"
+
+#~ msgid "Account Balance"
+#~ msgstr "Solde du compte"
+
+#~ msgid "Hourly Cost (24 hours)"
+#~ msgstr "Coût horaire (24 heures)"
+
+#~ msgid "Daily Cost (1 month)"
+#~ msgstr "Coût quotidien (1 mois)"
+
+#~ msgid "Monthly Payments (1 year)"
+#~ msgstr "Paiements mensuels (1 an)"
+
+#~ msgid "Map"
+#~ msgstr "Carte"
+
+#~ msgid "Thorttle Error"
+#~ msgstr ""
+
+#~ msgid "Successfully logged in as %(username)s"
+#~ msgstr ""
+
+#~ msgid "Age"
+#~ msgstr "Age"
+
+#~ msgid "Datetime"
+#~ msgstr "Date"
+
+#~ msgid "RSSI"
+#~ msgstr "RSSI"
+
+#~ msgid "RMS Voltage"
+#~ msgstr "Tension RMS"
+
+#~ msgid "RMS Current"
+#~ msgstr "Courant RMS"
+
+#~ msgid "True Power"
+#~ msgstr "Puissance Réelle"
+
+#~ msgid "Long Energy"
+#~ msgstr "Energie"
+
+#~ msgid "Total Seconds"
+#~ msgstr "Total Secondes"
+
+#~ msgid "True Power1 Threshold"
+#~ msgstr "Limite puissance"
+
+#~ msgid "Checksum"
+#~ msgstr "Contrôle"
+
+#~ msgid "Above Parasitic Load"
+#~ msgstr "Sup. à charge parasite"
+
+#~ msgid "Starting Balance"
+#~ msgstr "Solde de départ"
+
+#~ msgid "Starting Debt"
+#~ msgstr "Dette de départ"
+
+#~ msgid "Cleaned"
+#~ msgstr "Nettoyé"
+
+#~ msgid "Sum Meter True Power"
+#~ msgstr "Puissance Réelle Compteur Totaliseur"
+
+#~ msgid "Readings"
+#~ msgstr "Données"
+
+#~ msgid "Summarized"
+#~ msgstr "Résumé"
+
+#~ msgid "Reading Count"
+#~ msgstr "Nombre de données"
+
+#~ msgid "Min Voltage Datetime"
+#~ msgstr "Date Tension Min"
+
+#~ msgid "Max Voltage Datetime"
+#~ msgstr "Date Tension Max"
+
+#~ msgid "Smart Sensor %(code)d - Phase %(phase)d"
+#~ msgstr "Compteur Totaliseur %(code)d - Phase %(phase)d"
+
+#~ msgid "Smart Sensor"
+#~ msgstr "Compteur Totaliseur"
+
+#~ msgid "The customer's name."
+#~ msgstr "Le nom du client."
+
+#~ msgid "Payment for Power"
+#~ msgstr "Paiement pour électricité"
+
+#~ msgid "Payment for debt"
+#~ msgstr "Paiement pour dette"
+
+#~ msgid "Payment to Vendor"
+#~ msgstr "Historique des paiements"
+
+#~ msgid "Payment History"
+#~ msgstr ""
+
+#~ msgid "Payments"
+#~ msgstr "Paiements"
+
+#~ msgid "Make payment"
+#~ msgstr "Effectuer un paiement"
+
+#~ msgid "Payment Added"
+#~ msgstr "Paiement Ajouté"
+
+#~ msgid "Balance"
+#~ msgstr "Solde"
+
+#~ msgid "Transaction History"
+#~ msgstr "Historique des transferts"
+
+#~ msgid "Bonus"
+#~ msgstr ""
+
+#~ msgid "Price (HTG)"
+#~ msgstr "Prix (HTG)"
+
+#~ msgid "Vendor selling credits"
+#~ msgstr "Revendeur"
+
+#~ msgid ""
+#~ msgstr ""
+
+#~ msgid "Tariff List"
+#~ msgstr "Tarif mis à jour"
+
+#~ msgid "Max Instances"
+#~ msgstr "Nombre max"
+
+#~ msgid "Add a tariff"
+#~ msgstr "ajouter tarif"
+
+#~ msgid "Transaction Source List"
+#~ msgstr "Historique des transferts"
+
+#~ msgid "Add a Transaction Source"
+#~ msgstr "Historique des transferts"
+
+#~ msgid "Src MAC"
+#~ msgstr "Src MAC"
+
+#~ msgid "Instantaneous True Power (W)"
+#~ msgstr ""
+
+#~ msgid "User Power Limit (W)"
+#~ msgstr "Limite de puissance"
+
+#~ msgid "Days"
+#~ msgstr ""
+
+#~ msgid "Sparkmac Flooding Subnet Mask"
+#~ msgstr ""
+
+#~ msgid "Sparkmac Flooding Subnet Address"
+#~ msgstr ""
+
+#~ msgid "Flooding Subnet Mask"
+#~ msgstr ""
+
+#~ msgid "Flooding Subnet Address"
+#~ msgstr ""
+
+#~ msgid "Price"
+#~ msgstr "Prix"
+
+#~ msgid "Billable Unit"
+#~ msgstr "Unité facturable"
+
+#~ msgid "Kilowatt-Hour"
+#~ msgstr "Kilowatt-heure"
+
+#~ msgid "Maximum number of instances"
+#~ msgstr "Nombre maximal d'instances"
+
+#~ msgid "Per"
+#~ msgstr "Par"
+
+#~ msgid "Please select a value less then %(num)d, or decrease the power limit"
+#~ msgstr ""
+
+#~ msgid "Cycle fee"
+#~ msgstr ""
+
+#~ msgid "Cycle fee (kWh)"
+#~ msgstr ""
+
+#~ msgid "Block rate %(s1)d to %(e1)d overlap with Block rate %(s2)d to %(e2)d"
+#~ msgstr ""
+
+#~ msgid "Block rates contain gaps, lowest is %(l)d, highest %(h)d"
+#~ msgstr ""
+
+#~ msgid "Please add some block rates"
+#~ msgstr ""
+
+#~ msgid "Please add some TOU periods"
+#~ msgstr ""
+
+#~ msgid "The lower value of a blockrate must not be empty."
+#~ msgstr ""
+
+#~ msgid "The lower value of a blockrate must be a number."
+#~ msgstr ""
+
+#~ msgid "The upper value of a blockrate must not be empty."
+#~ msgstr ""
+
+#~ msgid "The upper value of a blockrate must be a number."
+#~ msgstr ""
+
+#~ msgid "Blockrate start (%(start)d) must be different from end(%(end)s)"
+#~ msgstr ""
+
+#~ msgid "Blockrate start (%(end)d) must be higher than end (%(start)s)"
+#~ msgstr ""
+
+#~ msgid "Block rates contain gaps, starts at %(start)d, ends at %(end)d"
+#~ msgstr ""
+
+#~ msgid "TOU period start (%(start)d) must be different from end(%(end)s)"
+#~ msgstr ""
+
+#~ msgid "TOU period start (%(end)d) must be later than end (%(start)s)"
+#~ msgstr ""
+
+#~ msgid "TOU period %(s1)d to %(e1)d overlaps with TOU period %(s2)d to %(e2)d"
+#~ msgstr ""
+
+#~ msgid "TOU periods contain gaps, starts at %(start)d, ends at %(end)d"
+#~ msgstr ""
+
+#~ msgid "Power Limit (watts)"
+#~ msgstr "Limite de puissance (watts)"
+
+#~ msgid "TOU periods contain gaps, starts at %(start)s, ends at %(end)s"
+#~ msgstr ""
+
+#~ msgid " per kWh"
+#~ msgstr ""
+
+#~ msgid "Load limitation (watts)"
+#~ msgstr "Limite de puissance (watts)"
+
+#~ msgid "Plan"
+#~ msgstr ""
+
+#~ msgid "Vendor Amount"
+#~ msgstr "Part du Revendeur"
+
+#~ msgid "Vendor"
+#~ msgstr "Revendeur"
+
+#~ msgid "Transfer"
+#~ msgstr "Transfert"
+
+#~ msgid "Reset Demo Data"
+#~ msgstr ""
+
+#~ msgid "View microgrids"
+#~ msgstr "Voir micro-réseaux"
+
+#~ msgid "Manage users"
+#~ msgstr "Gérer les utilisateurs"
+
+#~ msgid "Profile"
+#~ msgstr "Profil"
+
+#~ msgid "Settings"
+#~ msgstr "Paramètres"
+
+#~ msgid "Logout"
+#~ msgstr "Déconnexion"
+
+#~ msgid "Dashboard"
+#~ msgstr "Tableau de bord"
+
+#~ msgid "Cloud Manager"
+#~ msgstr ""
+
+#~ msgid "SparkCentral"
+#~ msgstr ""
+
+#~ msgid "Vendor List"
+#~ msgstr "Liste des Revendeurs"
+
+#~ msgid "Vendors"
+#~ msgstr "Revendeurs"
+
+#~ msgid "status"
+#~ msgstr "Etat"
+
+#~ msgid "min total. energy (kWh)"
+#~ msgstr ""
+
+#~ msgid "max total. energy (kWh)"
+#~ msgstr ""
+
+#~ msgid "%(currency)s per kWh"
+#~ msgstr ""
+
+#~ msgid "Add a tariff block rate"
+#~ msgstr "ajouter tarif"
+
+#~ msgid "Minimum total energy"
+#~ msgstr ""
+
+#~ msgid "in kWh"
+#~ msgstr ""
+
+#~ msgid "Maximum total energy"
+#~ msgstr ""
+
+#~ msgid "Close"
+#~ msgstr "faux"
+
+#~ msgid "End"
+#~ msgstr "Revendeur"
+
+#~ msgid "Modifier"
+#~ msgstr ""
+
+#~ msgid "Add a tariff time of use"
+#~ msgstr ""
+
+#~ msgid "Add a TOU period"
+#~ msgstr ""
+
+#~ msgid "Start time"
+#~ msgstr "Dernière mise à jour"
+
+#~ msgid "End time"
+#~ msgstr "Utilisateur mise à jour"
+
+#~ msgid "%% of normal tariff"
+#~ msgstr ""
+
+#~ msgid "add tariff"
+#~ msgstr "Tarif"
+
+#~ msgid "Add a new tariff"
+#~ msgstr "ajouter tarif"
+
+#~ msgid "Edit block rate"
+#~ msgstr ""
+
+#~ msgid "Edit time of use"
+#~ msgstr ""
+
+#~ msgid "in watts"
+#~ msgstr ""
+
+#~ msgid "in %(currency)s"
+#~ msgstr "Courant RMS"
+
+#~ msgid "Flat"
+#~ msgstr ""
+
+#~ msgid "in %(currency)s per kWh"
+#~ msgstr ""
+
+#~ msgid "Block rates"
+#~ msgstr ""
+
+#~ msgid "TOU Periods"
+#~ msgstr ""
+
+#~ msgid "Load Limit"
+#~ msgstr ""
+
+#~ msgid "Monthly Plan"
+#~ msgstr ""
+
+#~ msgid "Electricity Rate"
+#~ msgstr ""
+
+#~ msgid "TOU Pricing"
+#~ msgstr ""
+
+#~ msgid "Watts"
+#~ msgstr ""
+
+#~ msgid "%(currency)s/month"
+#~ msgstr "Courant RMS"
+
+#~ msgid "%(currency)s/kWh"
+#~ msgstr "Courant RMS"
+
+#~ msgid "Plan credit"
+#~ msgstr ""
+
+#~ msgid "TOU period start (%(end)s) must be later than end (%(start)s)"
+#~ msgstr ""
+
+#~ msgid "Sparkmac Static Routes"
+#~ msgstr ""
+
+#~ msgid "Sparkmac Flooding Macs"
+#~ msgstr ""
+
+#~ msgid "Microgrid"
+#~ msgstr "Micro-réseau"
+
+#~ msgid "Postal Code"
+#~ msgstr "Code postal"
+
+#~ msgid "System Status"
+#~ msgstr "État du système"
+
+#~ msgid "Network Graph JSON"
+#~ msgstr ""
+
+#~ msgid "Role"
+#~ msgstr "Rôle"
+
+#~ msgid "Description"
+#~ msgstr "Description"
+
+#~ msgid "Password"
+#~ msgstr "Mot de passe"
+
+#~ msgid "Roles"
+#~ msgstr "Rôles"
+
+#~ msgid "Gravatar"
+#~ msgstr "Gravatar"
+
+#~ msgid "Not a valid choice"
+#~ msgstr ""

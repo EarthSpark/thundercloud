@@ -1,0 +1,20 @@
+> POST /api/v0/transaction/external-id/reverse HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 201 CREATED
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Location: /api/v0/transaction/%% FILTERED BY UNITTEST %%
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "transaction_id": "%% FILTERED BY UNITTEST %%"
+}

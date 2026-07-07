@@ -1,0 +1,337 @@
+{# copied from bootstrap/wtf.html #}
+{% macro _hz_form_wrap(horizontal_columns, form_type, add_group=False) %}
+{% if form_type == "horizontal" %}
+  {% if add_group %}<div class="form-group">{% endif %}
+  <div class="col-{{horizontal_columns[0]}}-offset-{{horizontal_columns[1]}}
+              col-{{horizontal_columns[0]}}-{{horizontal_columns[2]}}
+             ">
+{% endif %}
+{{caller()}}
+
+{% if form_type == "horizontal" %}
+  {% if add_group %}</div>{% endif %}
+  </div>
+{% endif %}
+{% endmacro %}
+
+{# copied from bootstrap/wtf.html #}
+{% macro form_errors(form, hiddens=True) %}
+  {% if form.errors %}
+    {% for fieldname, errors in form.errors.items() %}
+      {% if bootstrap_is_hidden_field(form[fieldname]) and hiddens or
+             bootstrap_is_hidden_field(form[fieldname]) and hiddens != 'only' %}
+        {% for error in errors %}
+          <p class="error">{{error}}</p>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endmacro %}
+
+{% macro form_error(field) %}
+  {% if field.errors %}
+    {% for error in field.errors %}
+    <p class="help-block">{{error}}</p>
+    {% endfor %}
+  {% elif field.description %}
+    <p class="help-block">{{field.description|safe}}</p>
+  {% endif %}
+{% endmacro %}
+
+{% macro render_breadcrumbs(links) %}
+    <ul class="breadcrumb">
+        {% for url, title in links %}
+            {% if not loop.last %}
+                <li><a href="{{ url }}">{{ title }}</a> <span class="divider">/</span></li>
+            {% else %}
+                <li class="active">{{ title }}</li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+{% macro breadcrumb(url=None, role=None, color='') %}
+    {% if not role or current_user.has_role(role) %}
+        <{{'a' if url else 'div'}} class="breadcrumb-button {{color}}" {% if url %}href="{{ url }}"{% endif %}>
+                <span class="breadcrumb-label">
+                    {{ caller() }}
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </{{'a' if url else 'div'}}>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_box(title, box_content_class='', itoggle=None, ibutton=None) %}
+    <div class="box">
+        {% if title or itoggle or ibutton %}
+        <div class="box-header">
+            {% if title %}
+            <span class="title">{{ title }}</span>
+            {% endif %}
+            {% if ibutton %}
+                <ul class="box-toolbar">
+                    <li><button class="btn {{ ibutton[1] }}">{{ ibutton[0] }}</button></li>
+                </ul>
+            {% endif %}
+            {% if itoggle %}
+                {% if itoggle is not string %}
+                    {% for it in itoggle %}
+                        <ul class="box-toolbar">
+                            <li>
+                                {{ it }}
+                            </li>
+                            <li>
+                                <input id="{{ it }}" class="iButton-icons" type="checkbox" checked="checked"/>
+                            </li>
+                        </ul>
+                    {% endfor %}
+                {% else %}
+                    <ul class="box-toolbar">
+                        <li>
+                            {{ itoggle }}
+                        </li>
+                        <li>
+                            <input id="{{ itoggle }}" class="iButton-icons" type="checkbox" checked="checked"/>
+                        </li>
+                    </ul>
+                {% endif %}
+            {% endif %}
+        </div>
+        {% endif %}
+        <div class="box-content {{ box_content_class }}">
+            {{ caller() }}
+        </div> <!-- class="box-content" -->
+        {#
+        <div class="box-footer padded">
+            <div class="row">
+                <div class="col-md-6 text-center">
+                    <div>LAST PAYMENT</div>
+                    <div><strong>Jan 14, 2013</strong></div>
+                </div>
+                <div class="col-md-6">
+                    <a href="#" class="btn btn-blue btn-block"><i class="icon-money"></i> Make a payment</a>
+                </div>
+            </div>
+        </div>
+        #}
+    </div> <!-- class="box" -->
+{% endmacro %}
+
+{% macro horizontal_field_addon(field, prepend=None, prepend_icon=None, append=None) %}
+    <div class="form-group {% if field.errors %}has-error{% endif %}">
+        {{field.label(class="col-sm-4 control-label")}}
+        <div class="input-group col-sm-8">
+            {% if prepend or prepend_icon %}
+                <span class="input-group-addon">
+                    {% if prepend_icon %}<i class="prepend_icon"></i>{% endif %}
+                    {% if prepend %}{{ prepend }}{% endif %}
+                </span>
+            {% endif %}
+            {{field(**kwargs)|safe}}
+            {% if append %}
+                <span class="input-group-addon">{{ append }}</span>
+            {% endif %}
+        </div>
+        form_error(field)
+    </div>
+{% endmacro %}
+
+{# copied from bootstrap/wtf.html, a/prepend added #}
+{% macro addon_form_field(field, prepend=None, prepend_icon=None, append=None, show_label=True,
+                    form_type="basic",
+                    horizontal_columns=('lg', 2, 10),
+                    custom_style=None,
+                    field_class="form-control",
+                    label_class="control-label",
+                    button_map={}) %}
+
+{% if field.widget.input_type == 'checkbox disabled cause its dumb' %}
+  {% call _hz_form_wrap(horizontal_columns, form_type, True) %}
+    <div class="checkbox">
+      <label>
+        {{field()|safe}} {{field.label.text|safe}}
+      </label>
+    </div>
+  {% endcall %}
+{% elif field.type == 'RadioField' %}
+  {# note: A cleaner solution would be rendering depending on the widget,
+     this is just a hack for now, until I can think of something better #}
+  {% call _hz_form_wrap(horizontal_columns, form_type, True) %}
+    {% for item in field %}
+      <div class="radio">
+        <label>
+          {{item|safe}} {{item.label.text|safe}}
+        </label>
+      </div>
+    {% endfor %}
+  {% endcall %}
+{% elif field.type == 'SubmitField' %}
+  {# note: same issue as above - should check widget, not field type #}
+  {% call _hz_form_wrap(horizontal_columns, form_type, True) %}
+    {{field(class='btn btn-%s' % button_map.get(field.name, 'default'))}}
+  {% endcall %}
+{% elif field.type == 'FormField' %}
+    <div class="form-group{% if custom_style %} {{custom_style}}{% endif %}{% if field.errors %} has-error{% endif %}">
+        {% if show_label %}
+            {{field.label(class="control-label " + (
+                " col-%s-%s" % horizontal_columns[0:2]
+                ))|safe}}
+        {% endif %}
+        <div class="input-group col-{{horizontal_columns[0]}}-{{horizontal_columns[2]}}">
+            {{ quick_form(field, subform=True, form_type=form_type, horizontal_columns=horizontal_columns) }}
+        </div>
+    </div>
+{% else %}
+  <div class="form-group {% if field.errors %} has-error{% endif %}">
+      {% if form_type == "inline" %}
+        {% if show_label %}{{field.label(class="sr-only")|safe}}{% endif %}
+        {{field(class=field_class, placeholder=field.description, **kwargs)|safe}}
+      {% elif form_type == "horizontal" %}
+
+        {% if show_label %}
+            {{field.label(class=label_class + (
+                " col-%s-%s" % horizontal_columns[0:2]
+                ))|safe}}
+        {% endif %}
+        <div class="input-group col-{{horizontal_columns[0]}}-{{horizontal_columns[2]}}">
+
+            {% if prepend or prepend_icon %}
+                <span class="input-group-addon">
+                    {% if prepend_icon %}<i class="{{ prepend_icon }}"></i>{% endif %}
+                    {% if prepend %}{{ prepend }}{% endif %}
+                </span>
+            {% endif %}
+
+
+            {{field(class=field_class , **kwargs)|safe}}
+
+
+            {% if append %}
+                <span class="input-group-addon">{{ append }}</span>
+            {% endif %}
+
+        </div>
+        {% if field.errors %}
+          {% for error in field.errors %}
+            {% call _hz_form_wrap(horizontal_columns, form_type) %}
+              <p class="help-block">{{error}}</p>
+            {% endcall %}
+          {% endfor %}
+        {% elif field.description %}
+          {% call _hz_form_wrap(horizontal_columns, form_type) %}
+            <p class="help-block">{{field.description|safe}}</p>
+          {% endcall %}
+        {% endif %}
+      {% else %}
+        {% if show_label %}{{field.label(class="control-label")|safe}}{% endif %}
+
+            {% if prepend or prepend_icon or append or append_icon %}
+                <div class="input-group">
+            {% endif %}
+
+                {% if prepend or prepend_icon %}
+                    <span class="input-group-addon">
+                        {% if prepend_icon %}<i class="{{ prepend_icon }}"></i>{% endif %}
+                        {% if prepend %}{{ prepend }}{% endif %}
+                    </span>
+                {% endif %}
+                {{field(class=field_class, **kwargs)|safe}}
+
+                {% if append or append_icon %}
+                    <span class="input-group-addon">
+                        {% if append_icon %}<i class="{{ append_icon }}"></i>{% endif %}
+                        {% if append %}{{ append }}{% endif %}
+                    </span>
+                {% endif %}
+
+            {% if prepend or prepend_icon or append or append_icon %}
+                </div>
+            {% endif %}
+
+        {% if field.errors %}
+          {% for error in field.errors %}
+            <p class="help-block">{{error}}</p>
+          {% endfor %}
+        {% elif field.description %}
+          <p class="help-block">{{field.description|safe}}</p>
+        {% endif %}
+      {% endif %}
+  </div>
+{% endif %}
+{% endmacro %}
+
+
+
+{# copied from bootstrap/wtf.html #}
+{# valid form types are "basic", "inline" and "horizontal" #}
+{% macro quick_form(form,
+                    action="",
+                    method="post",
+                    extra_classes=None,
+                    role="form",
+                    form_type="basic",
+                    horizontal_columns=('lg', 2, 10),
+                    enctype=None,
+                    button_map={},
+                    subform=False) %}
+{% if not subform %}
+<form
+  {% if action %} action="{{action}}"{% endif %}
+  {% if method %} method="{{method}}"{% endif %}
+  class="form
+    {% if extra_classes %} {{extra_classes}}{% endif %}
+    {% if form_type == "horizontal" %} form-horizontal
+    {% elif form_type == "inline" %} form-inline
+    {% endif %}
+  "
+  {% if enctype %} enctype="{{enctype}}"{% endif %}
+  {% if role %} role="{{role}}"{% endif %}
+  >
+{% endif %}
+  {{ form.hidden_tag() }}
+  {{ form_errors(form, hiddens='only') }}
+
+  {% for field in form %}
+    {% if not bootstrap_is_hidden_field(field) %}
+      {{ addon_form_field(field,
+                    form_type=form_type,
+                    horizontal_columns=horizontal_columns,
+                    button_map=button_map) }}
+    {% endif %}
+  {% endfor %}
+{% if not subform %}
+</form>
+{% endif %}
+
+{% endmacro %}
+
+{% macro recursive_dl(d) %}
+  <dl class="indented">
+    {% for k,v in d.items() %}
+      <dt>{{ k|replace('_',' ') }}:</dt>
+      <dd id="{{ k }}">
+        {% if v is mapping %}
+          {{ recursive_dl(v) }}
+        {% else %}
+          {{ v }}
+        {% endif %}
+      </dd>
+    {% endfor %}
+  </dl>
+{% endmacro %}
+
+{% macro translate_value(v) %}
+    {% if v is none %}
+        {{ _('None') }}
+    {% elif v is sameas true %}
+        {{ _('True') }}
+    {% elif v is sameas false %}
+        {{ _('False') }}
+    {% else %}
+        {{ v }}
+    {% endif %}
+{% endmacro %}
+
+{% macro format_currency(amount) -%}
+    {{ '%.2f %s'|format(amount, config['CURRENCY']) }}
+{%- endmacro %}

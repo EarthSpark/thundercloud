@@ -1,0 +1,19 @@
+> GET /user/testüser-001/fr_FR HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 302 FOUND
+< Content-Type: text/html; charset=utf-8
+< Location: /user/test%C3%BCser-001/
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/user/test%C3%BCser-001/">/user/test%C3%BCser-001/</a>. If not, click the link.
+

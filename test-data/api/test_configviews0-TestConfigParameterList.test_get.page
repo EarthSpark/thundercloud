@@ -1,0 +1,55 @@
+> GET /api/v0/config/ HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "parameters": {
+    "allow-negative-balance": {
+      "label": "Allow Negative Balance",
+      "last_modified": "%% FILTERED BY UNITTEST %%",
+      "tooltip": "When convert to debt is selected, meters in Auto mode are not allowed to have a negative credits balance. Instead, charges that would result in negative balance are automatically converted to debt.",
+      "value": true,
+      "value_type": "bool"
+    },
+    "debt-payback-percent": {
+      "label": "On-bill debt repayment",
+      "last_modified": "%% FILTERED BY UNITTEST %%",
+      "tooltip": "Percent of reading cost that will be automatically transferred to repay debt, every time a reading is received from the meter.",
+      "value": 0.0,
+      "value_type": "percent"
+    },
+    "nominal-voltage": {
+      "label": "Nominal voltage of system",
+      "last_modified": "%% FILTERED BY UNITTEST %%",
+      "tooltip": "Nominal voltage of current flowing through meters.",
+      "value": 240.0,
+      "value_type": "voltage"
+    },
+    "send-broadcast-signal": {
+      "label": "Send broadcast signal",
+      "last_modified": "%% FILTERED BY UNITTEST %%",
+      "tooltip": "When in load shedding is enabled, send out a broadcast signal so that all meters are turned off as soon as possible.",
+      "value": false,
+      "value_type": "bool"
+    },
+    "send-set-config-at-startup": {
+      "label": "Send set-config packets during startup",
+      "last_modified": "%% FILTERED BY UNITTEST %%",
+      "tooltip": "This parameter drives whether all active meters would be updated with their desired state as soon as the application starts, in order to accelerate the propagation of load shedding.",
+      "value": true,
+      "value_type": "bool"
+    }
+  },
+  "status": "success"
+}

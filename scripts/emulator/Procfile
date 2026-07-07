@@ -1,0 +1,7 @@
+web: python sparkmeter/main.py
+gatewayworker: celery worker -A sparkmeter.celery_app:celery -l INFO --autoreload --purge  -n gateway.%h  -Q mac_based_queue,broadcast_tasks -c 1
+sparkmacworker: celery worker -A sparkmeter.celery_app:celery -l INFO --autoreload --purge  -n sparkmac.%h  -Q sparkmac_queue
+appworker: celery worker -A sparkmeter.celery_app:celery -l INFO --autoreload --purge  -n app.%h  -Q app_queue
+transactionworker: celery worker -A sparkmeter.celery_app:celery -l INFO --autoreload --purge  -n transaction.%h  -Q transaction_queue
+beatworker: celery beat -A sparkmeter.celery_app:celery -l INFO
+emulator: python scripts/emulator/slipstream_server.py --config scripts/emulator/config/default.json

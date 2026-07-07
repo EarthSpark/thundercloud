@@ -1,0 +1,20 @@
+[
+    {
+        "create_time": "2018-01-25T22:30:18.048800",
+        "data_event_action": "W",
+        "last_update_by": null,
+        "last_update_time": "2018-01-25T22:30:18.048800",
+        "source_node_group_id": "cloud-group",
+        "sync_config_enabled": true,
+        "target_node_group_id": "ground-group"
+    },
+    {
+        "create_time": "2018-01-25T22:30:18.048800",
+        "data_event_action": "P",
+        "last_update_by": null,
+        "last_update_time": "2018-01-25T22:30:18.048800",
+        "source_node_group_id": "ground-group",
+        "sync_config_enabled": true,
+        "target_node_group_id": "cloud-group"
+    }
+]

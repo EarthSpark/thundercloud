@@ -1,0 +1,21 @@
+> PUT /api/v0/customers/0000000c-0000-0000-0000-000000000001 HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 20
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"tags": [540,null]}
+
+< HTTP/1.1 400 BAD REQUEST
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "the tags '540, None' are invalid. Tags must be strings, and cannot contain commas or spaces.",
+  "status": "failure"
+}

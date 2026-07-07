@@ -1,0 +1,19 @@
+{%- set page_name = "latest-readings" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('table') }} {{ _('Latest Readings') }}{% endblock %}
+{% block subtitle %}{{ _('the last reading received from each meter') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('table') }} {{ _('Latest Readings') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="latest-readings" data-list="latest-readings">
+            {% include "reading-latest-list.html" %}
+        </div>
+    </div>
+{% endblock %}

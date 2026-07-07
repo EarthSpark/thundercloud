@@ -1,0 +1,226 @@
+> POST /tariff/add HTTP/1.1
+> Content-Length: 314
+> Content-Type: application/x-www-form-urlencoded
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> blockrates=%5B%7B%22lower%22%3A+0%2C%22upper%22%3A+20%2C%22value%22%3A+1%7D%2C%7B%22lower%22%3A+20%2C%22upper%22%3A+40%2C%22value%22%3A+2%7D%2C%7B%22lower%22%3A+40%2C%22upper%22%3A+0%2C%22value%22%3A+3.5%7D%5D&name=TARIFF+BLOCKRATES&load_limit_type=flat&flat_load_limit=150&plan_price=0&cycle_start_day_of_month=1&tariff_type=blockrate&flat_price=4
+
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+        <meta itemprop="config-currency" content="USD">
+        <meta itemprop="config-username" content="testüser-001">
+        <meta itemprop="config-vendor" content="false">
+        <meta itemprop="config-ground" content="test micr\u00f8grid 1">
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter GroundBolt</title>
+
+        <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
+        <script src="%% VENDOR_JS %%" type="text/javascript"></script>
+        <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/static/logo/apple-touch-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/static/logo/apple-touch-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/static/logo/apple-touch-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/static/logo/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/static/logo/apple-touch-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/static/logo/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon-180x180.png">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-32x32.png" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-194x194.png" sizes="194x194">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-96x96.png" sizes="96x96">
+        <link rel="icon" type="image/png" href="/static/logo/android-chrome-192x192.png" sizes="192x192">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-16x16.png" sizes="16x16">
+        <link rel="manifest" href="/static/logo/manifest.json">
+        <link rel="mask-icon" href="/static/logo/safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body data-page-name="tariff-list">
+
+        <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">
+                    GroundBolt - operator</a>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-top">
+                    <span class="sr-only">Toggle Top Navigation</span>
+                    <i class="icon-align-justify"></i>
+                </button>
+
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-collapse-top">
+                <div class="navbar-right">
+                    <ul class="nav navbar-nav navbar-left">
+                            <li class="cdrop  " title="View ground"><a href="/ground/" data-name="ground"><i class="icon-th"></i>Ground Info</a></li>
+    <li class="cdrop active " title="View tariffs"><a href="/tariff/" data-name="tariffs"><i class="icon-money"></i>Tariffs</a></li>
+                            <li class="cdrop  " title="View sales accounts"><a href="/sales-account/" data-name="salesaccounts"><i class="icon-credit-card"></i>Sales Accounts</a></li>
+    <li class="cdrop  " title="Manage users"><a href="/user/" data-name="users"><i class="icon-group"></i>Users</a></li>
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="settings-menu">
+                                   <span>Global Settings<i class="icon-caret-down"></i></span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="/config/billing" data-name="billing-config">
+                                            <span>Billing</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/config/meters" data-name="meter-config">
+                                            <span>Meters</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/config/sms" data-name="sms-config">
+                                            <span>SMS</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="user-menu">
+                                   <span>
+                                       <span data-name="current-username">testüser-001 <i class="icon-caret-down"></i></span>
+                                   </span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li class="with-image">
+                                      <span>testüser-001</span>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/user/test%C3%BCser-001/" data-action="user-profile">
+                                            <i class="icon-user"></i> <span>Profile</span>
+                                        </a>
+                                    </li>
+                                        <li>
+                                            <a href="/user/test%C3%BCser-001/edit" data-action="settings">
+                                                <i class="icon-cog"></i> <span>Settings</span>
+                                            </a>
+                                        </li>
+                                    <li>
+                                        <a href="/logout" data-action="logout">
+                                            <i class="icon-off"></i> <span>Logout</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li style="text-align:center;">
+                                        <div id="locales" class="btn-group">
+                                                <a class="btn btn-primary" href="/user/test%C3%BCser-001/en_US">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/US.png">
+                                                </a>
+                                                <a class="btn " href="/user/test%C3%BCser-001/fr_FR">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/FR.png">
+                                                </a>
+                                        </div>
+                                    </li>
+                                    <li style="text-align:center;">
+                                      <h6>%% APP_VERSION %% <small>%% GIT_VERSION %%</small></h6>
+                                    </li>
+                                </ul>
+                            </li>
+                    </ul>
+                </div>
+            </div><!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="main-content">
+            <div class="container">
+                <div class="row">
+                    <div class="area-top clearfix">
+                        <div class="pull-left header">
+                            <h3 class="title">
+<i class="icon-money"></i> Tariffs                            </h3>
+                            <h5></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    <div class="alerts">
+                                    <div class="alert alert-success">Tariff <a href="/tariff/%% FILTERED BY UNITTEST %%/edit">TARIFF BLOCKRATES</a> created.</div>
+                    </div> <!-- class="alerts"-->
+
+                    <div id="breadcrumbs">
+        <a class="breadcrumb-button blue" href="/">
+                <span class="breadcrumb-label">
+                                                <i class="icon-home"></i> Home
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+        <div class="breadcrumb-button " >
+                <span class="breadcrumb-label">
+                            <i class="icon-money"></i> Tariffs
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </div>
+                    </div> <!-- id="breadcrumbs"-->
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+    <div class="row">
+        <div class="col-md-12" data-box="tariffs">
+
+
+<div class="box">
+    <div class="box-header">
+        <span class="title">Tariffs</span>
+        <ul class="box-toolbar">  <li class="toolbar-link">
+    <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul id="export-menu" class="dropdown-menu">
+      <li>
+        <a class="add" href="/tariff/add"><i class="icon-plus"></i> Add a tariff</a>
+      </li>
+    </ul>
+  </li>
+</ul>
+    </div> <!-- class="box-header" -->
+    <div class="box-content padded">  <table  class='table table-striped table-bordered table-hover table-normal dataTable tariff-list'>
+      <thead class="double-header">
+      <tr>
+          <th>Name</th>
+          <th>Load Limit</th>
+          <th>Plan</th>
+          <th>Electricity Rate</th>
+          <th>TOU Pricing</th>
+          <th>Daily Energy Limit</th>
+      </tr>        <tr>            <th></th>            <th>Watts</th>            <th>USD per unit time</th>            <th>USD/kWh</th>            <th>% of normal tariff</th>            <th>kWh</th>        </tr>    </thead>
+    <tfoot></tfoot>
+    <tbody></tbody>
+  </table>
+</div> <!-- class="box-content" --></div> <!-- class="box" -->        </div>
+    </div>
+                </div>
+            </div>
+
+        </div> <!-- class="main-content"-->
+    </body>
+</html>

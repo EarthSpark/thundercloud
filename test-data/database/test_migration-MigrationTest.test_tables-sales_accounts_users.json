@@ -1,0 +1,27 @@
+[
+    {
+        "id": "12c63c47-9252-ccc1-54a6-83d2bbe8bd7e",
+        "sales_account_id": "df9c20bc-1ff5-8bb1-95cc-1dc5083463d3",
+        "user_id": "84ecab80-fff9-11e4-b8d3-00617b7c6bff"
+    },
+    {
+        "id": "4c87e56a-04e6-2798-33fb-b0359d4a6878",
+        "sales_account_id": "90ec0dbb-08ec-8716-31f3-0f44c35c690c",
+        "user_id": "84ecab80-fff9-11e4-b8d3-00617b7c6bff"
+    },
+    {
+        "id": "552939df-31f8-ed03-4507-045779a26c34",
+        "sales_account_id": "df9c20bc-1ff5-8bb1-95cc-1dc5083463d3",
+        "user_id": "42f9bd80-fa6d-11e4-a575-00617b7c44e1"
+    },
+    {
+        "id": "7b4aa4c9-f635-4ae0-a32b-9b5ae03b9e8c",
+        "sales_account_id": "1fd2160d-f88e-4b85-b153-3b82b1013368",
+        "user_id": "2231141d-d172-fd95-19eb-47364c20ef23"
+    },
+    {
+        "id": "b2be92ce-a276-4264-9645-b63e415b2b08",
+        "sales_account_id": "1fd2160d-f88e-4b85-b153-3b82b1013368",
+        "user_id": "84ecab80-fff9-11e4-b8d3-00617b7c6bff"
+    }
+]

@@ -1,0 +1,15 @@
+[
+    {
+        "created_by_id": null,
+        "environment": {},
+        "event_type": "config-parameter-changed",
+        "ground_id": null,
+        "id": "%% FILTERED BY UNITTEST %%",
+        "object_id": "%% FILTERED BY UNITTEST %%",
+        "object_table": "config_parameter",
+        "processed": false,
+        "processed_timestamp": null,
+        "snapshot_id": "bf54bf5a-8aed-517c-368d-94d5f11d2f89",
+        "timestamp": "%% FILTERED BY UNITTEST %%"
+    }
+]

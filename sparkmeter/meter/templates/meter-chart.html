@@ -1,0 +1,58 @@
+{% set page_name = "meter-chart" %}
+{% extends "base.html" %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('ground') }} {{ meter.ground.name|e }}
+    {% endcall %}
+    {% call breadcrumb(url=url_for('meter.view', meter_serial=meter.serial)) %}
+        {{ icon('meter') }} {{ meter.title() }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('chart') }} {{ _('Chart') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            {% call render_box(_('Chart'), ibutton = ('export to csv', 'download-chart-csv btn-primary')) %}
+            <div id="meter-serial">
+                <div id="vis">
+                    <p class='loading padded'>{{ _('loading') }}...</p>
+                </div>
+            </div>
+            {% endcall %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            {% call render_box(_('Chart Parameters'), box_content_class="padded") %}
+                <form method="GET" class="form-horizontal" role="form">
+                    {{ form.hidden_tag() }}
+                    {{ wtf.form_errors(form, 'only') }}
+                    <div class="row">
+                        <div class="col-md-4">
+                            {{ wtf.form_field(form.fields, class="select2", form_type="horizontal", horizontal_columns=('sm', 2, 10)) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ wtf.form_field(form.group_by, form_type="horizontal", horizontal_columns=('sm', 5, 7)) }}
+                            {{ wtf.form_field(form.group_by_function, form_type="horizontal", horizontal_columns=('sm', 5, 7)) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ wtf.form_field(form.start, class="form-control datepicker", form_type="horizontal", horizontal_columns=('sm', 3, 9)) }}
+                            {{ wtf.form_field(form.end, class="form-control datepicker", form_type="horizontal", horizontal_columns=('sm', 3, 9)) }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-12">
+                            <button id="chart" type="submit" class="btn btn-primary btn-lg  btn-block">{{ _('Chart') }}</button>
+                        </div>
+                    </div>
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+
+{% endblock %}

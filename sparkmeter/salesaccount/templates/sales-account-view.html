@@ -1,0 +1,82 @@
+{%- set page_name = "salesaccount-view" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('sales-account') }} {{ _('Sales Accounts') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('sales_account.index')) %}
+        {{ icon('sales-account') }} {{ _('Sales Accounts') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('sales-account') }} {{ sales_account.name|e }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block top_right %}
+        <div class="action-nav-normal pull-right col-md-9">
+            <div class="row">
+            {%- if can_add('transaction') and user_can_sell -%}
+                <div class="col-md-2 action-nav-button">
+                    <a href="{{ url_for('transaction.transfer', from_account_id=system_sales_account.id, to_account_id=sales_account.id) }}" title="{{ _('Make Payment') }}" data-action="make-payment">
+                        <i class="icon-money"></i>
+                        <span>{{ _('Make Payment') }}</span>
+                    </a>
+                    <span class="triangle-button green"><i class="icon-plus"></i></span>
+                </div>
+            {%- endif -%}
+            {%- if can_edit -%}
+                <div class="col-md-2 action-nav-button">
+                    <a href="{{ url_for('sales_account.edit', sales_account_id=sales_account.id) }}" data-action="edit">
+                        <i class="icon-cog"></i>
+                        <span>{{ _('Edit Sales Account') }}</span>
+                    </a>
+                </div>
+            {%- endif -%}
+            </div>
+        </div>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <h2 class="col-md-12">{{ gettext('Sales Account %(name)s', name=sales_account.name) }}</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6" data-sa-type="{{ sales_account.account_type }}">
+          {% call render_box(_('Information'), box_content_class='padded') %}
+          <dl>
+            <dt>{{ _('Name') }}:</dt>
+            <dd id="name">{{ sales_account.name|e }}</dd>
+
+            <dt>{{ _('Active') }}:</dt>
+            <dd id="active">{{ sales_account.active }}</dd>
+
+            {%- if not sales_account.global_account -%}
+            <dt>{{ _('Ground') }}:</dt>
+            <dd id="ground">{{ sales_account.ground.name }}</dd>
+
+            <dt>{{ _('Markup') }}:</dt>
+            <dd id="markup">{{ sales_account.markup }}</dd>
+
+            <dt>{{_('Credit') }}:</dt>
+            <dd id="acct_credit">{{ format_currency(sales_account.credit_wallet.value) }}</dd>
+
+            <dt>{{_('Debt') }}:</dt>
+            <dd id="acct_debt">{{ format_currency(sales_account.debt_wallet.value) }}</dd>
+            {%- endif -%}
+          </dl>
+          {% endcall %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="transactions" data-list="transactions">
+            {% with export_url = url_for("sales_account.transactions_export", sales_account_id=sales_account.id) %}
+            {% include "transaction-history-list.html" %}
+            {% endwith %}
+        </div>
+    </div>
+
+{% endblock %}

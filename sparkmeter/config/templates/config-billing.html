@@ -1,0 +1,24 @@
+{%- set page_name = "billing-settings" -%}
+{% extends "base.html" %}
+{% block title %}{{ icon('settings') }} {{ _('Billing settings') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('settings') }} {{ _('Settings') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ _('Billing') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div id="box-settings" class="box">
+        <div class="box-header">
+            <span class="title">Billing settings</span>
+        </div> <!-- class="box-header" -->
+        <div class="box-content padded">
+            <form class="form-horizontal">
+            </form>
+        </div>
+    </div>
+{% endblock %}

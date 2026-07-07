@@ -1,0 +1,133 @@
+{%- if form.mode == 'edit' -%}
+{%- set title = _('Edit %(meter)s', meter=meter.title()) -%}
+{%- else -%}
+{%-   if meter_type == 'customer' -%}
+{%-     set title = _('Add a new customer meter') -%}
+{%-   else -%}
+{%-     set title = _('Add a new totalizer meter') -%}
+{%-   endif -%}
+{%- endif -%}
+
+{%- from "_macros.html" import form_errors, form_error %}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('meter') }} {{ title }} {% endblock %}
+{%- if form.mode == 'edit' -%}
+{% block subtitle %}{{ _('Edit') }}{% endblock %}
+{%- endif -%}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('ground.index')) %}
+        {{ icon('grounds') }} {{ _('Grounds') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('ground') }} {{ ground.name|e }}
+    {% endcall %}
+    {%- if form.mode == 'edit' -%}
+        {% call breadcrumb(url=url_for('meter.view', meter_serial=meter.serial)) %}
+        {{ icon('meter') }} {{ meter.title() }}
+        {% endcall %}
+        {% call breadcrumb() %}
+        {{ icon('edit') }} {{ _('Edit') }}
+        {% endcall %}
+    {%- else -%}
+        {% call breadcrumb() %}
+        {{ icon('add') }} {{ title }}
+        {% endcall %}
+    {%- endif -%}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            {% set box_content_class = 'padded' %}
+            {% if form.mode == 'add' and config['HEROKU'] %}
+              {% set box_content_class = 'padded row' %}
+            {% endif %}
+            {% call render_box(title, box_content_class=box_content_class) %}
+                <form class="form form-horizontal" role="form" method="POST">
+                    {{- form.hidden_tag() -}}
+                    {%- if form.mode == 'add' -%}
+                    {{ addon_form_field(form.serial, form_type="horizontal", horizontal_columns=('lg', 2, 10)) }}
+                    {%- endif -%}
+                    <div class="form-group" title="{{ form.tags.description }}">
+                      {{ form.tags.label(class_="control-label col-lg-2") }}
+                      <div class="input-group col-lg-10">
+                        {{ form.tags(class="form-control") }}
+                      </div>
+                    </div>
+
+                    {%- if meter_type == 'customer' -%}
+                    <div class="form-group">
+                      {{ form.tariff.label(class="control-label col-lg-2") }}
+                      <div class="input-group col-lg-10">
+                        {{ form.tariff(class="form-control") }}
+                      </div>
+                    </div>
+                    {%- endif -%}
+
+                    <div class="form-group">
+                      {{ form.active.label(class="control-label col-lg-2") }}
+                      <div class="input-group col-lg-10">
+                        {{ form.active(class="form-control") }}
+                      </div>
+                    </div>
+                    {{ form_error(form.active) }}
+
+                    {%- if meter_type == 'customer' -%}
+                    <div class="form-group">
+                      {{ form.state.label(class="control-label col-lg-2") }}
+                      <div class="input-group col-lg-10">
+                        {{ form.state(class="form-control") }}
+                      </div>
+                    </div>
+                    {{ form_error(form.state) }}
+                    {%- endif -%}
+
+                    {{ addon_form_field(form.address_street1, form_type="horizontal", horizontal_columns=('lg', 2, 10), custom_style="indented-form") }}
+                    {{ addon_form_field(form.address_street2, form_type="horizontal", horizontal_columns=('lg', 2, 10), custom_style="indented-form") }}
+                    {{ addon_form_field(form.address_city, form_type="horizontal", horizontal_columns=('lg', 2, 10), custom_style="indented-form") }}
+                    {{ addon_form_field(form.address_state, form_type="horizontal", horizontal_columns=('lg', 2, 10), custom_style="indented-form") }}
+                    {{ addon_form_field(form.address_country, form_type="horizontal", horizontal_columns=('lg', 2, 10), custom_style="indented-form") }}
+                    {{ addon_form_field(form.address_coords, form_type="horizontal", horizontal_columns=('lg', 2, 10), custom_style="indented-form") }}
+                    {%- if meter_type == 'customer' -%}
+                    <div class="form-group indented-form">
+                      <label class="control-label col-lg-2" for="customer">Customer</label>
+                      <div class="input-group col-lg-10">
+                        {{- addon_form_field(form.customer_name, form_type="horizontal") -}}
+                        {{- addon_form_field(form.customer_code, form_type="horizontal") -}}
+                        <div class="form-group {% if form.customer_country_code.errors or form.customer_national_number.errors %}has-error{% endif %}">
+                          {{ form.customer_national_number.label(class_="control-label col-lg-2") }}
+                          <div class="input-group">
+                            <div class="col-sm-5 col-xs-5">
+                              {{ form.customer_country_code(class="form-control") }}
+                            </div>
+                            <div class="col-sm-5 col-xs-8">
+                              {{ form.customer_national_number(class="form-control") }}
+                            </div>
+                          </div>
+                          <div class="col-lg-offset-2">
+                            <p>
+                              {{ form_error(form.customer_country_code) }}
+                            </p>
+                            <p>
+                              {{ form_error(form.customer_national_number) }}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {%- endif -%}
+                    {{ addon_form_field(form.save_button, form_type="horizontal", horizontal_columns=('lg', 2, 10), button_map={'save_button': 'primary'}) }}
+                    {% if config['HEROKU'] and form.mode == 'add' %}
+                      <p class="col-lg-offset-2 col-lg-6">
+                        Depending on connectivity, it might take some time for a meter created in GroundBolt to show in ThunderCloud.
+                        If you think that a meter with this same serial has already been created in GroundBolt, please do not create it again here.
+                        Instead wait for a short while to allow GroundBolt to sync. If the meter is still not displayed in ThunderCloud, please contact support.
+                      </p>
+                    {% endif %}
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}

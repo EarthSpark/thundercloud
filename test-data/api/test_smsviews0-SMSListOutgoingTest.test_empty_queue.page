@@ -1,0 +1,19 @@
+> GET /api/v0/sms/outgoing HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 404 NOT FOUND
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "No outgoing messages in the queue",
+  "status": "failure"
+}

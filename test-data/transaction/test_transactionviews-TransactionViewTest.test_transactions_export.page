@@ -1,0 +1,17 @@
+> GET /transaction/transactions.csv HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Disposition: attachment; filename=transactions.csv
+< Content-Type: text/csv; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+ID,Amount,Type,From,To,User,Reference,Created,Ground,Source,State,Origin,External,Memo,Error,Meter Serial,Sales Account
+00000007-0000-0000-0000-000000000002,100.0,debt,System,strëet,testüser-002,,2010-01-02 00:00:00,test micrøgrid 1,transaction sòurce name 01,pending,user,,LEO,,SM15R-01-00000001,System
+00000007-0000-0000-0000-000000000001,100.0,credit,System,strëet,testüser-002,,2010-01-01 00:00:00,test micrøgrid 1,transaction sòurce name 01,pending,user,,MOTLEY,,SM15R-01-00000001,System
+

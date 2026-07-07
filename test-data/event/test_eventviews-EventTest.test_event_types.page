@@ -1,0 +1,620 @@
+> GET /event/event-types HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "event_types": [
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the last transaction placed for this customer.",
+          "example": "25.00",
+          "name": "last_transaction_amount"
+        },
+        {
+          "description": "Name of vendor used for the last transaction placed for this customer.",
+          "example": "Jane Doe",
+          "name": "last_transaction_vendor"
+        },
+        {
+          "description": "Time when the last transaction for this customer was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "last_transaction_creation_datetime"
+        },
+        {
+          "description": "Source of the last transaction placed for this customer (cash/bonus).",
+          "example": "cash",
+          "name": "last_transaction_source"
+        },
+        {
+          "description": "Status of the last transaction placed for this customer (not processed/processed/error).",
+          "example": "processed",
+          "name": "last_transaction_status"
+        }
+      ],
+      "label": "Low balance",
+      "value": "customer-low-balance"
+    },
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the last transaction placed for this customer.",
+          "example": "25.00",
+          "name": "last_transaction_amount"
+        },
+        {
+          "description": "Name of vendor used for the last transaction placed for this customer.",
+          "example": "Jane Doe",
+          "name": "last_transaction_vendor"
+        },
+        {
+          "description": "Time when the last transaction for this customer was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "last_transaction_creation_datetime"
+        },
+        {
+          "description": "Source of the last transaction placed for this customer (cash/bonus).",
+          "example": "cash",
+          "name": "last_transaction_source"
+        },
+        {
+          "description": "Status of the last transaction placed for this customer (not processed/processed/error).",
+          "example": "processed",
+          "name": "last_transaction_status"
+        }
+      ],
+      "label": "Meter created",
+      "value": "meter-created"
+    },
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the last transaction placed for this customer.",
+          "example": "25.00",
+          "name": "last_transaction_amount"
+        },
+        {
+          "description": "Name of vendor used for the last transaction placed for this customer.",
+          "example": "Jane Doe",
+          "name": "last_transaction_vendor"
+        },
+        {
+          "description": "Time when the last transaction for this customer was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "last_transaction_creation_datetime"
+        },
+        {
+          "description": "Source of the last transaction placed for this customer (cash/bonus).",
+          "example": "cash",
+          "name": "last_transaction_source"
+        },
+        {
+          "description": "Status of the last transaction placed for this customer (not processed/processed/error).",
+          "example": "processed",
+          "name": "last_transaction_status"
+        }
+      ],
+      "label": "Meter state changed",
+      "value": "meter-state-changed"
+    },
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the last transaction placed for this customer.",
+          "example": "25.00",
+          "name": "last_transaction_amount"
+        },
+        {
+          "description": "Name of vendor used for the last transaction placed for this customer.",
+          "example": "Jane Doe",
+          "name": "last_transaction_vendor"
+        },
+        {
+          "description": "Time when the last transaction for this customer was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "last_transaction_creation_datetime"
+        },
+        {
+          "description": "Source of the last transaction placed for this customer (cash/bonus).",
+          "example": "cash",
+          "name": "last_transaction_source"
+        },
+        {
+          "description": "Status of the last transaction placed for this customer (not processed/processed/error).",
+          "example": "processed",
+          "name": "last_transaction_status"
+        }
+      ],
+      "label": "Meter tariff changed",
+      "value": "meter-tariff-changed"
+    },
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the placed transaction.",
+          "example": "25.00",
+          "name": "amount"
+        },
+        {
+          "description": "Name of vendor used for the placed transaction.",
+          "example": "Jane Doe",
+          "name": "vendor"
+        },
+        {
+          "description": "Time when the transaction was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "creation_datetime"
+        },
+        {
+          "description": "Source of the placed transaction (cash/bonus).",
+          "example": "cash",
+          "name": "source"
+        },
+        {
+          "description": "Status of placed transaction (not processed/processed/error).",
+          "example": "processed",
+          "name": "status"
+        }
+      ],
+      "label": "Payment reversed",
+      "value": "reversal-transaction-processed"
+    },
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the placed transaction.",
+          "example": "25.00",
+          "name": "amount"
+        },
+        {
+          "description": "Name of vendor used for the placed transaction.",
+          "example": "Jane Doe",
+          "name": "vendor"
+        },
+        {
+          "description": "Time when the transaction was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "creation_datetime"
+        },
+        {
+          "description": "Source of the placed transaction (cash/bonus).",
+          "example": "cash",
+          "name": "source"
+        },
+        {
+          "description": "Status of placed transaction (not processed/processed/error).",
+          "example": "processed",
+          "name": "status"
+        }
+      ],
+      "label": "Successful bonus payment",
+      "value": "customer-credit-bonus-transaction-processed"
+    },
+    {
+      "keywords": [
+        {
+          "description": "Name of the customer.",
+          "example": "John Doe",
+          "name": "customer_name"
+        },
+        {
+          "description": "Code of the customer.",
+          "example": "CC1618",
+          "name": "customer_code"
+        },
+        {
+          "description": "Credit balance for the customer.",
+          "example": "10.34",
+          "name": "credits_balance"
+        },
+        {
+          "description": "Debt balance for the customer.",
+          "example": "42.91",
+          "name": "debt_balance"
+        },
+        {
+          "description": "Name of Tariff used by the meter.",
+          "example": "ET60",
+          "name": "current_tariff_name"
+        },
+        {
+          "description": "Meter serial number.",
+          "example": "SM15R-01-00DDBA11",
+          "name": "serial"
+        },
+        {
+          "description": "If the tariff used includes a plan, has it been paid? (yes/no)",
+          "example": "yes",
+          "name": "is_running_plan"
+        },
+        {
+          "description": "For tariffs with plans, the Plan balance.",
+          "example": "17.26",
+          "name": "plan_balance"
+        },
+        {
+          "description": "Last energy value read for the meter, in kWh.",
+          "example": "8.663 kWh",
+          "name": "last_energy"
+        },
+        {
+          "description": "Operating mode of the meter (On/Off/Auto).",
+          "example": "Auto",
+          "name": "operating_mode"
+        },
+        {
+          "description": "Total amount of energy used since the beginning of the month, in kWh.",
+          "example": "2.804 kWh",
+          "name": "total_cycle_energy"
+        },
+        {
+          "description": "Amount of the placed transaction.",
+          "example": "25.00",
+          "name": "amount"
+        },
+        {
+          "description": "Name of vendor used for the placed transaction.",
+          "example": "Jane Doe",
+          "name": "vendor"
+        },
+        {
+          "description": "Time when the transaction was placed.",
+          "example": "3/31/16, 4:01\u202fPM",
+          "name": "creation_datetime"
+        },
+        {
+          "description": "Source of the placed transaction (cash/bonus).",
+          "example": "cash",
+          "name": "source"
+        },
+        {
+          "description": "Status of placed transaction (not processed/processed/error).",
+          "example": "processed",
+          "name": "status"
+        }
+      ],
+      "label": "Successful cash payment",
+      "value": "customer-credit-transaction-processed"
+    }
+  ],
+  "status": "success"
+}

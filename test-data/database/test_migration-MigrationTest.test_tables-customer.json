@@ -1,0 +1,26 @@
+[
+    {
+        "code": null,
+        "id": "8cc67eb0-51d5-4ab3-9ee3-2be9bfc1f181",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "name": "Test Customer 91",
+        "phone_number": "+15555550102",
+        "phone_number_verified": true
+    },
+    {
+        "code": null,
+        "id": "ace82e9e-b18b-4e52-9fc3-23cf46b80302",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "name": "Test Customer 140",
+        "phone_number": "+15555550103",
+        "phone_number_verified": false
+    },
+    {
+        "code": null,
+        "id": "fb58f722-9e1a-4ea1-9606-1e3417e91c82",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "name": "Test Customer 61",
+        "phone_number": "+15555550101",
+        "phone_number_verified": true
+    }
+]

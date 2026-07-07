@@ -1,0 +1,84 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SMSAlertsService method: createEmpty() should create an empty 1`] = `
+Object {
+  "event_type": "first",
+  "id": null,
+  "label": "First",
+  "template": "",
+}
+`;
+
+exports[`SMSAlertsService method: fillModalScope() should populate with a alerts from the response 1`] = `
+Object {
+  "alert": Object {
+    "id": 123,
+  },
+  "eventTypes": Array [
+    Object {
+      "label": "First",
+      "value": "first",
+    },
+  ],
+  "unusedEventTypes": Array [
+    Object {
+      "label": "First",
+      "value": "first",
+    },
+  ],
+}
+`;
+
+exports[`SMSAlertsService method: objectCreated() should update list of alerts  1`] = `
+Object {
+  "alerts": Array [
+    Object {
+      "id": 123,
+    },
+  ],
+}
+`;
+
+exports[`SMSAlertsService method: objectDeleted() should delete an item  1`] = `
+Object {
+  "alerts": Array [
+    Object {
+      "id": 100,
+      "template": "T100",
+    },
+    Object {
+      "id": 150,
+      "template": "T150",
+    },
+  ],
+}
+`;
+
+exports[`SMSAlertsService method: objectUpdated() should update list of alerts  1`] = `
+Object {
+  "alerts": Array [
+    Object {
+      "id": 100,
+      "template": "T100",
+    },
+    Object {
+      "id": 123,
+      "template": "T123 after",
+    },
+    Object {
+      "id": 150,
+      "template": "T150",
+    },
+  ],
+}
+`;
+
+exports[`SMSAlertsService method: populateListScope() should populate with a alerts from the response 1`] = `
+Object {
+  "alerts": Array [
+    Object {
+      "id": 123,
+    },
+  ],
+}
+`;

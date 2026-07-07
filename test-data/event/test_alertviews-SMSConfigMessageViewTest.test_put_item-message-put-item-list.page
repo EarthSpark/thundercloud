@@ -1,0 +1,30 @@
+> GET /alert/config/smsmessages HTTP/1.1
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+<
+{
+  "error": null,
+  "messages": [
+    {
+      "id": "e2cb3e47-194f-684f-69fc-417e7146dd25",
+      "message_type": "no-such-number",
+      "template": "updated message t\u00e9mplate"
+    },
+    {
+      "id": "74541701-6000-c437-043e-e0a7d0fce713",
+      "message_type": "verify-number",
+      "template": "Send back CHECK to validate this phone number. This will allow you to receive alerts from SparkMeter."
+    },
+    {
+      "id": "ef98e4ab-2adb-049b-4185-708f6826de0f",
+      "message_type": "wrong-code",
+      "template": "This SMS code is not recognized by SparkMeter."
+    }
+  ],
+  "status": "success"
+}

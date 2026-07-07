@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    tags: ["**"]
+  pull_request:
+
+env:
+  # Defaults to GitHub Container Registry. Override via the repo's
+  # Actions variable `REGISTRY` to push to a private registry instead.
+  REGISTRY: ${{ vars.REGISTRY || 'ghcr.io' }}
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/verify-permissions.sh sparkmeter
+      - run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - run: uv python install 3.13
+      - run: uv sync --group dev
+      - run: uv run flake8 sparkmeter --select E,W,F --ignore W503 --max-line-length=110
+      - run: uv run isort --check-only --line-width 100 -p sparkmeter sparkmeter
+      - run: uv run pydocstyle --ignore=D211,D403 sparkmeter
+        continue-on-error: true
+
+  metering-wire-drift:
+    # Verify the committed sparkmeter/metering/_generated/ matches what
+    # the regen script would produce against the current spec. Catches
+    # cases where the spec changed but the webapp client wasn't
+    # regenerated, or where someone hand-edited generated files.
+    #
+    # TODO: parameterize the spec source. For now the job expects
+    # `OPENAPI_URL` to be set (a CI secret / repo variable pointing at
+    # the canonical openapi.json — release artifact, GitHub Pages, etc.)
+    # If unset, the drift check is skipped so CI doesn't block on this.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if spec source not configured
+        id: have_spec
+        run: |
+          if [ -z "${{ vars.OPENAPI_URL }}" ]; then
+            echo "OPENAPI_URL not set; skipping drift check"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.have_spec.outputs.skip != 'true'
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - if: steps.have_spec.outputs.skip != 'true'
+        run: uv python install 3.13
+      - if: steps.have_spec.outputs.skip != 'true'
+        name: Fetch openapi.json
+        run: curl -fsSL "${{ vars.OPENAPI_URL }}" -o /tmp/openapi.json
+      - if: steps.have_spec.outputs.skip != 'true'
+        name: Regenerate metering client
+        env:
+          OPENAPI_PATH: /tmp/openapi.json
+        run: ./scripts/regen-metering-wire.sh
+      - if: steps.have_spec.outputs.skip != 'true'
+        name: Verify no drift in committed _generated/
+        run: git diff --exit-code sparkmeter/metering/_generated/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # hatch-vcs reads tags from `.git/` inside the build context
+          # to derive the version; the default shallow checkout doesn't
+          # include enough history for that.
+          fetch-depth: 0
+      - name: Build test image
+        run: docker compose --profile test build --no-cache test
+      - name: Run tests
+        run: docker compose --profile test run --rm test
+
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cd scripts/config && npm install
+      - run: npx --prefix scripts/config jest --coverage --config scripts/config/package.json
+
+  docker-build:
+    if: github.event_name == 'pull_request' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/')
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        run: |
+          docker build --target production \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+            -f deploy/Dockerfile .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+  docker-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Tag and push release
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

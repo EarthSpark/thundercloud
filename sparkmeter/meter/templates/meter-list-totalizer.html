@@ -1,0 +1,39 @@
+{% set table_class = "totalizer-meter-list" %}
+{% set in_box = True %}
+{% set box_content_class = "padded" %}
+{% if not config['HEROKU'] and meter_type %}
+{% set title %}
+{{ title }} on {{ ground.name }}
+{% endset %}
+{% endif %}
+
+{% extends "list/base.html" %}
+
+{% block toolbar %}
+<li>
+    <div id="active-group" class="btn-group active-toggle" data-toggle="buttons">
+        <label class="btn btn-info active">
+            <input type="radio" name="active" value="true" autocomplete="off" checked>{{ _('Active') }}
+        </label>
+        <label class="btn btn-default">
+            <input type="radio" name="active" value="false" autocomplete="off">{{ _('Archived') }}
+        </label>
+    </div>
+    {% if config['HEROKU'] %}
+    <label for="{{ meter_type }}" class="select-filter-label">Ground:</label>
+    <select id="{{ meter_type }}" class="select-filter {{ meter_type }}">
+        <option value="">All</option>
+    </select>
+    {% endif %}
+</li>
+<li class="toolbar-link">
+    <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul id="export-menu" class="dropdown-menu">
+        {% if can_add('meter') %}
+        <li>
+            <a class="add" href="{{ url_for('meter.add', meter_type=meter_type) }}">{{ icon('add') }} {{ add_label }}</a>
+        </li>
+        {% endif %}
+    </ul>
+</li>
+{% endblock %}

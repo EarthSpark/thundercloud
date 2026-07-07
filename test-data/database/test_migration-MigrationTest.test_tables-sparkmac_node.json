@@ -1,0 +1,36 @@
+[
+    {
+        "flooding_macs": null,
+        "flooding_subnets": 255,
+        "forwarding": "flooding",
+        "id": "84c687df-963e-4ff7-9078-6cd25bb5a7c8",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "routing_enabled": [],
+        "static_routes": [],
+        "ttl": 15
+    },
+    {
+        "flooding_macs": null,
+        "flooding_subnets": 255,
+        "forwarding": "flooding",
+        "id": "af859a0d-d631-4031-917e-6949518d057b",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "routing_enabled": [
+            "dynamic"
+        ],
+        "static_routes": [],
+        "ttl": 15
+    },
+    {
+        "flooding_macs": null,
+        "flooding_subnets": 255,
+        "forwarding": "flooding",
+        "id": "d5920f16-f6bd-4939-be18-a84c4a05f1ad",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "routing_enabled": [
+            "dynaic"
+        ],
+        "static_routes": [],
+        "ttl": 15
+    }
+]

@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+        <meta itemprop="config-currency" content="{{ config['CURRENCY'] }}">
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter {{ brandname }}</title>
+
+        <link href="{{ APPLICATION_CSS }}" media="screen" rel="stylesheet" type="text/css" />
+        {% block style %}{% endblock style %}
+        <script src="{{ VENDOR_JS }}" type="text/javascript"></script>
+        <script src="{{ APPLICATION_JS }}" type="text/javascript"></script>
+        {% block scripts %}{% endblock scripts %}
+    </head>
+    <body>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h1 class="panel-title">Keyword help</h1>
+        </div>
+        <div class="panel-body">
+          <h4>Keyword syntax help for SMS messages</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="col-sm-2">Keyword</th>
+                <th class="col-sm-6">Description</th>
+                <th class="col-sm-4">Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for keyword in event_spec.keywords %}
+              <tr>
+                <td class="col-sm-2">{{ '{' }}{{ keyword.name }}{{ '}' }}</td>
+                <td class="col-sm-6">{{ keyword.description }}</td>
+                <td class="col-sm-4">{{ keyword.example }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </body>
+</html>

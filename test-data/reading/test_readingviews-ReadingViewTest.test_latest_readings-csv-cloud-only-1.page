@@ -1,0 +1,19 @@
+> GET /readings/latest.csv HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Disposition: attachment; filename=latest-readings-201401020000.csv
+< Content-type: text/csv
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+serial,customer_name,customer_code,state,frequency,voltage_avg,current_avg,true_power_inst,energy,uptime,user_power_limit,age,prr,address
+SM15R-01-00000001,strëet,customer code 1,,,,,,,,,,,strëet street2 city state
+SM15R-01-00000013,,,,,,,,,,,,,strëet street2 city state
+SM15R-01-00000002,strëet,customer code 4,On,60.0,120.0,1.0,1,1.0,100,12000,43200,,strëet street2 city state
+SM15R-01-00000003,strëet,customer code 6,,,,,,,,,,,strëet street2 city state
+

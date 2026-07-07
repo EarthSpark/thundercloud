@@ -1,0 +1,61 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: trailing-whitespace
+        exclude: ^(test-data/|sparkmeter/metering/_generated/)
+    -   id: end-of-file-fixer
+        exclude: ^(test-data/|sparkmeter/metering/_generated/)
+    -   id: check-added-large-files
+
+-   repo: https://github.com/pycqa/isort
+    rev: 8.0.1
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--line-width", "100", "-p", "sparkmeter"]
+        files: ^sparkmeter/
+        exclude: ^sparkmeter/metering/_generated/
+
+-   repo: https://github.com/hhatto/autopep8
+    rev: v2.3.2
+    hooks:
+      - id: autopep8
+        args: ["-i", "--select", "E,W", "--ignore", "W503", "--max-line-length", "110"]
+        files: ^sparkmeter/
+        exclude: ^sparkmeter/metering/_generated/
+
+-   repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.3
+    hooks:
+      - id: autoflake
+        args: ["--in-place", "--remove-all-unused-imports", "--remove-unused-variables"]
+        files: ^sparkmeter/
+        exclude: ^sparkmeter/metering/_generated/
+
+-   repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        args: ["--select", "F", "--max-line-length=110"]
+        files: ^sparkmeter/
+        exclude: ^sparkmeter/metering/_generated/
+
+-   repo: local
+    hooks:
+      - id: pydocstyle
+        name: pydocstyle (non-blocking)
+        entry: bash -c 'uv run pydocstyle --ignore=D211,D403 "$@" || true' --
+        language: system
+        types: [python]
+        files: ^sparkmeter/
+        verbose: true
+      - id: verify-permissions
+        name: verify decorator ordering
+        entry: ./scripts/verify-permissions.sh
+        args: ["sparkmeter"]
+        language: script
+        pass_filenames: false
+        files: ^sparkmeter/.*\.py$

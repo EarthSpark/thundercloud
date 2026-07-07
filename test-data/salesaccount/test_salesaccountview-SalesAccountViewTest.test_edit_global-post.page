@@ -1,0 +1,21 @@
+> POST /sales-account/0000000a-0001-0000-0000-000000000001/edit HTTP/1.1
+> Content-Length: 59
+> Content-Type: application/x-www-form-urlencoded
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> name=Global+Sales+Account+%231&active=True&save_button=Save
+
+< HTTP/1.1 302 FOUND
+< Content-Type: text/html; charset=utf-8
+< Location: /sales-account/
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/sales-account/">/sales-account/</a>. If not, click the link.
+

@@ -1,0 +1,16 @@
+[
+    {
+        "create_time": "2018-01-25T22:30:18.048800",
+        "description": "A ThunderCloud node",
+        "last_update_by": null,
+        "last_update_time": "2018-01-25T22:30:18.048800",
+        "node_group_id": "cloud-group"
+    },
+    {
+        "create_time": "2018-01-25T22:30:18.048800",
+        "description": "A Groundbolt node",
+        "last_update_by": null,
+        "last_update_time": "2018-01-25T22:30:18.048800",
+        "node_group_id": "ground-group"
+    }
+]

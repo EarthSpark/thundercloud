@@ -1,0 +1,29 @@
+[
+    {
+        "active": true,
+        "global_account": false,
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "1fd2160d-f88e-4b85-b153-3b82b1013368",
+        "markup": 0.0,
+        "name": "Sales Account for api-vendor",
+        "system": false
+    },
+    {
+        "active": true,
+        "global_account": true,
+        "ground_id": null,
+        "id": "90ec0dbb-08ec-8716-31f3-0f44c35c690c",
+        "markup": 0.0,
+        "name": "System",
+        "system": true
+    },
+    {
+        "active": true,
+        "global_account": false,
+        "ground_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "df9c20bc-1ff5-8bb1-95cc-1dc5083463d3",
+        "markup": 0.05,
+        "name": "Sales Account for vendor",
+        "system": false
+    }
+]

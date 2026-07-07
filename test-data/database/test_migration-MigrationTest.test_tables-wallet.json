@@ -1,0 +1,137 @@
+[
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "013d0648-9b2c-4550-91fa-647d5ae7a467",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 0.0,
+        "wallet_type": "plan"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "1d28e1fe-c60e-462b-9574-67063a89c593",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 0.0,
+        "wallet_type": "debt"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "21ecfb82-3733-4771-98ad-1a4d62d01cc6",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 0.0,
+        "wallet_type": "plan"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "32f3540b-a1b9-e151-9ad3-8305c7df475e",
+        "meter_id": null,
+        "negative_permitted": false,
+        "sales_account_id": "1fd2160d-f88e-4b85-b153-3b82b1013368",
+        "value": 0.0,
+        "wallet_type": "credit"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "393d3c87-c7d6-7f61-c372-3ac9cfd4467e",
+        "meter_id": null,
+        "negative_permitted": false,
+        "sales_account_id": "1fd2160d-f88e-4b85-b153-3b82b1013368",
+        "value": 0.0,
+        "wallet_type": "debt"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "3cf4a9f0-f208-4295-b97a-c874b01fcc9c",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": -0.19781249999978,
+        "wallet_type": "credit"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "3f7e86e2-a669-4c1e-b78a-7fc22cc7055e",
+        "meter_id": null,
+        "negative_permitted": false,
+        "sales_account_id": "df9c20bc-1ff5-8bb1-95cc-1dc5083463d3",
+        "value": 0.0,
+        "wallet_type": "debt"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "52d3cbc9-c827-4207-92d9-37c4676088b6",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 0.0,
+        "wallet_type": "plan"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "73f3a4f0-de22-4609-9bdc-d64c381c5d6d",
+        "meter_id": null,
+        "negative_permitted": true,
+        "sales_account_id": "90ec0dbb-08ec-8716-31f3-0f44c35c690c",
+        "value": -485845.0,
+        "wallet_type": "credit"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "831c1081-8cba-4fef-94de-f7cd3072e4c2",
+        "meter_id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 0.0,
+        "wallet_type": "debt"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "88d4d45c-bdf1-44d0-af2a-0bdbc067ddcc",
+        "meter_id": null,
+        "negative_permitted": false,
+        "sales_account_id": "90ec0dbb-08ec-8716-31f3-0f44c35c690c",
+        "value": 0.0,
+        "wallet_type": "debt"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "b195d6f6-a36c-4ffb-ab77-4439804b4cf0",
+        "meter_id": null,
+        "negative_permitted": false,
+        "sales_account_id": "df9c20bc-1ff5-8bb1-95cc-1dc5083463d3",
+        "value": 15.0,
+        "wallet_type": "credit"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "cefb46e7-2aec-4603-a7d7-dae2cd908c49",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 0.0,
+        "wallet_type": "debt"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "cf689101-0dde-4ccc-80f1-fb36c093401f",
+        "meter_id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 94.1532187500089,
+        "wallet_type": "credit"
+    },
+    {
+        "grid_id": "a6680c80-b159-11e4-b35e-002d9826d412",
+        "id": "f3fb5554-29eb-4d25-8da3-4c640a29ca80",
+        "meter_id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
+        "negative_permitted": false,
+        "sales_account_id": null,
+        "value": 99.0486503749979,
+        "wallet_type": "credit"
+    }
+]

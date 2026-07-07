@@ -1,0 +1,28 @@
+> GET /api/v0/sales-accounts?type=global HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "accounts": [
+    {
+      "account_type": "global",
+      "active": true,
+      "credit": null,
+      "id": "a45da96d-0bf6-5759-70f2-d27af22be28a",
+      "markup": null,
+      "name": "System"
+    }
+  ],
+  "error": null,
+  "status": "success"
+}

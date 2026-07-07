@@ -1,0 +1,44 @@
+> GET /users.json?role=vendor HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "users": [
+    {
+      "accounts": [
+        {
+          "id": "0000000a-0000-0000-0000-000000000001",
+          "name": "sales \u00e5cc\u00f6\u00fcnt 1"
+        },
+        {
+          "id": "0000000a-0000-0000-0000-000000000002",
+          "name": "sales \u00e5cc\u00f6\u00fcnt 2"
+        }
+      ],
+      "active": true,
+      "email": "vendor-with-accounts@earthsparkinternational.org",
+      "id": "00000009-0000-0000-0000-000000000003",
+      "username": "vendor-with-accounts"
+    },
+    {
+      "accounts": [
+        {
+          "id": null,
+          "name": null
+        }
+      ],
+      "active": true,
+      "email": "vendor-without-accounts@earthsparkinternational.org",
+      "id": "00000009-0000-0000-0000-000000000002",
+      "username": "vendor-without-accounts"
+    }
+  ]
+}

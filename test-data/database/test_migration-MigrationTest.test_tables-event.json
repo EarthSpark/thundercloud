@@ -1,0 +1,14 @@
+[
+    {
+        "created_by_id": null,
+        "event_type": "tariff-power-limit-changed",
+        "ground_id": null,
+        "id": "ec7f9bb5-ae8d-3009-6742-2542f51f3618",
+        "object_id": "0ecfb15c-9d6b-4583-bafa-954604685b1b",
+        "object_table": "tariff",
+        "processed": false,
+        "processed_timestamp": null,
+        "snapshot_id": "f8a11112-bf6c-99be-23ee-d576c5a1a34b",
+        "timestamp": "2017-06-06T00:00:00"
+    }
+]

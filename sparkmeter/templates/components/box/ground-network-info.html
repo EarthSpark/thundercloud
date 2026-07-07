@@ -1,0 +1,11 @@
+{%- set title = _('Network Information') -%}
+{%- set box_content_class = "padded" -%}
+
+{%- extends "components/box/base-box.html" -%}
+
+{% block box_content %}
+  <dl class="dl-horizontal">
+      <dt>{{ _('Heartbeat Period') }}:</dt><dd>{{ _('%(hb)d minutes', hb=config['HEARTBEAT_PERIOD']) }}</dd>
+      <dt>{{ _('Routing Algorithm') }}:</dt><dd>{# TODO: create not only one great network routing algorithm, but several #}</dd>
+  </dl>
+{% endblock box_content %}

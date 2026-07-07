@@ -1,0 +1,15 @@
+> GET /readings/latest.csv HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Disposition: attachment; filename=latest-readings-201401020000.csv
+< Content-type: text/csv
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+serial,customer_name,customer_code,state,frequency,voltage_avg,current_avg,true_power_inst,energy,uptime,user_power_limit,age,prr,address
+

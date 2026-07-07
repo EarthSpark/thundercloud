@@ -1,0 +1,21 @@
+{
+    "_meta": {
+        "legacy_migrated": false,
+        "type": "meter",
+        "version": 1
+    },
+    "address": {
+        "city": "city",
+        "coords": "42.5646975,-71.2708356",
+        "postalcode": "12345",
+        "state": "state",
+        "street1": "str\u00ebet",
+        "street2": "street2"
+    },
+    "code": 1,
+    "id": "00000000-0006-0000-0000-000000000001",
+    "model_name": "SM25R",
+    "serial": "SM15R-01-10000001",
+    "tags": [],
+    "type": "totalizer"
+}

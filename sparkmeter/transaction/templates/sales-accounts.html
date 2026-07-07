@@ -1,0 +1,36 @@
+{%- set page_name = "salesaccount-list" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('sales-account') }} {{ _('Sales Accounts') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator') %}
+        {{ icon('sales-account') }} {{ _('Sales Accounts') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-md-12" data-box="global-sales-accounts">
+        {% with %}
+          {% set title = _('Global Sales Accounts') %}
+          {% set add_label = _('Add a global sales account') %}
+          {% set account_type = 'global' %}
+          {% include "sales-accounts-table.html" %}
+        {% endwith %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="restricted-sales-accounts">
+        {% with %}
+          {% set title = _('Restricted Sales Accounts') %}
+          {% set add_label = _('Add a restricted sales account') %}
+          {% set account_type = 'restricted' %}
+          {% include "sales-accounts-table.html" %}
+        {% endwith %}
+        </div>
+    </div>
+
+ {% endblock %}

@@ -1,0 +1,56 @@
+> GET /users.json?role=operator HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "users": [
+    {
+      "accounts": [
+        {
+          "id": "0000000a-0000-0000-0000-000000000001",
+          "name": "sales \u00e5cc\u00f6\u00fcnt 1"
+        },
+        {
+          "id": "0000000a-0000-0000-0000-000000000002",
+          "name": "sales \u00e5cc\u00f6\u00fcnt 2"
+        }
+      ],
+      "active": true,
+      "email": "operator-with-accounts@earthsparkinternational.org",
+      "id": "00000009-0000-0000-0000-000000000003",
+      "username": "operator-with-accounts"
+    },
+    {
+      "accounts": [
+        {
+          "id": null,
+          "name": null
+        }
+      ],
+      "active": true,
+      "email": "operator-without-accounts@earthsparkinternational.org",
+      "id": "00000009-0000-0000-0000-000000000002",
+      "username": "operator-without-accounts"
+    },
+    {
+      "accounts": [
+        {
+          "id": null,
+          "name": null
+        }
+      ],
+      "active": true,
+      "email": "test\u00fcser-001@earthsparkinternational.org",
+      "id": "00000009-0000-0000-0000-000000000001",
+      "username": "test\u00fcser-001"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+#!/bin/sh
+
+set -o errexit
+set -o nounset
+
+echo "[ Running Webapp ]"
+
+: ${DATABASE_URL:=""}
+
+n_vars=$#
+cmd=$@
+
+wait_for_postgres() {
+    echo "[ Trying to establish a connection to PostgreSQL... ]"
+    until psql -qAt $DATABASE_URL -c 'SELECT 1;' &>/dev/null || false
+    do
+        sleep 2
+    done
+    echo "[ Connection to PostgreSQL established ]"
+}
+
+wait_for_table() {
+    table=$1
+    echo "[ Waiting for table $table to be created ]"
+    stmt="SELECT COUNT(*) FROM pg_tables WHERE tablename = '$table';"
+    while true; do
+        result=$(psql -qAt $DATABASE_URL -c "$stmt")
+        if [ "$result" = "1" ]; then
+            break
+        fi
+        sleep 2
+    done
+    echo "[ Table $table found ]"
+}
+
+check_table_count() {
+    table=$1
+    n_items=$2
+
+    wait_for_table $table
+    echo "[ Waiting for table $table to contain at least $n_items row(s) ]"
+    while true; do
+        result=$(psql -qAt $DATABASE_URL -c "SELECT COUNT(*) FROM $table;")
+        if [ "$result" -ge "$n_items" ]; then
+            break
+        fi
+        sleep 2
+    done
+}
+
+run_webserver() {
+    echo "[ Running web server ]"
+    # The ASGI entrypoint binds two listeners in one Hypercorn process:
+    # - 0.0.0.0:5000 for public traffic (mapped to host port 80)
+    # - 0.0.0.0:5001 for internal admin/proxy endpoints (NOT mapped, only
+    #   reachable from inside the container; CLI tools use it via
+    #   `docker compose exec`).
+    uv run python -m sparkmeter.asgi
+}
+
+run_command() {
+    echo "[ Running $cmd ]"
+    $cmd
+}
+
+# If DATABASE_URL is set, wait for PostgreSQL to come up
+if [ -n "$DATABASE_URL" ]; then
+    wait_for_postgres
+fi
+
+if [ $n_vars -eq 0 ]; then
+    # Application should handle missing services gracefully
+    run_webserver
+else
+    # FIXME: Maybe there are commands that don't need to wait for a ground to come up?
+    check_table_count ground 1
+    run_command
+fi

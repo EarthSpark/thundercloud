@@ -1,0 +1,47 @@
+[
+    {
+        "hash": "edbbb0b836ec69d6a148c1a7cc256561a801f6c2bb5bba0515132927533b49bd",
+        "id": "157fc88d-1fa8-ce3f-3553-c40f78e99716",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"ground\",\"version\": 1},\"address\": {\"city\": \"\",\"coords\": null,\"postalcode\": \"\",\"state\": \"\",\"street1\": \"\",\"street2\": \"\"},\"id\": \"a6680c80-b159-11e4-b35e-002d9826d412\",\"name\": \"sparkcentral-demo\",\"serial\": \"DEMOSERIAL0000000001\"}"
+    },
+    {
+        "hash": "3213360c8caa98ea816822fedc0bdd8701beee1234f929c6544e9dd1dfbdf56e",
+        "id": "313a8152-e8bb-5157-9d70-7e4cf1e40716",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"meter\",\"version\": 1},\"address\": {\"city\": \"Demo City\",\"coords\": null,\"postalcode\": null,\"state\": \"old_grid\",\"street1\": \"CL2\",\"street2\": \"Downtown\"},\"code\": 61,\"customer\": {\"code\": null,\"id\": \"fb58f722-9e1a-4ea1-9606-1e3417e91c82\",\"name\": \"Test Customer 61\",\"phone_number\": \"+15555550101\"},\"id\": \"162d0000-b3c3-11e4-aa48-00617b7c716d\",\"model_name\": \"SM15R\",\"serial\": \"SM15R-01-0000003D\",\"tags\": [],\"tariff\": {\"id\": \"0ecfb15c-9d6b-4583-bafa-954604685b1b\",\"name\": \"LIMYE\"},\"type\": \"customer\"}"
+    },
+    {
+        "hash": "99e60daebdda379ab1c74f14d532f5fef11d46336f9c5c4862da9c6f96e52b2b",
+        "id": "3fdeda62-1013-2f5b-0d0b-82ea32ae95b3",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"meter\",\"version\": 1},\"address\": {\"city\": \"Demo City\",\"coords\": null,\"postalcode\": \"\",\"state\": \"old_grid\",\"street1\": \"TV9\",\"street2\": \"Downtown\"},\"code\": 140,\"customer\": {\"code\": null,\"id\": \"ace82e9e-b18b-4e52-9fc3-23cf46b80302\",\"name\": \"Test Customer 140\",\"phone_number\": \"+15555550103\"},\"id\": \"04131900-b9e4-11e4-9c5c-00617b7c6dac\",\"model_name\": \"SM15R\",\"serial\": \"SM15R-01-0000008C\",\"tags\": [],\"tariff\": {\"id\": \"ce245985-8fe0-4e93-a0c1-2e27df13a99e\",\"name\": \"FREEZER\"},\"type\": \"customer\"}"
+    },
+    {
+        "hash": "15b9dd0319e158fe5b5d917beb84f54cd39d60867f42944155042681a77d8df1",
+        "id": "7e997cf4-9fe0-75d6-e641-d922ab2522bb",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"sales_account\",\"version\": 1},\"id\": \"90ec0dbb-08ec-8716-31f3-0f44c35c690c\",\"is_system_account\": true,\"name\": \"System\"}"
+    },
+    {
+        "hash": "5eb61bb9c64eccf323933fef856d4f4f87738a1159984c3baddd6480ea29aa82",
+        "id": "881b278f-b642-26c8-9d23-c0c95902307f",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"meter\",\"version\": 1},\"address\": {\"city\": \"Demo City\",\"coords\": null,\"postalcode\": \"\",\"state\": \"old_grid\",\"street1\": \"TV4\",\"street2\": \"Downtown\"},\"code\": 91,\"customer\": {\"code\": null,\"id\": \"8cc67eb0-51d5-4ab3-9ee3-2be9bfc1f181\",\"name\": \"Test Customer 91\",\"phone_number\": \"+15555550102\"},\"id\": \"162d0000-b3c3-11e4-aa49-00617b7c716d\",\"model_name\": \"SM15R\",\"serial\": \"SM15R-01-0000005B\",\"tags\": [],\"tariff\": {\"id\": \"0fa21714-f2c8-486f-8cd0-66885473ff76\",\"name\": \"TV 180\"},\"type\": \"customer\"}"
+    },
+    {
+        "hash": "6898e093f6f7093822195e6bbf74d0fad3edccf10e5c04fe0065f68e278c2c4d",
+        "id": "8b784d58-beb0-863d-eef6-c33872afd9ef",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"sales_account\",\"version\": 1},\"id\": \"df9c20bc-1ff5-8bb1-95cc-1dc5083463d3\",\"is_system_account\": false,\"name\": \"Sales Account for vendor\"}"
+    },
+    {
+        "hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "id": "bf54bf5a-8aed-517c-368d-94d5f11d2f89",
+        "payload": "{}"
+    },
+    {
+        "hash": "3a2fc431253b6d9d883b66f88fc8e7a3b4dfdb204030101d6cb4a12b7abffeb9",
+        "id": "f0a2a9c1-ec42-eb86-9266-16c8238b3be6",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"sales_account\",\"version\": 1},\"id\": \"1fd2160d-f88e-4b85-b153-3b82b1013368\",\"is_system_account\": false,\"name\": \"Sales Account for api-vendor\"}"
+    },
+    {
+        "hash": "d500275c5c1e1e264c6a2c281d9762cb79cc2abc841f83ef52fd2885a0c44dfd",
+        "id": "f8a11112-bf6c-99be-23ee-d576c5a1a34b",
+        "payload": "{\"_meta\": {\"legacy_migrated\": true,\"type\": \"tariff\",\"version\": 1},\"blockrates\": [],\"cycle_start_day_of_month\": 1,\"daily_energy_limit_enabled\": false,\"daily_energy_limit_reset_hour\": 0,\"daily_energy_limit_value\": 0.0,\"flat_load_limit\": 30,\"flat_price\": 50.0,\"id\": \"0ecfb15c-9d6b-4583-bafa-954604685b1b\",\"load_limit_type\": \"flat\",\"load_limits\": [],\"low_balance_threshold\": 0.0,\"name\": \"LIMYE\",\"plan_enabled\": false,\"plan_fixed_fee\": 0.0,\"plan_price\": 0.0,\"tariff_type\": \"flat\",\"tou_enabled\": true,\"tous\": [{\"end\": \"08:00\",\"start\": \"00:00\",\"value\": 120.0},{\"end\": \"00:00\",\"start\": \"18:00\",\"value\": 120.0},{\"end\": \"18:00\",\"start\": \"08:00\",\"value\": 80.0}]}"
+    }
+]

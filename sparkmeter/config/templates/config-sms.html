@@ -1,0 +1,53 @@
+{%- set page_name = "sms-settings" -%}
+{% extends "base.html" %}
+{% block title %}{{ icon('settings') }} {{ _('SMS settings') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('settings') }} {{ _('Settings') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ _('SMS') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="box" ng-app="sparkmeter.event.sms" ng-strict-di>
+  <div class="box-header">
+    <span class="title">SMS settings</span>
+    <ul class="box-toolbar">
+    </ul>
+  </div> <!-- class="box-header" -->
+  <div class="box-content padded">
+    <div class="config row">
+      <div class="col-sm-2 text-center text-sm-right">
+        <h5>Two-way SMS</h5>
+      </div>
+      <div class="col-md-6" data-box="sms-config-commands">
+        {% include "sms-config-command-modal.html" %}
+        {% include "sms-config-command-list.html" %}
+      </div>
+    </div>
+
+    <div class="config row">
+      <div class="col-sm-2 text-center text-sm-right">
+        <h5>SMS alerts</h5>
+      </div>
+      <div class="col-md-6" data-box="sms-config-alerts">
+        {% include "sms-config-alert-modal.html" %}
+        {% include "sms-config-alert-list.html" %}
+      </div>
+    </div>
+
+    <div class="config row">
+      <div class="col-sm-2 text-center text-sm-right">
+        <h5>System Messages</h5>
+      </div>
+      <div class="col-md-6" data-box="sms-config-messages">
+        {% include "sms-config-message-modal.html" %}
+        {% include "sms-config-message-list.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

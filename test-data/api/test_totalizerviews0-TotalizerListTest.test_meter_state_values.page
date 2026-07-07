@@ -1,0 +1,45 @@
+> GET /api/v0/totalizers HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "totalizers": [
+    {
+      "active": true,
+      "address": {
+        "city": "city",
+        "coords": "42.5646975,-71.2708356",
+        "country": "usa",
+        "postalcode": "12345",
+        "state": "state",
+        "street1": "str\u00ebet",
+        "street2": "street2"
+      },
+      "ground": {
+        "id": "00000002-0000-0000-0000-000000000001",
+        "name": "test micr\u00f8grid 1"
+      },
+      "is_running_plan": null,
+      "last_config_datetime": "2013-01-01T01:01:01",
+      "last_energy": 0.0,
+      "last_energy_datetime": "2013-01-01T01:01:01",
+      "last_meter_state_code": 8,
+      "operating_mode": 2,
+      "serial": "SM15R-01-10000001",
+      "tags": [],
+      "total_cycle_energy": null
+    }
+  ]
+}

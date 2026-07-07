@@ -1,0 +1,21 @@
+> GET /crudview/tests HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "tests": [
+    {
+      "id": "00000000-0000-0000-0000-100000000123"
+    }
+  ]
+}

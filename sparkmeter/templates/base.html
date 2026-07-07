@@ -1,0 +1,226 @@
+{% import "bootstrap/wtf.html" as wtf %}
+{% from "_macros.html" import format_currency, recursive_dl, render_breadcrumbs, render_box, breadcrumb, horizontal_field_addon, addon_form_field, quick_form with context %}
+{% from "_icons.html" import icon %}
+
+{%- if config['HEROKU'] -%}
+{%- set brandname = 'ThunderCloud' -%}
+{%- else -%}
+{%- set brandname = 'GroundBolt' -%}
+{%- endif -%}
+
+{% macro navlink(url, text, class=None, title=None, name=None, icon=None, image=None) %}
+    <li class="cdrop {{ 'active' if url == request.path }} {{class if class}}" {% if title %}title="{{ title }}"{% endif %}><a href="{{ url }}" data-name="{{ name }}">{% if icon %}<i class="{{ icon }}"></i>{% endif %}{% if image %}<img src="{{ image }}" alt="{{title}}"/>{% endif %}{{ text }}</a></li>
+{% endmacro %}
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+        {% if current_user.is_authenticated %}
+        <meta itemprop="config-currency" content="{{ config['CURRENCY'] }}">
+        <meta itemprop="config-username" content="{{ current_user.username }}">
+        <meta itemprop="config-vendor" content="{{ current_user.is_vendor()|tojson }}">
+        <meta itemprop="config-ground" content={{ ground_name|default('null')|tojson }}>
+        {% endif %}
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter {{ brandname }}</title>
+
+        <link href="{{ APPLICATION_CSS }}" media="screen" rel="stylesheet" type="text/css" />
+        {% block style %}{% endblock style %}
+        <script src="{{ VENDOR_JS }}" type="text/javascript"></script>
+        <script src="{{ APPLICATION_JS }}" type="text/javascript"></script>
+        {% block scripts %}{% endblock scripts %}
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/static/logo/apple-touch-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/static/logo/apple-touch-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/static/logo/apple-touch-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/static/logo/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/static/logo/apple-touch-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/static/logo/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon-180x180.png">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-32x32.png" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-194x194.png" sizes="194x194">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-96x96.png" sizes="96x96">
+        <link rel="icon" type="image/png" href="/static/logo/android-chrome-192x192.png" sizes="192x192">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-16x16.png" sizes="16x16">
+        <link rel="manifest" href="/static/logo/manifest.json">
+        <link rel="mask-icon" href="/static/logo/safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body{% if page_name is defined %} data-page-name="{{ page_name }}"{% endif %}>
+
+        <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">
+                    {{ brandname }}
+                    {%- if current_user.roles %} - {{ current_user.roles[0].name }}{% endif -%}
+                </a>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-top">
+                    <span class="sr-only">Toggle Top Navigation</span>
+                    <i class="icon-align-justify"></i>
+                </button>
+
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-collapse-top">
+                <div class="navbar-right">
+                    <ul class="nav navbar-nav navbar-left">
+                        {% if current_user.is_authenticated %}
+                        {% if current_user.is_operator() %}
+                        {{ navlink(url_for('ground.index'), _('Ground Info'), title=_("View ground"), name="ground", icon="icon-th") }}
+                        {%- endif -%}
+                        {%- if can_view('tariff') -%}
+                        {{ navlink(url_for('tariff.index'), _('Tariffs'), title=_("View tariffs"), name="tariffs", icon="icon-money") }}
+                        {%- endif -%}
+                        {% if current_user.is_operator() %}
+                        {{ navlink(url_for('sales_account.index'), _('Sales Accounts'), title=_("View sales accounts"), name="salesaccounts", icon="icon-credit-card") }}
+                        {%- endif -%}
+                        {%- if can_view('user') -%}
+                        {{ navlink(url_for('user.list'), _('Users'), title=_("Manage users"), name="users", icon="icon-group") }}
+                        {%- endif -%}
+                        {%- if config['HEROKU'] and config['CLOUD_PORTAL_URL'] and current_user.portal_id %}
+                            {{ navlink(config['CLOUD_PORTAL_URL'], _('Koios'), title=_('Return to Koios'), name="koios", image='/static/logo/logo-icon.png') }}
+                        {% endif -%}
+                        {% if current_user.is_operator() %}
+                          {% if config['ENABLE_DEMO_RESET'] %}
+                            {{ navlink(url_for('web.reset_demo_data'), _('Reset Demo'), title=_("Reset Demo Data"), name="reset-demo", icon="icon-warning-sign") }}
+                          {% endif %}
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="settings-menu">
+                                   <span>{{ _('Global Settings') }}<i class="icon-caret-down"></i></span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="{{ url_for('config.billing') }}" data-name="billing-config">
+                                            <span>{{ _('Billing') }}</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ url_for('config.meters') }}" data-name="meter-config">
+                                            <span>{{ _('Meters') }}</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="{{ url_for('config.sms') }}" data-name="sms-config">
+                                            <span>{{ _('SMS') }}</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% endif %}
+
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="user-menu">
+                                   <span>
+                                       <span data-name="current-username">{{ current_user.username|e }} <i class="icon-caret-down"></i></span>
+                                   </span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li class="with-image">
+                                      <span>{{ current_user.username|e }}</span>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="{{ url_for('user.view', username=current_user.username) }}" data-action="user-profile">
+                                            <i class="icon-user"></i> <span>{{ _('Profile') }}</span>
+                                        </a>
+                                    </li>
+                                    {% if current_user.is_operator() %}
+                                        <li>
+                                            <a href="{{ url_for('user.edit', username=current_user.username) }}" data-action="settings">
+                                                <i class="icon-cog"></i> <span>{{ _('Settings') }}</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    <li>
+                                        <a href="{{ url_for('security.logout') }}" data-action="logout">
+                                            <i class="icon-off"></i> <span>{{ _('Logout') }}</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li style="text-align:center;">
+                                        <div id="locales" class="btn-group">
+                                            {% for locale in config['LOCALES'] %}
+                                                <a class="btn {{ 'btn-primary' if current_user.locale == locale }}" href="{{ url_for('user.update_locale', username=current_user.username, locale=locale) }}">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/{{ locale[3:] }}.png">
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    </li>
+                                    <li style="text-align:center;">
+                                      <h6>{{ APP_VERSION }} <small>{{ GIT_VERSION }}</small></h6>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div><!-- /.navbar-collapse -->
+        </nav>
+    {% if override_banner %}
+    <div class="override-banner">
+        {{override_banner}}
+    </div>
+    {% endif %}
+
+        <div id="main-content">
+            <div class="container">
+                <div class="row">
+                    <div class="area-top clearfix">
+                        <div class="pull-left header">
+                            <h3 class="title">
+                                {% block title %}
+                                    <i class="icon-dashboard"></i>
+                                    {{ _('Dashboard') }}
+                                {% endblock %}
+                            </h3>
+                            <h5>{% block subtitle %}{% endblock %}</h5>
+                        </div>
+                        {% block top_right %}{% endblock top_right %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    <div class="alerts">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert {% if category %}alert-{{category}}{% endif %}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                    </div> <!-- class="alerts"-->
+
+                    <div id="breadcrumbs">
+                        {% call breadcrumb(color='blue', url=url_for('homepage.index')) %}
+                            {{ icon('home') }} {{ _('Home') }}
+                        {% endcall %}
+                        {% block breadcrumbs %}
+                        {% endblock breadcrumbs %}
+                    </div> <!-- id="breadcrumbs"-->
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    {% block content %}{% endblock content %}
+                </div>
+            </div>
+
+        </div> <!-- class="main-content"-->
+    </body>
+</html>

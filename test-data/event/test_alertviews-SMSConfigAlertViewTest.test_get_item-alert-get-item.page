@@ -1,0 +1,22 @@
+> GET /alert/config/smsalerts/00000000-0001-0000-0000-000000000001 HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "alert": {
+    "event_type": "config-parameter-changed",
+    "id": "00000000-0001-0000-0000-000000000001",
+    "label": "Config parameter changed",
+    "template": "alert t\u00e9mplate 1"
+  },
+  "error": null,
+  "status": "success"
+}

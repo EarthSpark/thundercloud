@@ -1,0 +1,414 @@
+> POST /meter/add-meter HTTP/1.1
+> Content-Length: 73
+> Content-Type: application/x-www-form-urlencoded
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> tariff=00000004-0000-0000-0000-000000000001&serial=invalid-serial&state=0
+
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+< X-Form-Errors: {"serial": ["Invalid meter serial, must look like \"SMXXX-XX-XXXXXXXX\"."]}
+<
+
+<!doctype html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0">
+        <meta charset="utf-8">
+        <!-- Always force latest IE rendering engine or request Chrome Frame -->
+        <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+        <meta itemprop="config-currency" content="USD">
+        <meta itemprop="config-username" content="testüser-001">
+        <meta itemprop="config-vendor" content="false">
+        <meta itemprop="config-ground" content="test micr\u00f8grid 1">
+
+        <!-- Use title if it's in the page YAML frontmatter -->
+        <title>SparkMeter GroundBolt</title>
+
+        <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
+        <script src="%% VENDOR_JS %%" type="text/javascript"></script>
+        <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/static/logo/apple-touch-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/static/logo/apple-touch-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/static/logo/apple-touch-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/static/logo/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/static/logo/apple-touch-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/static/logo/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/logo/apple-touch-icon-180x180.png">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-32x32.png" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-194x194.png" sizes="194x194">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-96x96.png" sizes="96x96">
+        <link rel="icon" type="image/png" href="/static/logo/android-chrome-192x192.png" sizes="192x192">
+        <link rel="icon" type="image/png" href="/static/logo/favicon-16x16.png" sizes="16x16">
+        <link rel="manifest" href="/static/logo/manifest.json">
+        <link rel="mask-icon" href="/static/logo/safari-pinned-tab.svg" color="#5bbad5">
+        <meta name="msapplication-TileColor" content="#da532c">
+        <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+    </head>
+    <body>
+
+        <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">
+                    GroundBolt - operator</a>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-top">
+                    <span class="sr-only">Toggle Top Navigation</span>
+                    <i class="icon-align-justify"></i>
+                </button>
+
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-collapse-top">
+                <div class="navbar-right">
+                    <ul class="nav navbar-nav navbar-left">
+                            <li class="cdrop  " title="View ground"><a href="/ground/" data-name="ground"><i class="icon-th"></i>Ground Info</a></li>
+    <li class="cdrop  " title="View tariffs"><a href="/tariff/" data-name="tariffs"><i class="icon-money"></i>Tariffs</a></li>
+                            <li class="cdrop  " title="View sales accounts"><a href="/sales-account/" data-name="salesaccounts"><i class="icon-credit-card"></i>Sales Accounts</a></li>
+    <li class="cdrop  " title="Manage users"><a href="/user/" data-name="users"><i class="icon-group"></i>Users</a></li>
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="settings-menu">
+                                   <span>Global Settings<i class="icon-caret-down"></i></span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="/config/billing" data-name="billing-config">
+                                            <span>Billing</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/config/meters" data-name="meter-config">
+                                            <span>Meters</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/config/sms" data-name="sms-config">
+                                            <span>SMS</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li class="dropdown">
+                               <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-name="user-menu">
+                                   <span>
+                                       <span data-name="current-username">testüser-001 <i class="icon-caret-down"></i></span>
+                                   </span>
+                               </a>
+                                <ul class="dropdown-menu">
+                                    <li class="with-image">
+                                      <span>testüser-001</span>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="/user/test%C3%BCser-001/" data-action="user-profile">
+                                            <i class="icon-user"></i> <span>Profile</span>
+                                        </a>
+                                    </li>
+                                        <li>
+                                            <a href="/user/test%C3%BCser-001/edit" data-action="settings">
+                                                <i class="icon-cog"></i> <span>Settings</span>
+                                            </a>
+                                        </li>
+                                    <li>
+                                        <a href="/logout" data-action="logout">
+                                            <i class="icon-off"></i> <span>Logout</span>
+                                        </a>
+                                    </li>
+                                    <li class="divider"></li>
+                                    <li style="text-align:center;">
+                                        <div id="locales" class="btn-group">
+                                                <a class="btn btn-primary" href="/user/test%C3%BCser-001/en_US">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/US.png">
+                                                </a>
+                                                <a class="btn " href="/user/test%C3%BCser-001/fr_FR">
+                                                    <img src="/static/images/flags/flags-iso/shiny/32/FR.png">
+                                                </a>
+                                        </div>
+                                    </li>
+                                    <li style="text-align:center;">
+                                      <h6>%% APP_VERSION %% <small>%% GIT_VERSION %%</small></h6>
+                                    </li>
+                                </ul>
+                            </li>
+                    </ul>
+                </div>
+            </div><!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="main-content">
+            <div class="container">
+                <div class="row">
+                    <div class="area-top clearfix">
+                        <div class="pull-left header">
+                            <h3 class="title">
+ Add a new customer meter                             </h3>
+                            <h5>Edit</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+                    <div class="alerts">
+                    </div> <!-- class="alerts"-->
+
+                    <div id="breadcrumbs">
+        <a class="breadcrumb-button blue" href="/">
+                <span class="breadcrumb-label">
+                                                <i class="icon-home"></i> Home
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+        <a class="breadcrumb-button " href="/ground/">
+                <span class="breadcrumb-label">
+                                    <i class="icon-th"></i>
+ Grounds
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </a>
+        <div class="breadcrumb-button " >
+                <span class="breadcrumb-label">
+                                    <i class="icon-th"></i> test micrøgrid 1
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </div>
+        <div class="breadcrumb-button " >
+                <span class="breadcrumb-label">
+                            <i class="icon-plus"></i> Add a new customer meter
+
+                </span>
+                <span class="breadcrumb-arrow"><span></span></span>
+        </div>
+                    </div> <!-- id="breadcrumbs"-->
+                </div>
+            </div>
+
+            <div class="container padded">
+                <div class="row">
+    <div class="row">
+        <div class="col-md-12">
+    <div class="box">
+        <div class="box-header">
+            <span class="title">Add a new customer meter</span>
+        </div>
+        <div class="box-content padded">
+                            <form class="form form-horizontal" role="form" method="POST">
+  <div class="form-group  has-error">
+
+            <label class="control-label col-lg-2" for="serial">Serial</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="serial" name="serial" type="text" value="INVALID-SERIAL">
+
+
+
+        </div>
+  <div class="col-lg-offset-2
+              col-lg-10
+             ">
+              <p class="help-block">Invalid meter serial, must look like "SMXXX-XX-XXXXXXXX".</p>
+
+
+  </div>
+  </div>
+<div class="form-group" title="List of tags for this meter, could mean anything, for instance a geographical location">
+                      <label class="control-label col-lg-2" for="tags">Tags</label>
+                      <div class="input-group col-lg-10">
+                        <select class="form-control tags" id="tags" multiple name="tags"></select>
+                      </div>
+                    </div><div class="form-group">
+                      <label class="control-label col-lg-2" for="tariff">Tariff</label>
+                      <div class="input-group col-lg-10">
+                        <select class="form-control" id="tariff" name="tariff"><option selected value="00000004-0000-0000-0000-000000000001">tarïff01</option></select>
+                      </div>
+                    </div><div class="form-group">
+                      <label class="control-label col-lg-2" for="active">Active</label>
+                      <div class="input-group col-lg-10">
+                        <input class="form-control" id="active" name="active" type="checkbox" value="y">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="control-label col-lg-2" for="state">State</label>
+                      <div class="input-group col-lg-10">
+                        <select class="form-control" id="state" name="state"><option selected value="0">Off</option><option value="1">On</option><option value="2">Auto</option></select>
+                      </div>
+                    </div>
+                    
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="address_street1">Street1</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="address_street1" name="address_street1" type="text" value="">
+
+
+
+        </div>
+  </div>
+
+                    
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="address_street2">Street2</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="address_street2" name="address_street2" type="text" value="">
+
+
+
+        </div>
+  </div>
+
+                    
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="address_city">City</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="address_city" name="address_city" type="text" value="">
+
+
+
+        </div>
+  </div>
+
+                    
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="address_state">State</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="address_state" name="address_state" type="text" value="">
+
+
+
+        </div>
+  </div>
+
+                    
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="address_country">Country</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="address_country" name="address_country" type="text" value="">
+
+
+
+        </div>
+  </div>
+
+                    
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="address_coords">Coordinates</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="address_coords" name="address_coords" type="text" value="">
+
+
+
+        </div>
+  </div>
+<div class="form-group indented-form">
+                      <label class="control-label col-lg-2" for="customer">Customer</label>
+                      <div class="input-group col-lg-10">
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="customer_name">Name</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="customer_name" name="customer_name" type="text" value="new customer">
+
+
+
+        </div>
+  </div>
+
+  <div class="form-group ">
+
+            <label class="control-label col-lg-2" for="customer_code">Code</label>
+        <div class="input-group col-lg-10">
+
+
+
+            <input class="form-control" id="customer_code" name="customer_code" type="text" value="">
+
+
+
+        </div>
+  </div>
+<div class="form-group ">
+                          <label class="control-label col-lg-2" for="customer_national_number">Phone Number</label>
+                          <div class="input-group">
+                            <div class="col-sm-5 col-xs-5">
+                              <select class="form-control" id="customer_country_code" name="customer_country_code"><option value="93">Afghanistan (+93)</option><option value="355">Albania (+355)</option><option value="213">Algeria (+213)</option><option value="376">Andorra (+376)</option><option value="244">Angola (+244)</option><option value="54">Argentina (+54)</option><option value="374">Armenia (+374)</option><option value="297">Aruba (+297)</option><option value="247">Ascension Island (+247)</option><option value="61">Australia (+61)</option><option value="43">Austria (+43)</option><option value="994">Azerbaijan (+994)</option><option value="973">Bahrain (+973)</option><option value="880">Bangladesh (+880)</option><option value="375">Belarus (+375)</option><option value="32">Belgium (+32)</option><option value="501">Belize (+501)</option><option value="229">Benin (+229)</option><option value="975">Bhutan (+975)</option><option value="591">Bolivia (+591)</option><option value="387">Bosnia &amp; Herzegovina (+387)</option><option value="267">Botswana (+267)</option><option value="55">Brazil (+55)</option><option value="246">British Indian Ocean Territory (+246)</option><option value="673">Brunei (+673)</option><option value="359">Bulgaria (+359)</option><option value="226">Burkina Faso (+226)</option><option value="257">Burundi (+257)</option><option value="855">Cambodia (+855)</option><option value="237">Cameroon (+237)</option><option value="238">Cape Verde (+238)</option><option value="236">Central African Republic (+236)</option><option value="235">Chad (+235)</option><option value="56">Chile (+56)</option><option value="86">China (+86)</option><option value="57">Colombia (+57)</option><option value="269">Comoros (+269)</option><option value="242">Congo - Brazzaville (+242)</option><option value="243">Congo - Kinshasa (+243)</option><option value="682">Cook Islands (+682)</option><option value="506">Costa Rica (+506)</option><option value="385">Croatia (+385)</option><option value="53">Cuba (+53)</option><option value="599">Curaçao (+599)</option><option value="357">Cyprus (+357)</option><option value="420">Czechia (+420)</option><option value="225">Côte d’Ivoire (+225)</option><option value="45">Denmark (+45)</option><option value="253">Djibouti (+253)</option><option value="593">Ecuador (+593)</option><option value="20">Egypt (+20)</option><option value="503">El Salvador (+503)</option><option value="240">Equatorial Guinea (+240)</option><option value="291">Eritrea (+291)</option><option value="372">Estonia (+372)</option><option value="268">Eswatini (+268)</option><option value="251">Ethiopia (+251)</option><option value="500">Falkland Islands (+500)</option><option value="298">Faroe Islands (+298)</option><option value="679">Fiji (+679)</option><option value="358">Finland (+358)</option><option value="33">France (+33)</option><option value="594">French Guiana (+594)</option><option value="689">French Polynesia (+689)</option><option value="241">Gabon (+241)</option><option value="220">Gambia (+220)</option><option value="995">Georgia (+995)</option><option value="49">Germany (+49)</option><option value="233">Ghana (+233)</option><option value="350">Gibraltar (+350)</option><option value="30">Greece (+30)</option><option value="299">Greenland (+299)</option><option value="590">Guadeloupe (+590)</option><option value="502">Guatemala (+502)</option><option value="224">Guinea (+224)</option><option value="245">Guinea-Bissau (+245)</option><option value="592">Guyana (+592)</option><option value="509">Haiti (+509)</option><option value="504">Honduras (+504)</option><option value="852">Hong Kong SAR China (+852)</option><option value="36">Hungary (+36)</option><option value="354">Iceland (+354)</option><option value="91">India (+91)</option><option value="62">Indonesia (+62)</option><option value="98">Iran (+98)</option><option value="964">Iraq (+964)</option><option value="353">Ireland (+353)</option><option value="972">Israel (+972)</option><option value="39">Italy (+39)</option><option value="81">Japan (+81)</option><option value="962">Jordan (+962)</option><option value="254">Kenya (+254)</option><option value="686">Kiribati (+686)</option><option value="383">Kosovo (+383)</option><option value="965">Kuwait (+965)</option><option value="996">Kyrgyzstan (+996)</option><option value="856">Laos (+856)</option><option value="371">Latvia (+371)</option><option value="961">Lebanon (+961)</option><option value="266">Lesotho (+266)</option><option value="231">Liberia (+231)</option><option value="218">Libya (+218)</option><option value="423">Liechtenstein (+423)</option><option value="370">Lithuania (+370)</option><option value="352">Luxembourg (+352)</option><option value="853">Macao SAR China (+853)</option><option value="261">Madagascar (+261)</option><option value="265">Malawi (+265)</option><option value="60">Malaysia (+60)</option><option value="960">Maldives (+960)</option><option value="223">Mali (+223)</option><option value="356">Malta (+356)</option><option value="692">Marshall Islands (+692)</option><option value="596">Martinique (+596)</option><option value="222">Mauritania (+222)</option><option value="230">Mauritius (+230)</option><option value="52">Mexico (+52)</option><option value="691">Micronesia (+691)</option><option value="373">Moldova (+373)</option><option value="377">Monaco (+377)</option><option value="976">Mongolia (+976)</option><option value="382">Montenegro (+382)</option><option value="212">Morocco (+212)</option><option value="258">Mozambique (+258)</option><option value="95">Myanmar (Burma) (+95)</option><option value="264">Namibia (+264)</option><option value="674">Nauru (+674)</option><option value="977">Nepal (+977)</option><option value="31">Netherlands (+31)</option><option value="687">New Caledonia (+687)</option><option value="64">New Zealand (+64)</option><option value="505">Nicaragua (+505)</option><option value="227">Niger (+227)</option><option value="234">Nigeria (+234)</option><option value="683">Niue (+683)</option><option value="672">Norfolk Island (+672)</option><option value="850">North Korea (+850)</option><option value="389">North Macedonia (+389)</option><option value="47">Norway (+47)</option><option value="968">Oman (+968)</option><option value="92">Pakistan (+92)</option><option value="680">Palau (+680)</option><option value="970">Palestinian Territories (+970)</option><option value="507">Panama (+507)</option><option value="675">Papua New Guinea (+675)</option><option value="595">Paraguay (+595)</option><option value="51">Peru (+51)</option><option value="63">Philippines (+63)</option><option value="48">Poland (+48)</option><option value="351">Portugal (+351)</option><option value="974">Qatar (+974)</option><option value="40">Romania (+40)</option><option value="7">Russia (+7)</option><option value="250">Rwanda (+250)</option><option value="262">Réunion (+262)</option><option value="685">Samoa (+685)</option><option value="378">San Marino (+378)</option><option value="966">Saudi Arabia (+966)</option><option value="221">Senegal (+221)</option><option value="381">Serbia (+381)</option><option value="248">Seychelles (+248)</option><option value="232">Sierra Leone (+232)</option><option value="65">Singapore (+65)</option><option value="421">Slovakia (+421)</option><option value="386">Slovenia (+386)</option><option value="677">Solomon Islands (+677)</option><option value="252">Somalia (+252)</option><option value="27">South Africa (+27)</option><option value="82">South Korea (+82)</option><option value="211">South Sudan (+211)</option><option value="34">Spain (+34)</option><option value="94">Sri Lanka (+94)</option><option value="290">St. Helena (+290)</option><option value="508">St. Pierre &amp; Miquelon (+508)</option><option value="249">Sudan (+249)</option><option value="597">Suriname (+597)</option><option value="46">Sweden (+46)</option><option value="41">Switzerland (+41)</option><option value="963">Syria (+963)</option><option value="239">São Tomé &amp; Príncipe (+239)</option><option value="886">Taiwan (+886)</option><option value="992">Tajikistan (+992)</option><option value="255">Tanzania (+255)</option><option value="66">Thailand (+66)</option><option value="670">Timor-Leste (+670)</option><option value="228">Togo (+228)</option><option value="690">Tokelau (+690)</option><option value="676">Tonga (+676)</option><option value="216">Tunisia (+216)</option><option value="993">Turkmenistan (+993)</option><option value="688">Tuvalu (+688)</option><option value="90">Türkiye (+90)</option><option value="256">Uganda (+256)</option><option value="380">Ukraine (+380)</option><option value="971">United Arab Emirates (+971)</option><option value="44">United Kingdom (+44)</option><option selected value="1">United States (+1)</option><option value="598">Uruguay (+598)</option><option value="998">Uzbekistan (+998)</option><option value="678">Vanuatu (+678)</option><option value="58">Venezuela (+58)</option><option value="84">Vietnam (+84)</option><option value="681">Wallis &amp; Futuna (+681)</option><option value="967">Yemen (+967)</option><option value="260">Zambia (+260)</option><option value="263">Zimbabwe (+263)</option><option value="800">world (+800)</option><option value="808">world (+808)</option><option value="870">world (+870)</option><option value="878">world (+878)</option><option value="881">world (+881)</option><option value="882">world (+882)</option><option value="883">world (+883)</option><option value="888">world (+888)</option><option value="979">world (+979)</option></select>
+                            </div>
+                            <div class="col-sm-5 col-xs-8">
+                              <input class="form-control" id="customer_national_number" name="customer_national_number" type="tel" value="">
+                            </div>
+                          </div>
+                          <div class="col-lg-offset-2">
+                            <p>
+                              
+                            </p>
+                            <p>
+                              
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+<div class="form-group">  <div class="col-lg-offset-2
+              col-lg-10
+             ">
+    <input class="btn btn-primary" id="save_button" name="save_button" type="submit" value="Save">
+
+
+</div>  </div>
+
+                </form>
+
+        </div> <!-- class="box-content" -->
+    </div> <!-- class="box" -->
+        </div>
+    </div>
+                </div>
+            </div>
+
+        </div> <!-- class="main-content"-->
+    </body>
+</html>

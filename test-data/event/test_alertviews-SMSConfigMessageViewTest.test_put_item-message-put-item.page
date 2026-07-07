@@ -1,0 +1,20 @@
+> PUT /alert/config/smsmessages/e2cb3e47-194f-684f-69fc-417e7146dd25 HTTP/1.1
+> Content-Length: 78
+> Content-Type: application/json
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"message_type": "no-such-number","template": "updated message t\u00e9mplate"}
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Location: /alert/config/smsmessages/e2cb3e47-194f-684f-69fc-417e7146dd25
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success"
+}

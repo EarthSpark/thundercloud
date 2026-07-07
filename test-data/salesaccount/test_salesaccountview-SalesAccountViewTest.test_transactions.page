@@ -1,0 +1,45 @@
+> GET /sales-account/0000000a-0000-0000-0000-000000000001/transactions.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "draw": 1,
+  "total": 1,
+  "transactions": [
+    {
+      "acct_type": "credit",
+      "amount": 100.0,
+      "created": "2013-01-01T01:01:01",
+      "error": null,
+      "external_id": null,
+      "from_data": {
+        "sales_account_id": "0000000a-0000-0000-0000-000000000001",
+        "sales_account_name": "sales \u00e5cc\u00f6\u00fcnt 1"
+      },
+      "ground_name": "test micr\u00f8grid 1",
+      "ground_serial": "groundserial1",
+      "has_reversal": false,
+      "id": "00000007-0000-0000-0000-000000000001",
+      "memo": null,
+      "monetary": true,
+      "origin": "user",
+      "reference_id": null,
+      "source_name": "transaction s\u00f2urce name 01",
+      "state": "pending",
+      "to_data": {
+        "customer_code": "customer code 1",
+        "customer_name": "str\u00ebet",
+        "meter_serial": "SM15R-01-00000001"
+      },
+      "username": "test\u00fcser-002"
+    }
+  ]
+}

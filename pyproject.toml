@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sparkmeter"
+dynamic = ["version"]
+description = "Sparkmeter"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv",
+    "uv",
+    "zope.component",
+    "future",
+    "packaging",
+
+    # Sentry. Both extras are needed: FlaskIntegration captures errors
+    # raised in the WSGI-mounted Flask app; FastApiIntegration covers
+    # the native FastAPI routes.
+    "sentry-sdk[flask,fastapi]",
+
+    # Flask
+    "flask",
+    "flask-babel",
+    "flask-bootstrap",
+    "flask-login",
+    "flask-security-too",
+    "flask-wtf",
+    "itsdangerous",
+    "wtforms",
+    "wtforms-sqlalchemy",
+    "bcrypt",
+    "werkzeug",
+
+    # general web
+    "requests",
+    "httpx",
+
+    # Used by the generated metering-provider client at
+    # sparkmeter/metering/_generated/ (pyopenapi-gen output).
+    "cattrs",
+
+    # AWS S3 — used by the historical-data feature in sparkmeter/history/.
+    "boto3",
+
+    # SQL
+    "psycopg2-binary",
+    "alembic",
+    "sqlalchemy",
+    "flask-sqlalchemy",
+
+    # ASGI / FastAPI
+    "fastapi",
+    "hypercorn",
+    "a2wsgi",
+    "protobuf",
+    "click",
+
+    # dates and times
+    "python-dateutil",
+
+    # phone numbers
+    "phonenumbers",
+
+    # data vizualization
+    "numpy",
+    "pandas",
+    "vincent",
+
+    # Translation
+    "babel",
+    "speaklater",
+]
+
+[tool.hatch.version]
+source = "vcs"
+# uv's build isolation invokes hatch-vcs from a temp directory that
+# doesn't contain `.git/`. Without this, setuptools-scm fails with
+# "unable to detect version" even though `.git` exists in the build
+# context. `search-parent-directories` makes scm walk up to find it.
+raw-options.search_parent_directories = true
+
+[tool.hatch.build.hooks.vcs]
+version-file = "sparkmeter/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sparkmeter"]
+
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-xdist",
+    "pytest-asyncio",
+    "filelock",
+    "factory-boy",
+    "freezegun",
+    "httmock",
+    "testfixtures",
+    "html5lib",
+    "flake8",
+    "isort",
+    "pydocstyle",
+    "autopep8",
+    "pre-commit",
+    "grpcio-tools",
+    "pyopenapi-gen",
+    "pytest-diagnose @ git+https://github.com/tescalada/pytest-diagnose.git",
+    "pytest-randomly>=4.1.0",
+]

@@ -1,0 +1,62 @@
+{% set table_id = "tariff-blockrates" %}
+{% set headers = [_('min total. energy (kWh)'),_('max total. energy (kWh)'),_('%(currency)s per kWh', currency=config['CURRENCY']),
+                  ''] %}
+
+{% from "_macros.html" import render_box, quick_form with context %}
+{% from "_icons.html" import icon %}
+{% extends "list/base.html" %}
+
+{% block tfoot %}
+{% if can_add('tariff') %}
+<tr data-object="{}">
+  <td colspan="{{ headers|length }}">
+      <button type="button" class="btn btn-default" id="add-modal" href="#" data-toggle="modal" data-target="#blockrateModal" data-title="{{ _('Add a tariff block rate') }}"> {{ _('Add a tariff block rate') }}</button>
+  </td>
+</tr>
+{% endif %}
+{% endblock tfoot %}
+
+{% block list_footer %}
+<div class="modal" id="blockrateModal" tabindex="-1" role="dialog" aria-labelledby="blockrateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="blockrateModalLabel"></h4>
+      </div>
+      <div class="modal-body">
+        <div style="display:none;">
+          <input id="id" name="id" type="hidden" value="">
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="lower">{{ _('Minimum total energy') }}</label>
+          <div class="input-group col-lg-6">
+            <input class="form-control numeric" id="lower" name="lower" type="text" value="">
+            <span class="input-group-addon">{{ _('in kWh') }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="upper">{{ _('Maximum total energy') }}</label>
+          <div class="input-group col-lg-6">
+            <input class="form-control numeric" id="upper" name="upper" type="text" value="">
+            <span class="input-group-addon">{{ _('in kWh') }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-lg-5" for="value">{{ _('Price') }}</label>
+          <div class="input-group col-lg-6">
+            <input class="form-control numeric" id="value" name="value" type="text" value="">
+            <span class="input-group-addon">{{ _('in %(currency)s per kWh', currency=config.CURRENCY) }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">{{ _('Close') }}</button>
+        <button id="save" type="button" class="btn btn-primary">{{ _('Save') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock list_footer %}

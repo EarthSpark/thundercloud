@@ -1,0 +1,21 @@
+> POST /api/v0/transaction/ HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 89
+> Content-Type: application/x-www-form-urlencoded
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> customer_id=0000000c-0000-0000-0000-000000000001&amount=40&source=cash&external_id=abc123
+
+< HTTP/1.1 403 FORBIDDEN
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "permission denied",
+  "status": "failure"
+}

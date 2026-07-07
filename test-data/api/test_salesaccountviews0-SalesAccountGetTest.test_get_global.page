@@ -1,0 +1,26 @@
+> GET /api/v0/sales-accounts/0000000a-0001-0000-0000-000000000001 HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "account": {
+    "account_type": "global",
+    "active": true,
+    "credit": null,
+    "id": "0000000a-0001-0000-0000-000000000001",
+    "markup": null,
+    "name": "Captain Planet"
+  },
+  "error": null,
+  "status": "success"
+}

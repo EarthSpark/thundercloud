@@ -1,0 +1,21 @@
+> POST /api/v0/customer/ HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Content-Length: 85
+> Content-Type: application/json
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> {"meter_tariff_name": "Tariff","serial": "sm5r-00-00000001","tags": ["invalid,tags"]}
+
+< HTTP/1.1 400 BAD REQUEST
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": "the tags 'invalid,tags' are invalid. Tags must be strings, and cannot contain commas or spaces.",
+  "status": "failure"
+}

@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SMSAlertsService activation() should setup the list scope properly 1`] = `
+Array [
+  Object {
+    "data": "data",
+    "id": 123,
+  },
+]
+`;

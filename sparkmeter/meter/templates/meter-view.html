@@ -1,0 +1,209 @@
+{%- set page_name = "meter-view" -%}
+{% extends "base.html" %}
+{%- set tag_names = meter.tags|join(" ", attribute="name") -%}
+
+{% block title %}{{ icon('meter') }}  {{ meter.title() }}{% endblock %}
+{% block subtitle %}{{ meter.customer.name|e }}{% endblock %}
+
+{% block top_right %}
+    <div class="action-nav-normal pull-right col-md-9">
+      <div class="row">
+            {%- if meter_type == 'customer' and has_accounts -%}
+            <div class="col-md-2 action-nav-button">
+                <a href="{{ url_for('transaction.add', meter_serial=meter.serial) }}" title="{{ _('Make Payment') }}" data-action="make-payment">
+                    <i class="icon-money"></i>
+                    <span>{{ _('Make Payment') }}</span>
+                </a>
+                <span class="triangle-button green"><i class="icon-plus"></i></span>
+            </div>
+            {%- endif -%}
+            {% if can_edit('meter') %}
+            {%- if meter_type == 'customer' -%}
+                <div class="col-md-2 action-nav-button" data-action="set-state">
+                    <a class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                        <i class="icon-off"></i>
+                        <span><span>{{ _('Power') }}</span> <span class="meter-state-text">{{ meter.state_text }}</span><span class="caret"></span></span>
+                    </a>
+                    <ul class="dropdown-menu meter-state">
+                        <li><a data-meter-state="on">{{ _('On') }}</a></li>
+                        <li><a data-meter-state="off">{{ _('Off') }}</a></li>
+                        <li><a data-meter-state="auto">{{ _('Auto') }}</a></li>
+                    </ul>
+                    <span id="meter-state-color" class="triangle-button {{ 'green' if meter.state_value else 'red' }}"></span>
+                </div>
+            {%- endif -%}
+
+                <div class="col-md-2 action-nav-button" data-action="edit">
+                    <a href="{{ url_for('meter.edit', meter_serial=meter.serial) }}" title="{{ _('Edit Meter') }}">
+                        <i class="icon-cog"></i>
+                        <span>{{ _('Edit Meter') }}</span>
+                    </a>
+                </div>
+            {% endif %}
+            {% if meter_type == 'customer' -%}
+                <div class="col-md-2 action-nav-button" data-action="reset">
+                    <a href="{{ url_for('meter.reset_meter', meter_serial=meter.serial) }}">
+                        <i class="icon-refresh"></i>
+                        <span>{{ _('Reset Meter') }}</span>
+                    </a>
+                </div>
+            {% endif %}
+             <div class="col-md-2 action-nav-button" data-action="charts">
+                 <a href="{{ url_for('meter.chart', meter_serial=meter.serial) }}">
+                    <i class="icon-bar-chart"></i>
+                    <span>{{ _('Operator Charts') }}</span>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('ground') }} {{ meter.ground.name|e }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('meter') }} {{ meter.title() }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-3">
+            {% call render_box(_('Information'), box_content_class="padded", ibutton=('details', 'btn-info btn-xs toggle-details')) %}
+                <dl class="indented">
+                    <dt>{{ _('Serial') }}:</dt><dd>{{ meter.serial }}</dd>
+                    <dt>{{ _('Tags') }}:</dt><dd class="tags">{{ meter.tags|join(",", attribute="name") }}</dd>
+                    {%- if meter_type == 'customer' -%}
+                    <dt>{{ _('Credit (%(currency)s)', currency=config.CURRENCY) }}:</dt><dd id="acct_credit">{{ meter.credit_wallet.value }}</dd>
+                    <dt>{{ _('Plan (%(currency)s)', currency=config.CURRENCY) }}:</dt><dd id="acct_plan">{{ meter.plan_wallet.value }}</dd>
+                    <dt>{{ _('Debt (%(currency)s)', currency=config.CURRENCY) }}:</dt><dd id="acct_debt">{{ meter.debt_wallet.value }}</dd>
+                    <dt>{{ _('State') }}:</dt><dd id="state_text" class="meter-state-text">{{ meter.state_text }}</dd>
+                    {%- endif -%}
+                    <dt>{{ _('Current State') }}:</dt><dd id="current_state_text">{{ meter.current_state_text }}</dd>
+                    <dt>{{ _('Current Load Limit (Watts)') }}:</dt><dd id="current_load_limit_text">{{ meter.system_info.current_user_power_limit }}{{ ' (Capped)' if load_limit_capped else '' }}</dd>
+                    <dt>{{ _('Currently Running Plan') }}:</dt><dd id="currently_running_plan">{{ meter.billing.is_running_plan|e }}</dd>
+                    <dt>{{ _('Active') }}:</dt><dd id="active">{{ not meter.config.hidden }}</dd>
+                    <div class="hidden-details">
+                        <dt>{{ _('Id') }}:</dt><dd>{{ meter.id }}</dd>
+                        <dt>{{ _('Code') }}:</dt><dd>{{ meter.code }}</dd>
+                        <dt>{{ _('Firmware Version') }}:</dt><dd id="firmware">{{ meter.system_info.firmware|e }}</dd>
+                        <dt>{{ _('Bootloader Version') }}:</dt><dd id="bootloader">{{ meter.system_info.bootloader|e }}</dd>
+                        <dt>{{ _('Number of Phases') }}:</dt><dd id="phase_count">{{ meter.model.phase_count }}</dd>
+                        <dt><abbr title="{{ _('The upper bound of the current consumed per phase by a meter during normal operation. If a meter spends too much time over this limit, throttling occurs.') }}">
+                            {{ _('Continuous Current Limit (Amps)') }}</abbr>:
+                        </dt><dd id="continuous_current_limit">{{ meter.model.continuous_limit|e }}</dd>
+                        <dt><abbr title="{{ _('The upper bound for the inrush current consumed by a meter. If a meter draws over this limit, it will enter protect mode.') }}">
+                            {{ _('Inrush Current Limit (Amps)') }}</abbr>:
+                        </dt><dd id="inrush_current_limit">{{ meter.model.inrush_limit|e }}</dd>
+                        <dt>{{ _('Total Cycle Energy (kWh)') }}:</dt><dd id="total_cycle_energy">{{ meter.billing.total_cycle_energy|e }}</dd>
+                        <dt>{{ _('Last Energy (kWh)') }}:</dt><dd id="last_energy">{{ meter.system_info.last_energy|e }}</dd>
+                        <dt>{{ _('Last Reading Received') }}:</dt><dd id="last_reading_received">{{ meter.system_info.last_energy_datetime|e }}</dd>
+                        <dt>{{ _('Last Config Update') }}:</dt><dd id="last_config_update">{{ meter.system_info.last_config_datetime|e }}</dd>
+                        <dt>{{ _('Last Cycle Start') }}:</dt><dd id="last_cycle_start">{{ meter.billing.last_cycle_start|e }}</dd>
+                        <dt>{{ _('Last Plan Payment Date') }}:</dt><dd id="last_plan_payment_date">{{ meter.billing.last_plan_payment_date|e }}</dd>
+                        <dt>{{ _('Last Plan Expiration Date') }}:</dt><dd id="last_plan_expiration_date">{{ meter.billing.last_plan_expiration_date|e }}</dd>
+                        {% if meter.current_daily_energy is not none -%}
+                            <dt>{{ _('Daily Energy Limit Consumed (kWh)') }}:</dt><dd id="current_daily_energy">{{ meter.current_daily_energy|e }}</dd>
+                        {%- endif %}
+                    </div>
+                </dl>
+            {% endcall %}
+        </div>
+
+        {%- if meter_type == 'customer' -%}
+        <div class="col-md-3">
+            {% call render_box(_('Customer'), box_content_class="padded") %}
+                <dl class="indented">
+                    <dt>{{ _('Name') }}:</dt><dd id="customer-name">{{ meter.customer.name|e }}</dd>
+                    <dt>{{ _('Code') }}:</dt><dd id="customer-code">{{ meter.customer.code|e }}</dd>
+                    <dt>{{ _('Phone') }}:</dt><dd id="customer-phone-number">{{ meter.customer.phone_number|format_phone_number }}</dd>
+                    {%- if meter.customer.phone_number -%}
+                    <dt>{{ _('Verified') }}:</dt><dd id="customer-phone-number-verified">
+                    {%- if meter.customer.phone_number_verified -%}
+                    <i class="icon-ok"></i> {{ _('Phone number is verified.') }}
+                    {%- else -%}
+                    <i class="icon-remove"></i> {{ _('Phone number is not verified.') }}
+                    <button id="verify-phone-number" class="btn btn-default">
+                      {%- if meter.customer.verification_message_sent -%}
+                      {{ _('Re-verify phone number') }}
+                      {%- else -%}
+                      {{ _('Verify phone number') }}
+                      {%- endif -%}
+                    </button>
+                    {%- endif -%}
+                    </dd>
+                    {%- endif -%}
+                </dl>
+            {% endcall %}
+        </div>
+        {%- endif -%}
+
+        <div class="col-md-3">
+            {% call render_box(_('Address'), box_content_class="padded") %}
+                <dl class="indented">
+                    <dt>{{ _('Street1') }}:</dt><dd id="address-street1">{{ meter.address.street1|e }}</dd>
+                    <dt>{{ _('Street2') }}:</dt><dd id="address-street2">{{ meter.address.street2|e }}</dd>
+                    <dt>{{ _('City') }}:</dt><dd id="address-city">{{ meter.address.city|e }}</dd>
+                    <dt>{{ _('State') }}:</dt><dd id="address-state">{{ meter.address.state|e }}</dd>
+                    <dt>{{ _('Postal code') }}:</dt><dd id="address-postalcode">{{ meter.address.postalcode|e }}</dd>
+                    <dt>{{ _('Country') }}:</dt><dd id="address-country">{{ meter.address.country|e }}</dd>
+                    <dt>{{ _('Coordinates') }}:</dt><dd id="address-coords">{{ meter.address.coords|e }}</dd>
+                </dl>
+            {% endcall %}
+        </div>
+
+        {%- if meter_type == 'customer' -%}
+        <div class="col-md-3">
+            {% call render_box(_('Tariff'), box_content_class="padded") %}
+                <dl class="indented">
+                    <dt>{{ _('Name') }}:</dt><dd id="tariff-name"><a class="underline" href="/tariff/{{ meter.tariff.id }}/">{{ meter.tariff.name|e }}</a></dd>
+                    <dt>{{ _('Electricity Rate (%(currency)s/kWh)', currency=config.CURRENCY) }}:</dt><dd id="tariff-flat_price">{{ meter.tariff.display_rate()|e }}</dd>
+                    <dt>{{ _('Load Limit (Watts)') }}:</dt><dd id="tariff-load_limit">{{ meter.tariff.display_load_limit()|e }}</dd>
+                    <dt>{{ _('Plan') | e }}:</dt>
+                    <dd id="tariff-plan_price">
+                    {{ meter.tariff.display_plan() }}
+                    </dd>
+                    <dt>{{ _('TOU Pricing') }}:</dt>
+                    <dd id="tariff-tou_pricing">
+                    {%- if meter.tariff.tou_enabled -%}
+                        {{ meter.tariff.display_tou()|e }}
+                    {%- else -%}
+                      {{ _('Disabled') }}
+                    {%- endif -%}
+                    </dd>
+                    <dt>{{ _('Daily Energy Limit') }}:</dt>
+                    <dd id="tariff-daily_energy_limit">
+                    {%- if meter.tariff.daily_energy_limit_enabled -%}
+                        {{ _("%(limit)s kWh resetting at %(hour)02d:00 local time.", limit=meter.tariff.daily_energy_limit_value, hour=meter.tariff.daily_energy_limit_reset_hour) }}
+                    {%- else -%}
+                      {{ _('Disabled') }}
+                    {%- endif -%}
+                    </dd>
+                </dl>
+            {% endcall %}
+        </div>
+        {%- endif -%}
+    </div>
+
+    {%- if meter_type == 'customer' -%}
+    <div class="row">
+        <div class="col-md-12" data-box="transactions">
+            {% with export_url=url_for("meter.transactions_export", meter_serial=meter.serial) %}
+            {% include "transaction-history-list.html" %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="messages">
+            {% with export_url=url_for("meter.messages_export", meter_serial=meter.serial) %}
+                {% include "message-history-list.html" %}
+            {% endwith %}
+        </div>
+    </div>
+    {%- endif -%}
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{%- set title = _('Ground Capacity') -%}
+{%- set box_content_class = "padded" -%}
+
+{%- extends "components/box/base-box.html" -%}
+
+{% block box_content %}
+  <div class="text-center">
+    <div id="ground-capacity-gauge" class="justgage" style="display: inline-block"
+      data-value="{{ ground.get_used_capacity() }}"
+      data-max="{{ ground.private.max_capacity }}"
+      data-title="Sold Capacity"
+      data-label="watts">
+    </div>
+  </div>
+{% endblock box_content %}

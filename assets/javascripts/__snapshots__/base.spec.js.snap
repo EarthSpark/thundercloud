@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`base detailItems return a span with info label 1`] = `"<span class=\\"label label-info\\" data-type=\\"test-type\\">text</span>&nbsp;"`;
+
+exports[`base detailItems return a span with info label 2`] = `"<span class=\\"label label-test-label\\" data-type=\\"test-type\\">text</span>&nbsp;"`;
+
+exports[`base flash delay should add an alert-category class 1`] = `"<div class=\\"alert alert-category\\" style=\\"opacity: 0;\\">testing</div>"`;
+
+exports[`base theme should define a set of colors 1`] = `
+Array [
+  "blue",
+  "darkGreen",
+  "gray",
+  "green",
+  "lightBlue",
+  "orange",
+  "red",
+]
+`;

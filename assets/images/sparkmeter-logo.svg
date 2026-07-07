@@ -1,0 +1,60 @@
+reated with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 744.09448819 1052.3622047"
+   id="svg3738"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="sparkmeter-logo.svg">
+  <defs
+     id="defs3740" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.35"
+     inkscape:cx="22.142857"
+     inkscape:cy="520"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1018"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata3743">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       inkscape:connector-curvature="0"
+       id="path3398"
+       style="fill:#facb09;fill-opacity:1;fill-rule:nonzero;stroke:none"
+       d="m 482.46309,166.26679 c -14.52491,104.58491 -29.03582,209.17015 -44.41431,319.95347 55.09109,-10.56428 105.31256,-20.19157 155.53402,-29.81887 8.92764,0 10.78873,3.75017 7.12253,11.12401 -104.69686,143.37395 -209.39371,286.73448 -314.09056,430.10844 -11.97815,4.21138 -14.18907,1.14744 -15.50443,-6.53537 15.11262,-100.33099 30.21124,-200.66197 46.10748,-306.25439 -57.48392,9.92171 -111.3576,19.22661 -165.23128,28.53262 -9.55733,0.95154 -11.82423,-0.16791 -9.55733,-9.16608 105.63439,-150.62242 214.83704,-298.64188 325.52297,-445.5701 10.45289,-11.64231 14.16108,-4.07201 14.51091,7.62627" />
+  </g>
+</svg>

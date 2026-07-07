@@ -1,0 +1,112 @@
+{%- set page_name = "user-form" -%}
+{%- if form.mode == 'edit' -%}
+{%- set title = _('Edit %(user)s', user=user.username) -%}
+{%- else -%}
+{%- set title = _('Add %(role)s', role=role) -%}
+{%- endif -%}
+
+{%- from "_macros.html" import form_error %}
+
+{% extends "base.html" %}
+
+{%- if form.mode == 'edit' -%}
+{% block title %}{{ icon('user') }} {{ title }}{% endblock %}
+{%- endif -%}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('user.list')) %}
+        {{ icon('users') }} {{ _('Users') }}
+    {% endcall %}
+    {%- if form.mode == 'edit' -%}
+        {% call breadcrumb(url=url_for('user.view', username=user.username)) %}
+          {{ icon('user') }} {{ user.username|e }}
+        {% endcall %}
+    {%- endif -%}
+    {% call breadcrumb() %}
+        {%- if form.mode == 'edit' -%}
+          {{ icon('edit') }} {{ _('Edit') }}
+        {%- else -%}
+          {{ icon('add') }} {{ _('Add a new %(role)s', role=role) }}
+        {%- endif -%}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-10">
+            {% call render_box(title, box_content_class="padded") %}
+                <form class="form form-horizontal" role="form" method="POST">
+                    {{ form.hidden_tag() }}
+                    {%- if role != 'api' -%}
+                    {{ addon_form_field(form.email, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                    {%- endif -%}
+                    {{ addon_form_field(form.username, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                    {%- if role == 'api' -%}
+                    <div class="form-group api-sales-account">
+                      {{ form.api_sales_account.label(class_="control-label col-lg-1") }}
+                      <div class="input-group col-lg-11">
+                        <div class="checkbox form-control-static">
+                          <div>
+                            {{ form.transaction_permission(class="transaction_permission") }}
+                            <div>{{ form.transaction_permission.label() }}:</div>
+                          </div>
+                          &nbsp;
+                          {% if form.transaction_permission.data %}
+                          {{ form.api_sales_account(class_="form-control api-sales-account") }}
+                          {% else %}
+                          {{ form.api_sales_account(class_="form-control api-sales-account", disabled="disabled") }}
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    {{ form_error(form.api_sales_account) }}
+                    {%- else -%}
+                    {%- if form.mode == 'add' -%}
+                      {{ addon_form_field(form.password, form_type="horizontal", autocomplete="off", horizontal_columns=('lg', 1, 11)) }}
+                      {{ addon_form_field(form.confirm, form_type="horizontal", autocomplete="off", horizontal_columns=('lg', 1, 11)) }}
+                    {%- endif -%}
+                    {{ addon_form_field(form.active, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+                    {%- if role != 'api' -%}
+                    <div class="form-group account_all_access">
+                        <div class="input-group col-lg-offset-1 col-lg-11">
+                            <div class="checkbox">
+                                <label>
+                                    {{ form.ground_all_access(class="account_all_access") }}
+                                    <div>{{ form.ground_all_access.label() }}:</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{ addon_form_field(form.grounds, form_type="horizontal", horizontal_columns=('lg', 1, 11)) }}
+
+                    <div class="form-group account_all_access">
+                      <div class="input-group col-lg-offset-1 col-lg-11">
+                        <div class="checkbox">
+                          <label>
+                            {{ form.account_all_access(class="account_all_access") }}
+                            <div>{{ form.account_all_access.label() }}:</div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    {{ form_error(form.account_all_access) }}
+                    {{ addon_form_field(form.accounts, form_type="horizontal", horizontal_columns=('lg', 1, 11), button_map={'save_button': 'primary'}) }}
+                    {%- endif -%}
+                    {{ addon_form_field(form.locale, form_type="horizontal", horizontal_columns=('lg', 1, 11), field_class="form-control select2") }}
+                    {%- endif -%}
+                    {{ addon_form_field(form.save_button, form_type="horizontal", horizontal_columns=('lg', 1, 11), button_map={'save_button': 'primary'}) }}
+                </form>
+            {% endcall %}
+        </div>
+        {% if user == current_user %}
+            <div class="col-md-2">
+                {% call render_box(_('Change Password'), box_content_class="padded") %}
+                    <a href="{{ url_for_security('change_password') }}" class="btn btn-gray btn-block">
+                        {{ icon('password') }} {{ _('Change Password') }}
+                    </a>
+                {% endcall %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

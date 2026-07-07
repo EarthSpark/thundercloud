@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ icon('message') }} {{ _('Ground Messages') }}{% endblock %}
+{% block subtitle %}{{ _('Ground Message History') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('message') }} {{ _('Messages') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="messages" data-list="messages">
+            {% with %}
+            {% set with_dropdown = True %}
+            {% set export_url = url_for("event.messages_export") %}
+            {% include "message-history-list.html" %}
+            {% endwith %}
+        </div>
+    </div>
+{% endblock %}

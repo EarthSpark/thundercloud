@@ -1,0 +1,33 @@
+{% raw %}
+<script type="text/ng-template" id="sms-config-message-modal.html">
+  <div class="modal-header">
+    <h3 class="modal-title" ng-cloak>{{ vm.title }} System Message</h3>
+  </div>
+  <div class="modal-body">
+    <form name="form" class="form form-horizontal" role="form">
+      <div class="form-group form-group-lg">
+        <label class="control-label col-sm-3" for="event-type">Message type</label>
+        <div class="input-group col-sm-6">
+          <p class="form-control-static">{{ messageLabels[message.message_type] }}</p>
+        </div>
+      </div>
+      <div class="form-group form-group-lg" ng-class="{ 'has-error': form.template.$invalid }">
+        <label class="control-label col-sm-3" for="template">Outbound text</label>
+        <div class="input-group col-sm-6">
+          <div sm-sms-template
+               completion-type="message"
+               name="template"
+               ng-model="message.template"/>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-default" type="button" ng-click="vm.cancel()"
+            data-action="cancel">Cancel</button>
+    <button class="btn btn-primary" type="button" ng-click="vm.save(message)"
+            ng-disabled="form.$invalid"
+            data-action="save">Save</button>
+  </div>
+</script>
+{% endraw %}

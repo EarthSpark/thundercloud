@@ -1,0 +1,25 @@
+{% set table_id = "transaction-source-list" %}
+{% set table_class = "datatable-small" %}
+{% set headers = [_('Name'),_('Monetary')] %}
+
+{% set in_box = True %}
+{% set title = _('Transaction Source List') %}
+
+{% extends "list/base.html" %}
+
+{% block toolbar %}
+  <li class="toolbar-link">
+    <a class="cog" href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul id="export-menu" class="dropdown-menu">
+    </ul>
+  </li>
+{% endblock %}
+
+{% block tbody %}
+{% for transaction_source in transaction_sources %}
+<tr>
+  <td>{{ transaction_source.name|e }}</td>
+  <td>{{ transaction_source.monetary }}</td>
+</tr>
+{% endfor %}
+{% endblock tbody %}

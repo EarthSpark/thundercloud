@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+            {% call render_box(_('Login'), box_content_class="padded") %}
+                <form action="{{ url_for_security('login') }}" method="POST" name="login_user_form" role="form">
+                    {{ login_user_form.hidden_tag() }}
+                    {{ wtf.form_errors(login_user_form, hiddens="only") }}
+
+                    {{ addon_form_field(login_user_form.email, prepend_icon="icon-user", placeholder=_("email address"), show_label=False) }}
+                    {{ addon_form_field(login_user_form.password, prepend_icon="icon-key", placeholder=_("password"), show_label=False) }}
+
+                    {{ wtf.form_field(login_user_form.remember) }}
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">
+                            {{ _('Login') }} <i class="icon-signin"></i>
+                        </button>
+                    </div>
+                </form>
+                {% include "security/_menu.html" %}
+            <h6 style="text-align: right">{{ APP_VERSION }} <small>{{ GIT_VERSION }}</small></h6>
+            {% endcall %}
+            {% if demo_users %}
+                {% call render_box(_('Demo Logins'), box_content_class="padded") %}
+                    Login As:
+                    {% for user in demo_users %}
+                        <a class="btn btn-primary btn-lg btn-block" href="{{ url_for('web.demo_login', user_id=user.id) }}">
+                            {{ user.roles|join(', ') }}: {{ user.username|e }}
+                        </a>
+                    {% endfor %}
+                {% endcall %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

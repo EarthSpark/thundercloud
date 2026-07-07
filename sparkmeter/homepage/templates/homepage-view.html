@@ -1,0 +1,87 @@
+{%- set page_name = 'homepage-view' -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('home') }} {{ _('Home') }}{% endblock %}
+
+
+{% block top_right %}
+    <div class="action-nav-normal pull-right col-md-9">
+        <div class="row">
+            {% if current_user.has_role('operator') %}
+                <div class="col-md-2 action-nav-button">
+                    <a class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                        <i class="icon-bar-chart"></i>
+                        <span>{{ _('History') }} <span class="caret"></span></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('transaction.transactions') }}">{{ icon('table') }} <span>{{ _('Transactions') }}</span></a></li>
+                        <li><a href="{{ url_for('event.messages') }}">{{ icon('message') }} <span>{{ _('Messages') }}</span></a></li>
+                        {% if config.get('S3_HISTORY_BUCKET') and config.get('S3_SITE') -%}
+                        <li><a href="{{ url_for('history.index') }}">{{ icon('download') }} <span>{{ _('Historical Data') }}</span></a></li>
+                        {%- endif %}
+                    </ul>
+                </div>
+                <div class="col-md-2 action-nav-button">
+                    <a class="btn btn-default" href="{{ url_for('dashboard.index') }}">
+                        <i class="icon-dashboard"></i>
+                        <span>{{ _('Dashboards') }}</span>
+                    </a>
+                </div>
+                <div class="col-md-2 action-nav-button">
+                    <a class="btn btn-default" href="{{ url_for('reading.latest') }}">
+                        <i class="icon-book"></i>
+                        <span>{{ _('Latest Readings') }}</span>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="global-sales-accounts">
+            {% with %}
+            {% set title = _('My Global Sales Accounts') %}
+            {% set account_type = 'global' %}
+            {% set disable_add = True %}
+            {% include "sales-accounts-table.html" %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="restricted-sales-accounts">
+            {% with %}
+            {% set title = _('My Restricted Sales Accounts') %}
+            {% set account_type = 'restricted' %}
+            {% set disable_add = True %}
+            {% include "sales-accounts-table.html" %}
+            {% endwith %}
+        </div>
+    </div>
+
+    {% if current_user.has_role('operator') %}
+    <div class="row">
+        <div class="col-md-12" data-box="totalizer-meters" data-list="totalizer">
+            {% with %}
+            {% set title = _('Totalizer meters') %}
+            {% set meter_type = 'totalizer' %}
+            {% set add_label = _('Add a totalizer meter') %}
+            {% include "meter-list-totalizer.html" %}
+            {% endwith %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-12" data-box="customer-meters" data-list="customer">
+            {% with %}
+            {% set title = _('Customer meters') %}
+            {% set meter_type = 'customer' %}
+            {% set add_label = _('Add a customer meter') %}
+            {% include "meter-list-customer.html" %}
+            {% endwith %}
+        </div>
+    </div>
+{% endblock %}

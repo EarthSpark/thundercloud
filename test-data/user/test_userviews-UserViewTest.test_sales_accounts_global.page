@@ -1,0 +1,27 @@
+> GET /user/testüser-001/sales-account/global.json HTTP/1.1
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "sales_accounts": [
+    {
+      "active": true,
+      "credit": 0.0,
+      "debt": 0.0,
+      "id": "0000000a-0001-0000-0000-000000000001",
+      "markup": 0.05,
+      "name": "Global",
+      "negative_permitted": true,
+      "transaction_count": 0,
+      "transaction_total": 0.0
+    }
+  ]
+}

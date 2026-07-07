@@ -1,0 +1,160 @@
+{%- set page_name = "user-view" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('user') }} {{ user.username|e }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb(role='operator', url=url_for('user.list')) %}
+        {{ icon('users') }} {{ _('Users') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('user') }} {{ user.username|e }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block top_right %}
+    {% if user == current_user and not user.is_api() %}
+        <div class="action-nav-normal pull-right col-md-9">
+            <div class="row">
+                <div class="col-md-2 action-nav-button">
+                    <a href="{{ url_for_security('change_password') }}" title="{{ _('Change Password') }}">
+                        {{ icon('password') }}
+                        <span>{{ _('Change Password') }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <h2 class="col-md-12">
+            {{ gettext('User %(username)s', username=user.username) }}
+            {% if can_edit('user') %}
+                <small><a href="{{ url_for('user.edit', username=user.username) }}" data-action="edit">{{ _('edit') }}</a></small>
+            {% endif %}
+        </h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            {% call render_box(_('Information'), box_content_class='padded', ibutton=('debug', 'btn-info btn-xs toggle-details')) %}
+          <dl>
+            <dt>Username:</dt><dd id="username">{{ user.username|e }}</dd>
+            {% if not user.is_api() %}
+            <dt>Password:</dt><dd>&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</dd>
+            <dt>Email:</dt><dd id="email">{{ user.email|e }}</dd>
+            <dt>Active:</dt><dd id="active">{{ user.active }}</dd>
+            <dt>Locale:</dt><dd id="locale">{{ user.locale|e }}</dd>
+            {% endif %}
+            {% if user.is_api() and current_user.is_operator() %}
+                <dt>API Credentials:</dt>
+                <dd>
+                  <button class="btn btn-default" href="#"
+                          data-action="view-credentials"
+                          data-toggle="modal"
+                          data-target="#modal-api-view-credentials">
+                    {{ _('View Credentials') }}
+                  </button>
+                </dd>
+                <p></p>
+                <dd>
+                  <button class="btn btn-default" href="#"
+                          data-action="reset-credentials"
+                          data-toggle="modal"
+                          data-target="#modal-api-reset-credentials">
+                    {{ _('Reset Credentials') }}
+                  </button>
+                </dd>
+                <p></p>
+            {% endif %}
+          </dl>
+          <div class="hidden-details">
+            <dl>
+              {% for k, v in user._data|dictsort %}
+              {% if k == 'roles' %}
+                <dt>{{ k|replace('_',' ') }}:</dt><dd>{{ v|join(", ", attribute='name') }}</dd>
+              {% elif k != 'password' %}
+                <dt>{{ k|replace('_',' ') }}:</dt><dd>{{ v }}</dd>
+              {% endif %}
+              {% endfor %}
+            </dl>
+          </div>
+          {% endcall %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" data-box="global-sales-accounts">
+        {% with %}
+          {% set title = _('Global Sales Accounts assigned to %(user)s', user=user.username) %}
+          {% set add_label = _('Add a global sales account') %}
+          {% set account_type = 'global' %}
+          {% set disable_add = True %}
+          {% include "sales-accounts-table.html" %}
+        {% endwith %}
+        </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12" data-box="restricted-sales-accounts">
+        {% with %}
+          {% set title = _('Restricted Sales Accounts assigned to %(user)s', user=user.username) %}
+          {% set add_label = _('Add a restricted sales account') %}
+          {% set account_type = 'restricted' %}
+          {% set disable_add = True %}
+          {% include "sales-accounts-table.html" %}
+        {% endwith %}
+        </div>
+    </div>
+
+    {% if user.is_api() and current_user.is_operator() %}
+        <!-- API Credentials Modal -->
+        <div class="modal fade" id="modal-api-view-credentials" tabindex="-1" role="dialog" aria-labelledby="modal-api-view-credentials-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="modal-api-view-credentials-label">{{ _('API Credentials') }}</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="control-label col-sm-5" for="endpoint">{{ _('API Endpoint:') }}</label>
+                            <input type="text" class="form-control" readonly="readonly" name="endpoint" value="{{ config['API_ENDPOINT'] }}"/>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-sm-5" for="token">{{ _('API Token:') }}</label>
+                            <textarea class="form-control" rows=3 readonly="readonly" name="token">
+                                {{- user.get_auth_token() -}}
+                            </textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-primary goback" data-dismiss="modal">{{ _('Close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modal-api-reset-credentials" tabindex="-1" role="dialog" aria-labelledby="modal-api-reset-credentials-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="modal-api-reset-credentials-label">{{ _('Reset API Credentials') }}</h4>
+                    </div>
+                    <div class="modal-body">
+                      <p>
+                        {{ _('Are you sure you want to reset the credentials for this API user?') }}
+                      </p>
+                    </div>
+                    <div class="modal-footer">
+                      <button class="btn btn-default goback" data-dismiss="modal">{{ _('Not now') }}</button>
+                      <button class="btn btn-primary" href="#" id="reset-link" >{{ _('Reset credentials') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock %}

@@ -1,0 +1,41 @@
+{% macro icon(type) -%}
+    {% if type == 'grounds' %}
+        <i class="icon-th"></i>
+    {% elif type == 'ground' %}
+        <i class="icon-th"></i>
+    {%- elif type == 'sitemap' -%}
+        <i class="icon-dashboard"></i>
+    {%- elif type == 'users' -%}
+        <i class="icon-group"></i>
+    {%- elif type == 'user' -%}
+        <i class="icon-user"></i>
+    {%- elif type == 'settings' -%}
+        <i class="icon-cog"></i>
+    {%- elif type == 'transaction' -%}
+        <i class="icon-money"></i>
+    {%- elif type == 'chart' -%}
+        <i class="icon-bar-chart"></i>
+    {%- elif type == 'table' -%}
+        <i class="icon-table"></i>
+    {%- elif type == 'tariff' -%}
+        <i class="icon-money"></i>
+    {%- elif type == 'edit' -%}
+        <i class="icon-edit"></i>
+    {%- elif type == 'transactionsource' -%}
+        <i class="icon-credit-card"></i>
+    {%- elif type == 'add' -%}
+        <i class="icon-plus"></i>
+    {%- elif type == 'password' -%}
+        <i class="icon-key"></i>
+    {%- elif type == 'message' -%}
+        <i class="icon-comment"></i>
+    {%- elif type == 'sales-account' -%}
+        <i class="icon-credit-card"></i>
+    {%- elif type == 'dashboard' -%}
+        <i class="icon-dashboard"></i>
+    {%- elif type == 'home' -%}
+        <i class="icon-home"></i>
+    {%- elif type == 'download' -%}
+        <i class="icon-download"></i>
+    {%- endif -%}
+{%- endmacro %}

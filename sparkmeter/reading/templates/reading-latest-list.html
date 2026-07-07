@@ -1,0 +1,32 @@
+{%- set table_id = "latestreadings" -%}
+{%- set thead_class = "grey-background" -%}
+{%- set in_box = True -%}
+{%- set title = _('Latest Readings') -%}
+{%- set box_content_class = "padded" -%}
+
+{%- extends "list/base.html" -%}
+
+{% block toolbar %}
+  <li>{{ _("Color") }}</li>
+  <li><input id="Color" class="iButton-icons" type="checkbox" checked="checked"/></li>
+  <li>{{ _("Auto-refresh") }}</li>
+  <li><input id="Auto-refresh" class="iButton-icons" type="checkbox" checked="checked"/></li>
+  {% if config['HEROKU'] %}
+  <li>
+   <label class="select-filter-label">Ground:</label>
+   <select class="select-filter latest-readings">
+     <option value="">All</option>
+   </select>
+  </li>
+  {% endif %}
+  <li class="toolbar-link">
+    <a href="#" data-toggle="dropdown"><i class="icon-cog"></i></a>
+    <ul class="dropdown-menu">
+      <li>
+        <a href="{{ url_for('reading.latest_data_csv') }}">
+          <i class="icon-download-alt"></i> {{ _('Export') }}
+        </a>
+      </li>
+    </ul>
+  </li>
+{% endblock %}

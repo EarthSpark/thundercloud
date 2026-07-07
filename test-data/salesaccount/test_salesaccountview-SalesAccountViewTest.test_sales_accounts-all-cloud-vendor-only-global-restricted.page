@@ -1,0 +1,15 @@
+> GET /sales-account/restricted.json HTTP/1.1
+> Cookie: session=%% SESSION %%; remember_token=%% AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 403 FORBIDDEN
+< Content-Type: text/html; charset=utf-8
+<
+<!doctype html>
+<html lang=en>
+<title>403 Forbidden</title>
+<h1>Forbidden</h1>
+<p>You don&#39;t have the permission to access the requested resource. It is either read-protected or not readable by the server.</p>
+

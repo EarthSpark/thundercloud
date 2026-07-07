@@ -1,0 +1,21 @@
+{%- set page_name = "transaction-list" -%}
+{% extends "base.html" %}
+
+{% block title %}{{ icon('table') }} {{ _('Transactions') }}{% endblock %}
+{% block subtitle %}{{ _('Transactions and Transfers') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        <i class="icon-bar-chart"></i> {{ _('Transactions') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12" data-box="transactions" data-list="transactions">
+            {% with export_url = url_for("transaction.transaction_export") %}
+            {% include "transaction-history-list.html" %}
+            {% endwith %}
+        </div>
+    </div>
+{% endblock %}

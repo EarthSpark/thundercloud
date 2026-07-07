@@ -1,0 +1,22 @@
+> POST /ground/groundserial2/edit HTTP/1.1
+> Content-Length: 36
+> Content-Type: application/x-www-form-urlencoded
+> Cookie: session=%% SESSION %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+> serial=groundserial2&max_capacity=10
+
+< HTTP/1.1 302 FOUND
+< Content-Type: text/html; charset=utf-8
+< Location: /ground/
+< Set-Cookie: %% COOKIE %%
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/ground/">/ground/</a>. If not, click the link.
+

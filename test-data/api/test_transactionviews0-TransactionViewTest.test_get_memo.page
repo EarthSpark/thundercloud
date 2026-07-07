@@ -1,0 +1,46 @@
+> GET /api/v0/transaction/00000007-0000-0000-0000-000000000001 HTTP/1.1
+> Authentication-Token: %% API AUTH TOKEN %%
+> Host: localhost
+> User-Agent: Unittest/1.0
+>
+
+< HTTP/1.1 200 OK
+< Cache-Control: no-store, no-cache, must-revalidate
+< Content-Type: application/json
+< Expires: 0
+< Pragma: no-cache
+< Set-Cookie: %% COOKIE %%
+< Vary: Cookie
+<
+{
+  "error": null,
+  "status": "success",
+  "transaction": {
+    "amount": 100.0,
+    "created": "2013-01-01T01:01:01",
+    "error": null,
+    "external_id": null,
+    "from": {
+      "id": "0000000a-0000-0000-0000-000000000002",
+      "sales_account": {
+        "name": "sales \u00e5cc\u00f6\u00fcnt 2",
+        "type": "restricted"
+      },
+      "type": "sales-account"
+    },
+    "id": "00000007-0000-0000-0000-000000000001",
+    "memo": "This is a memo",
+    "origin": "user",
+    "source": "transaction s\u00f2urce name 01",
+    "status": "not-processed",
+    "to": {
+      "customer": {
+        "code": "customer code 1",
+        "name": "str\u00ebet"
+      },
+      "id": "0000000c-0000-0000-0000-000000000001",
+      "type": "customer"
+    },
+    "type": "credit"
+  }
+}
