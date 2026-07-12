@@ -28,7 +28,7 @@ SECRET_KEY = None
 # TLS-terminating nginx set SM_SESSION_COOKIE_SECURE=true, and Heroku is
 # promoted automatically (see SparkmeterApplication._harden_session_cookie).
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = False
 
 READING_RETENTION_MINUTES = 60 * 24  # how long to keep summarized readings for
@@ -36,35 +36,35 @@ READING_RETENTION_MINUTES = 60 * 24  # how long to keep summarized readings for
 LOG_LEVEL = logging.INFO
 
 LOCALES = [
-    'en_US',
-    'fr_FR',
+    "en_US",
+    "fr_FR",
     # 'ht_HT',
 ]
 # Default country code for phone numbers
-DEFAULT_PHONE_COUNTRY_CODE = u'1'
+DEFAULT_PHONE_COUNTRY_CODE = "1"
 
 # generic sentry settings (disabled for local development)
 SENTRY_DSN = None
 
-SECURITY_PASSWORD_HASH = 'bcrypt'
+SECURITY_PASSWORD_HASH = "bcrypt"
 SECURITY_PASSWORD_SALT = None
 SECURITY_CHANGEABLE = True
-SECURITY_CHANGE_PASSWORD_TEMPLATE = 'security/change_password.html'
+SECURITY_CHANGE_PASSWORD_TEMPLATE = "security/change_password.html"
 SECURITY_SEND_PASSWORD_CHANGE_EMAIL = False
 SECURITY_SEND_PASSWORD_RESET_NOTICE_EMAIL = False
 
 # settings for creating new meters
-NEW_METER_TARIFF = 'ET1'
+NEW_METER_TARIFF = "ET1"
 NEW_METER_ACCT_CREDIT = 1000
 NEW_METER_STATE = 0  # 0=off, 1=on, 2=auto
 NEW_METER_HIDDEN = True
 NEW_METER_SUBNET = 255
 NEW_METER_SPARKMAC_TTL = 15
-NEW_METER_SPARKMAC_FORWARDING = 'flooding'
+NEW_METER_SPARKMAC_FORWARDING = "flooding"
 NEW_METER_SPARKMAC_FLOODING_SUBNETS = 255
 
 # configure postgres url on heroku
-SQLALCHEMY_DATABASE_URI = 'postgresql:///mydb'
+SQLALCHEMY_DATABASE_URI = "postgresql:///mydb"
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 # HEARTBEAT_PERIOD must be in [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 30, 60]
@@ -85,11 +85,11 @@ SYNC_LIMIT = 1000
 
 # current limit in Amps for each product
 CURRENT_LIMIT = {
-    'SM5R': 6.0,
-    'SM15R': 20.0,
-    'SM20R': 20.0,
-    'SM60R': 61.0,
-    'SM60RP': 61.0,
+    "SM5R": 6.0,
+    "SM15R": 20.0,
+    "SM20R": 20.0,
+    "SM60R": 61.0,
+    "SM60RP": 61.0,
 }
 
 # this is the nominal voltage default for the ParameterObject configs
@@ -108,7 +108,7 @@ LOCK_WALLETS_ON_PROCESS = True
 # How long to hold a wallet lock (in seconds).
 LOCK_WALLETS_ON_PROCESS_TIMEOUT = 5
 
-CLOUD_PORTAL_URL = 'https://sparkmeter.cloud'
+CLOUD_PORTAL_URL = "https://sparkmeter.cloud"
 
 # S3 Historical Data File Access Settings
 # boto3 uses standard AWS credential chain (IAM role, then environment variables)

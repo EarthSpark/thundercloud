@@ -38,22 +38,26 @@ def _make_snapshot(snapshot_type, version, payload):
 
 def get_meter_view_snapshot(meter_view):
     """Transform a meter_view to a meter snapshot dict."""
-    snap = _make_snapshot("meter", 1, {
-        "id": meter_view.id,
-        "code": meter_view.code,
-        "serial": meter_view.serial,
-        "type": meter_view.meter_type,
-        "address": {
-            "street1": meter_view.address_street1,
-            "street2": meter_view.address_street2,
-            "city": meter_view.address_city,
-            "state": meter_view.address_state,
-            "postalcode": meter_view.address_postalcode,
-            "coords": meter_view.address_coords,
+    snap = _make_snapshot(
+        "meter",
+        1,
+        {
+            "id": meter_view.id,
+            "code": meter_view.code,
+            "serial": meter_view.serial,
+            "type": meter_view.meter_type,
+            "address": {
+                "street1": meter_view.address_street1,
+                "street2": meter_view.address_street2,
+                "city": meter_view.address_city,
+                "state": meter_view.address_state,
+                "postalcode": meter_view.address_postalcode,
+                "coords": meter_view.address_coords,
+            },
+            "model_name": meter_view.model_name,
+            "tags": meter_view.tags or [],
         },
-        "model_name": meter_view.model_name,
-        "tags": meter_view.tags or [],
-    })
+    )
 
     if meter_view.is_customer_meter():
         snap["customer"] = {
@@ -71,29 +75,37 @@ def get_meter_view_snapshot(meter_view):
 
 def get_ground_snapshot(ground):
     """Transform a ground to a ground snapshot dict."""
-    snap = _make_snapshot("ground", 1, {
-        "id": ground.id,
-        "name": ground.name,
-        "serial": ground.serial,
-        "address": {
-            "street1": ground.address.street1,
-            "street2": ground.address.street2,
-            "city": ground.address.city,
-            "state": ground.address.state,
-            "postalcode": ground.address.postalcode,
-            "coords": ground.address.coords,
-        }
-    })
+    snap = _make_snapshot(
+        "ground",
+        1,
+        {
+            "id": ground.id,
+            "name": ground.name,
+            "serial": ground.serial,
+            "address": {
+                "street1": ground.address.street1,
+                "street2": ground.address.street2,
+                "city": ground.address.city,
+                "state": ground.address.state,
+                "postalcode": ground.address.postalcode,
+                "coords": ground.address.coords,
+            },
+        },
+    )
     return snap
 
 
 def get_sales_account_snapshot(sales_acct):
     """Transform a sales account to a sales account snapshot dict."""
-    snap = _make_snapshot("sales_account", 1, {
-        "id": sales_acct.id,
-        "name": sales_acct.name,
-        "is_system_account": sales_acct.system,
-    })
+    snap = _make_snapshot(
+        "sales_account",
+        1,
+        {
+            "id": sales_acct.id,
+            "name": sales_acct.name,
+            "is_system_account": sales_acct.system,
+        },
+    )
     return snap
 
 
@@ -109,28 +121,32 @@ def _maybe_json(field):
 
 def get_tariff_snapshot(tariff):
     """Transform a tariff to a tariff snapshot dict."""
-    snap = _make_snapshot("tariff", 2, {
-        "id": tariff.id,
-        "tariff_type": tariff.tariff_type,
-        "blockrates": _maybe_json(tariff.blockrates),
-        "flat_price": tariff.flat_price,
-        "flat_load_limit": tariff.flat_load_limit,
-        "load_limits": _maybe_json(tariff.load_limits),
-        "load_limit_type": tariff.load_limit_type,
-        "plan_enabled": tariff.plan_enabled,
-        "plan_price": tariff.plan_price,
-        "plan_duration_span": tariff.plan_duration_span,
-        "plan_duration_unit": tariff.plan_duration_unit,
-        "plan_fixed_fee": tariff.plan_fixed_fee,
-        "cycle_start_day_of_month": tariff.cycle_start_day_of_month,
-        "name": tariff.name,
-        "tou_enabled": tariff.tou_enabled,
-        "tous": _maybe_json(tariff.tous),
-        "low_balance_threshold": tariff.low_balance_threshold,
-        "daily_energy_limit_enabled": tariff.daily_energy_limit_enabled,
-        "daily_energy_limit_reset_hour": tariff.daily_energy_limit_reset_hour,
-        "daily_energy_limit_value": tariff.daily_energy_limit_value,
-    })
+    snap = _make_snapshot(
+        "tariff",
+        2,
+        {
+            "id": tariff.id,
+            "tariff_type": tariff.tariff_type,
+            "blockrates": _maybe_json(tariff.blockrates),
+            "flat_price": tariff.flat_price,
+            "flat_load_limit": tariff.flat_load_limit,
+            "load_limits": _maybe_json(tariff.load_limits),
+            "load_limit_type": tariff.load_limit_type,
+            "plan_enabled": tariff.plan_enabled,
+            "plan_price": tariff.plan_price,
+            "plan_duration_span": tariff.plan_duration_span,
+            "plan_duration_unit": tariff.plan_duration_unit,
+            "plan_fixed_fee": tariff.plan_fixed_fee,
+            "cycle_start_day_of_month": tariff.cycle_start_day_of_month,
+            "name": tariff.name,
+            "tou_enabled": tariff.tou_enabled,
+            "tous": _maybe_json(tariff.tous),
+            "low_balance_threshold": tariff.low_balance_threshold,
+            "daily_energy_limit_enabled": tariff.daily_energy_limit_enabled,
+            "daily_energy_limit_reset_hour": tariff.daily_energy_limit_reset_hour,
+            "daily_energy_limit_value": tariff.daily_energy_limit_value,
+        },
+    )
     return snap
 
 
@@ -142,10 +158,10 @@ class Snapshot(BaseDomain):
     in time.
     """
 
-    __tablename__ = 'snapshot'
+    __tablename__ = "snapshot"
 
     # Hash (SHA256)
-    hash_ = Column('hash', String(64), unique=True)
+    hash_ = Column("hash", String(64), unique=True)
 
     # The snapshot content
     payload = Column(Text, nullable=False)
@@ -153,7 +169,7 @@ class Snapshot(BaseDomain):
     @classmethod
     def get_default_id(cls, context):
         """Get the default ID for a Snapshot object."""
-        return as_uuid(context.current_parameters['hash'])
+        return as_uuid(context.current_parameters["hash"])
 
     @classmethod
     def sync_init(cls, group):
@@ -168,7 +184,7 @@ class Snapshot(BaseDomain):
             none can be inferred.
         """
         serialized = json_dumps(snapshot_dict, sort_keys=True)
-        computed_hash = sha256(serialized.encode('utf-8')).hexdigest()
+        computed_hash = sha256(serialized.encode("utf-8")).hexdigest()
         computed_id = as_uuid(computed_hash)
         result = cls.get_one_or_create(
             session=session,
@@ -190,6 +206,7 @@ class Snapshot(BaseDomain):
         :returns: The corresponding meter Snapshot
         """
         from sparkmeter.meter.meterdomain import MeterView
+
         if not meter_id:
             if not code:
                 raise ValueError("code or meter_id")

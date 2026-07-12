@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """SQLAlchemy custom types."""
+
 from __future__ import absolute_import
 
 import uuid
@@ -11,7 +12,6 @@ from sqlalchemy.dialects import postgresql
 
 
 class UUIDType(types.TypeDecorator):
-
     """
     UUID type.
 
@@ -47,7 +47,7 @@ class UUIDType(types.TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         """Load dialect."""
-        if dialect.name == 'postgresql' and self.native:
+        if dialect.name == "postgresql" and self.native:
             # Use the native UUID type.
             return dialect.type_descriptor(postgresql.UUID())
         else:
@@ -74,7 +74,7 @@ class UUIDType(types.TypeDecorator):
         if not isinstance(value, uuid.UUID):
             value = uuid.UUID(value)
 
-        if self.native and dialect.name == 'postgresql':
+        if self.native and dialect.name == "postgresql":
             return str(value)
 
         return value.bytes if self.binary else value.hex  # pragma: nocoverage
@@ -88,14 +88,13 @@ class UUIDType(types.TypeDecorator):
         if isinstance(value, uuid.UUID):
             return value
 
-        if self.native and dialect.name == 'postgresql':
+        if self.native and dialect.name == "postgresql":
             return uuid.UUID(value)
 
         return uuid.UUID(bytes=value) if self.binary else uuid.UUID(value)  # pragma: nocoverage
 
 
 class Choice(object):
-
     """
     Choice.
 
@@ -123,14 +122,10 @@ class Choice(object):
 
     def __repr__(self):
         """String representation."""
-        return 'Choice(code={code}, value={value})'.format(
-            code=self.code,
-            value=self.value
-        )
+        return "Choice(code={code}, value={value})".format(code=self.code, value=self.value)
 
 
 class ChoiceType(types.TypeDecorator):
-
     """
     Choice type.
 
@@ -189,9 +184,7 @@ class ChoiceType(types.TypeDecorator):
         """Create a new choice type."""
         types.TypeDecorator.__init__(self)
         if not choices:  # pragma: nocoverage
-            raise Exception(
-                'ChoiceType needs list of choices defined.'
-            )
+            raise Exception("ChoiceType needs list of choices defined.")
         self.choices = choices
         self.choices_dict = dict(choices)
         if impl:  # pragma: nocoverage

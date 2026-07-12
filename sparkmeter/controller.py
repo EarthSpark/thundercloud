@@ -19,8 +19,7 @@ from sparkmeter.billing import CalculateBilling
 from sparkmeter.config.configdict import config
 from sparkmeter.database.alchemy import sql
 from sparkmeter.database.database import get_schema_tables, load_schema
-from sparkmeter.exceptions import (DatabaseLockTimeoutException, DuplicateReadingException,
-                                   TransactionError)
+from sparkmeter.exceptions import DatabaseLockTimeoutException, DuplicateReadingException, TransactionError
 from sparkmeter.ground.grounddomain import Ground
 from sparkmeter.meter.meterdomain import Meter
 from sparkmeter.meter.meterstate import MeterState
@@ -69,35 +68,40 @@ def save_raw_reading(data, session):
     :return: (reading, meter)
     """
     # First check if there are any existing readings with the same heartbeat
-    if session.query(Reading).filter_by(meter=str(data['meter']),
-                                        heartbeat_end=data['heartbeat_end']).count():
+    if (
+        session.query(Reading)
+        .filter_by(meter=str(data["meter"]), heartbeat_end=data["heartbeat_end"])
+        .count()
+    ):
         raise DuplicateReadingException(
             "Meter {} already has a reading with heartbeat_end={}".format(
-                data['meter'], data['heartbeat_end']))
+                data["meter"], data["heartbeat_end"]
+            )
+        )
 
-    meter = session.query(Meter).filter_by(code=data['meter']).one()
+    meter = session.query(Meter).filter_by(code=data["meter"]).one()
     data = meter.apply_scalars(data)
-    snapshot = Snapshot.get_or_create_meter_snapshot(code=str(data['meter']), session=session)
+    snapshot = Snapshot.get_or_create_meter_snapshot(code=str(data["meter"]), session=session)
     session.add(snapshot)
     reading = Reading(
-        meter=str(data['meter']),
-        heartbeat_start=data['heartbeat_start'],
-        heartbeat_end=data['heartbeat_end'],
-        frequency=data['frequency'],
-        state=MeterState.get_state_id_from_name(data['state']),  # int
-        uptime=data['uptime'],
-        voltage_min=data['voltage_min'],
-        voltage_max=data['voltage_max'],
-        voltage_avg=data['voltage_avg'],
-        current_min=data['current_min'],
-        current_max=data['current_max'],
-        current_avg=data['current_avg'],
-        energy=data['energy'],
-        true_power_inst=data['true_power_inst'],
-        true_power_avg=data['true_power_avg'],
-        apparent_power_avg=data['apparent_power_avg'],
-        power_factor_avg=data['power_factor_avg'],
-        user_power_limit=data['user_power_limit'],
+        meter=str(data["meter"]),
+        heartbeat_start=data["heartbeat_start"],
+        heartbeat_end=data["heartbeat_end"],
+        frequency=data["frequency"],
+        state=MeterState.get_state_id_from_name(data["state"]),  # int
+        uptime=data["uptime"],
+        voltage_min=data["voltage_min"],
+        voltage_max=data["voltage_max"],
+        voltage_avg=data["voltage_avg"],
+        current_min=data["current_min"],
+        current_max=data["current_max"],
+        current_avg=data["current_avg"],
+        energy=data["energy"],
+        true_power_inst=data["true_power_inst"],
+        true_power_avg=data["true_power_avg"],
+        apparent_power_avg=data["apparent_power_avg"],
+        power_factor_avg=data["power_factor_avg"],
+        user_power_limit=data["user_power_limit"],
         snapshot_id=str(snapshot.id),
     )
     session.add(reading)
@@ -123,22 +127,26 @@ def process_reading(reading, meter, session, update_meter_state=True):
     """
     if meter.is_customer_meter():
         try:
-            if config['LOCK_WALLETS_ON_PROCESS']:
-                session.execute(text("SET LOCAL lock_timeout = '{}s';".format(
-                    config['LOCK_WALLETS_ON_PROCESS_TIMEOUT'])))
+            if config["LOCK_WALLETS_ON_PROCESS"]:
+                session.execute(
+                    text("SET LOCAL lock_timeout = '{}s';".format(config["LOCK_WALLETS_ON_PROCESS_TIMEOUT"]))
+                )
                 session.query(Wallet).with_for_update(of=Wallet).filter(
                     (Wallet.id == meter.credit_wallet.id)
                     | (Wallet.id == meter.debt_wallet.id)
                     | (Wallet.id == meter.plan_wallet.id)
                 ).all()
                 session.flush()
-                logger.info("Billing wallet lock acquired for: %s, %s and %s",
-                            meter.credit_wallet.id, meter.debt_wallet.id,
-                            meter.plan_wallet.id)
+                logger.info(
+                    "Billing wallet lock acquired for: %s, %s and %s",
+                    meter.credit_wallet.id,
+                    meter.debt_wallet.id,
+                    meter.plan_wallet.id,
+                )
             session.expire_all()
             reading.update_kilowatt_hours(
-                meter.system_info.last_energy,
-                meter.system_info.last_energy_datetime)
+                meter.system_info.last_energy, meter.system_info.last_energy_datetime
+            )
 
             # The meter object is tied to the previous session and will not
             # update the wallets that get loaded in
@@ -146,18 +154,16 @@ def process_reading(reading, meter, session, update_meter_state=True):
             billing = CalculateBilling(reading, meter, session)
             billing.calculate()
             session.commit()
-            if config['LOCK_WALLETS_ON_PROCESS']:
+            if config["LOCK_WALLETS_ON_PROCESS"]:
                 logger.info("Billing wallet lock released")
 
         except OperationalError as e:
-            if 'canceling statement due to lock timeout' in str(e):
+            if "canceling statement due to lock timeout" in str(e):
                 raise DatabaseLockTimeoutException from e
             else:  # pragma: nocoverage
                 raise
     else:
-        reading.update_kilowatt_hours(
-            meter.system_info.last_energy,
-            meter.system_info.last_energy_datetime)
+        reading.update_kilowatt_hours(meter.system_info.last_energy, meter.system_info.last_energy_datetime)
 
     meter.update_from_reading(reading)
 
@@ -174,7 +180,7 @@ def process_reading(reading, meter, session, update_meter_state=True):
 
 def get_ground():
     """Get the current ground object."""
-    return Ground.get_by_serial(config['SERIAL'])
+    return Ground.get_by_serial(config["SERIAL"])
 
 
 def resetdb(empty=False, force=False, resetschema=True, engine=None):
@@ -186,8 +192,11 @@ def resetdb(empty=False, force=False, resetschema=True, engine=None):
     :param engine: The database engine to use.
     """
     # type: (bool, bool, bool, Engine)
-    from sparkmeter.database.database import (create_database_if_not_exists, database_has_tables,
-                                              reset_database_schema)
+    from sparkmeter.database.database import (
+        create_database_if_not_exists,
+        database_has_tables,
+        reset_database_schema,
+    )
 
     # First, create the PostgreSQL database if it doesn't exist
     if engine is None:
@@ -214,6 +223,7 @@ def resetdb(empty=False, force=False, resetschema=True, engine=None):
     from alembic import command
 
     from sparkmeter.alembic.migrationhelper import get_alembic_config
+
     alembic_cfg = get_alembic_config()
     command.stamp(alembic_cfg, "head")
     session = Session(engine)
@@ -223,6 +233,7 @@ def resetdb(empty=False, force=False, resetschema=True, engine=None):
     # Load database schemas (views, functions, etc.)
     logger.info("Loading database schemas")
     from sparkmeter.database.database import load_database_schemas
+
     load_database_schemas(engine)
 
     if not empty:
@@ -239,17 +250,18 @@ def create_default_config_params():
     """Creating default configuration parameters."""
     with session_scope() as session:
         from sparkmeter.config.configdomain import ConfigParameter
+
         ConfigParameter.add_defaults(session)
         session.commit()
-    logger.info('Created default config params')
+    logger.info("Created default config params")
 
 
 def create_default_roles():
     """Creating default roles."""
     roles = [
-        {"id": uuid.UUID('000000000-0000-0000-0001-00000000001'), "name": 'vendor'},
-        {"id": uuid.UUID('000000000-0000-0000-0001-00000000002'), "name": 'operator'},
-        {"id": uuid.UUID('000000000-0000-0000-0001-00000000004'), "name": 'api'},
+        {"id": uuid.UUID("000000000-0000-0000-0001-00000000001"), "name": "vendor"},
+        {"id": uuid.UUID("000000000-0000-0000-0001-00000000002"), "name": "operator"},
+        {"id": uuid.UUID("000000000-0000-0000-0001-00000000004"), "name": "api"},
     ]
 
     created_roles = {}
@@ -257,9 +269,9 @@ def create_default_roles():
     count = 0
     with session_scope() as session:
         for role in roles:
-            result = Role.get_one_or_create(session=session, id=role['id'], name=role['name'])
+            result = Role.get_one_or_create(session=session, id=role["id"], name=role["name"])
             count += int(result.created)
-            created_roles[role['name']] = result.object
+            created_roles[role["name"]] = result.object
 
     if count:
         logger.info("Created default roles")
@@ -296,18 +308,15 @@ def create_default_sms_objects(session=None):
         session = sql.session
 
     SMSConfig.get_one_or_create(
-        id=as_uuid('SMSConfig'),
+        id=as_uuid("SMSConfig"),
         session=session,
         flush=True,
     )
 
     for code, template in list(SMSConfigCommand.DEFAULT_COMMANDS.items()):
         command = SMSConfigCommand.get_one_or_create(
-            id=as_uuid(code),
-            session=session,
-            active=True,
-            code=code,
-            template=str(template))
+            id=as_uuid(code), session=session, active=True, code=code, template=str(template)
+        )
         session.add(command.save())
 
     for message_type, mti in list(SMSConfigMessage.messages.items()):
@@ -325,14 +334,15 @@ def create_default_sms_objects(session=None):
 def create_system_sales_account(session=None):
     """Create the default System Sales Account."""
     from sparkmeter.salesaccount.salesaccountdomain import SalesAccount
+
     if session is None:
         session = sql.session
 
     has_account = session.query(SalesAccount).filter_by(system=True).count() > 0
     if not has_account:
-        account = SalesAccount.create_empty(global_account=True, id=as_uuid('System'))
+        account = SalesAccount.create_empty(global_account=True, id=as_uuid("System"))
         account.system = True
-        account.name = 'System'
+        account.name = "System"
         session.add(account)
         session.commit()
 
@@ -340,136 +350,175 @@ def create_system_sales_account(session=None):
 def create_default_meter_models(session=None):
     """Initialize the meter model and scalars tables."""
     from sparkmeter.meter.meterdomain import MeterModels, MeterScalars
+
     if session is None:
         session = sql.session
 
     has_scalars = session.query(MeterScalars).count() > 0
     if not has_scalars:
         scalars2x = MeterScalars(
-            id=as_uuid('2x'),
-            name='2x',
+            id=as_uuid("2x"),
+            name="2x",
             frequency_scalar=0.01,
             voltage_scalar=0.01,
             current_scalar=0.002,
             energy_scalar=0.00003125,
             power_scalar=2.0,
-            power_factor_scalar=0.001)
+            power_factor_scalar=0.001,
+        )
         scalars4x = MeterScalars(
-            id=as_uuid('4x'),
-            name='4x',
+            id=as_uuid("4x"),
+            name="4x",
             frequency_scalar=0.01,
             voltage_scalar=0.01,
             current_scalar=0.004,
             energy_scalar=0.00003125,
             power_scalar=4.0,
-            power_factor_scalar=0.001)
+            power_factor_scalar=0.001,
+        )
         session.add(scalars2x)
         session.add(scalars4x)
         session.commit()
-        logger.info('Created default meter scalars')
+        logger.info("Created default meter scalars")
 
     has_meter_models = session.query(MeterModels).count() > 0
     if not has_meter_models:
-        session.add(MeterModels(
-            id=as_uuid('SM5R'),
-            name='SM5R',
-            inrush_limit=12.0,
-            continuous_limit=6.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM5XR'),
-            name='SM5XR',
-            inrush_limit=12.0,
-            continuous_limit=6.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=False))
-        session.add(MeterModels(
-            id=as_uuid('SM15R'),
-            name='SM15R',
-            inrush_limit=20.0,
-            continuous_limit=20.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM16R'),
-            name='SM16R',
-            inrush_limit=19.0,
-            continuous_limit=16.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM20R'),
-            name='SM20R',
-            inrush_limit=20.0,
-            continuous_limit=20.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM20XR'),
-            name='SM20XR',
-            inrush_limit=50.0,
-            continuous_limit=20.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=False))
-        session.add(MeterModels(
-            id=as_uuid('SM60R'),
-            name='SM60R',
-            inrush_limit=61.0,
-            continuous_limit=61.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM60RP'),
-            name='SM60RP',
-            inrush_limit=61.0,
-            continuous_limit=61.0,
-            phase_count=3,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM100E'),
-            name='SM100E',
-            inrush_limit=100.0,
-            continuous_limit=100.0,
-            phase_count=1,
-            scalars_id=scalars2x.id,
-            enabled=True))
-        session.add(MeterModels(
-            id=as_uuid('SM200E'),
-            name='SM200E',
-            inrush_limit=200.0,
-            continuous_limit=200.0,
-            phase_count=1,
-            scalars_id=scalars4x.id,
-            enabled=True))
-        for smrsd in ('SMRSD', 'SMRSDRF', 'SMRSDPLC'):
-            session.add(MeterModels(
-                id=as_uuid(smrsd),
-                name=smrsd,
-                inrush_limit=81.0,
+        session.add(
+            MeterModels(
+                id=as_uuid("SM5R"),
+                name="SM5R",
+                inrush_limit=12.0,
+                continuous_limit=6.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM5XR"),
+                name="SM5XR",
+                inrush_limit=12.0,
+                continuous_limit=6.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=False,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM15R"),
+                name="SM15R",
+                inrush_limit=20.0,
+                continuous_limit=20.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM16R"),
+                name="SM16R",
+                inrush_limit=19.0,
+                continuous_limit=16.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM20R"),
+                name="SM20R",
+                inrush_limit=20.0,
+                continuous_limit=20.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM20XR"),
+                name="SM20XR",
+                inrush_limit=50.0,
+                continuous_limit=20.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=False,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM60R"),
+                name="SM60R",
+                inrush_limit=61.0,
                 continuous_limit=61.0,
                 phase_count=1,
                 scalars_id=scalars2x.id,
-                enabled=True))
-        for smrpi in ('SMRPI', 'SMRPIRF', 'SMRPIPLC'):
-            session.add(MeterModels(
-                id=as_uuid(smrpi),
-                name=smrpi,
-                inrush_limit=101.0,
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM60RP"),
+                name="SM60RP",
+                inrush_limit=61.0,
                 continuous_limit=61.0,
                 phase_count=3,
                 scalars_id=scalars2x.id,
-                enabled=True))
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM100E"),
+                name="SM100E",
+                inrush_limit=100.0,
+                continuous_limit=100.0,
+                phase_count=1,
+                scalars_id=scalars2x.id,
+                enabled=True,
+            )
+        )
+        session.add(
+            MeterModels(
+                id=as_uuid("SM200E"),
+                name="SM200E",
+                inrush_limit=200.0,
+                continuous_limit=200.0,
+                phase_count=1,
+                scalars_id=scalars4x.id,
+                enabled=True,
+            )
+        )
+        for smrsd in ("SMRSD", "SMRSDRF", "SMRSDPLC"):
+            session.add(
+                MeterModels(
+                    id=as_uuid(smrsd),
+                    name=smrsd,
+                    inrush_limit=81.0,
+                    continuous_limit=61.0,
+                    phase_count=1,
+                    scalars_id=scalars2x.id,
+                    enabled=True,
+                )
+            )
+        for smrpi in ("SMRPI", "SMRPIRF", "SMRPIPLC"):
+            session.add(
+                MeterModels(
+                    id=as_uuid(smrpi),
+                    name=smrpi,
+                    inrush_limit=101.0,
+                    continuous_limit=61.0,
+                    phase_count=3,
+                    scalars_id=scalars2x.id,
+                    enabled=True,
+                )
+            )
         session.commit()
-        logger.info('Created default meter models')
+        logger.info("Created default meter models")
 
 
 def process_transaction(transaction_id):
@@ -478,8 +527,8 @@ def process_transaction(transaction_id):
 
     This should only be executed on the nuc.
     """
-    if config['HEROKU']:
-        raise Exception('transactions can not be processed in heroku')
+    if config["HEROKU"]:
+        raise Exception("transactions can not be processed in heroku")
 
     with session_scope() as session:
         #
@@ -494,35 +543,37 @@ def process_transaction(transaction_id):
         # transactions processing speed on a single ground is probably not going to
         # be a significant bottleneck for a long time.
         #
-        session.execute(text('LOCK TABLE transactions IN SHARE ROW EXCLUSIVE MODE;'))
+        session.execute(text("LOCK TABLE transactions IN SHARE ROW EXCLUSIVE MODE;"))
         transaction = Transaction.get_by_id(transaction_id)
         transaction = session.merge(transaction)
 
         try:
-            if config['LOCK_WALLETS_ON_PROCESS']:
-                session.execute(text("SET LOCAL lock_timeout = '{}s';".format(
-                    config['LOCK_WALLETS_ON_PROCESS_TIMEOUT'])))
+            if config["LOCK_WALLETS_ON_PROCESS"]:
+                session.execute(
+                    text("SET LOCAL lock_timeout = '{}s';".format(config["LOCK_WALLETS_ON_PROCESS_TIMEOUT"]))
+                )
                 session.query(Wallet).with_for_update().filter(
                     (Wallet.id == transaction.to_wallet_id) | (Wallet.id == transaction.from_wallet_id)
                 ).all()
                 session.flush()
-                logger.info('Transaction wallet lock acquired for: %s and %s',
-                            transaction.from_wallet_id,
-                            transaction.to_wallet_id)
+                logger.info(
+                    "Transaction wallet lock acquired for: %s and %s",
+                    transaction.from_wallet_id,
+                    transaction.to_wallet_id,
+                )
             session.expire_all()
             transaction.process()
             session.commit()
-            if config['LOCK_WALLETS_ON_PROCESS']:
-                logger.info('Transaction wallet lock released')
+            if config["LOCK_WALLETS_ON_PROCESS"]:
+                logger.info("Transaction wallet lock released")
         except TransactionError as e:
-            if e.code in [TransactionError.ERROR_ALREADY_REVERSED,
-                          TransactionError.ERROR_NOT_ENOUGH_FUNDS]:
+            if e.code in [TransactionError.ERROR_ALREADY_REVERSED, TransactionError.ERROR_NOT_ENOUGH_FUNDS]:
                 transaction.set_error(str(e))
                 # commit here because the scoped session will not commit if an exception is raised
                 session.commit()
             raise
         except OperationalError as e:
-            if 'canceling statement due to lock timeout' in str(e):
+            if "canceling statement due to lock timeout" in str(e):
                 raise DatabaseLockTimeoutException() from e
             else:  # pragma: nocoverage
                 raise
@@ -562,14 +613,11 @@ def create_admin():
 
             # Create user
             user = User(
-                id=as_uuid(username),
-                username=username,
-                email=email,
-                password=hash_password(password)
+                id=as_uuid(username), username=username, email=email, password=hash_password(password)
             )
 
             # Get operator role
-            operator_role = Role.query.filter_by(name='operator').first()
+            operator_role = Role.query.filter_by(name="operator").first()
             if not operator_role:
                 click.echo("Error: Operator role not found. Database may not be initialized.", err=True)
                 return 1

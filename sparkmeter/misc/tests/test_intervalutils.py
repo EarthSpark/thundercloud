@@ -8,7 +8,6 @@ from sparkmeter.tests.base import SparkMeterTestCaseBase
 
 
 class IntervalTests(SparkMeterTestCaseBase):
-
     def test_check_intervals_overlaps(self):
         assert not check_intervals_overlap([(0, 30), (30, 100), (100, 220), (220, 4800)])
 

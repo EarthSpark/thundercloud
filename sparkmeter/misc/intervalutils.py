@@ -7,7 +7,7 @@ import collections
 import itertools
 from builtins import range
 
-Overlap = collections.namedtuple('Overlap', 'start1 end1 start2 end2')
+Overlap = collections.namedtuple("Overlap", "start1 end1 start2 end2")
 
 
 # http://nedbatchelder.com/blog/201310/range_overlap_in_two_compares.html
@@ -34,8 +34,7 @@ def check_intervals_overlap(intervals):
         if check_interval_overlaps(s1, e1, s2, e2):
             # Make sure the result is in correct order
             res = sorted([(s1, e1), (s2, e2)])
-            return Overlap(res[0][0], res[0][1],
-                           res[1][0], res[1][1])
+            return Overlap(res[0][0], res[0][1], res[1][0], res[1][1])
 
 
 def check_intervals_gap(intervals, imin, imax):

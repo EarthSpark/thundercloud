@@ -10,8 +10,8 @@ Create Date: 2017-11-03 10:29:27.543204
 
 from alembic import op
 
-revision = '0.54'
-down_revision = '0.53'
+revision = "0.54"
+down_revision = "0.53"
 
 
 def upgrade():

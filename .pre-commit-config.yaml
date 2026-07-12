@@ -10,38 +10,14 @@ repos:
         exclude: ^(test-data/|sparkmeter/metering/_generated/)
     -   id: check-added-large-files
 
--   repo: https://github.com/pycqa/isort
-    rev: 8.0.1
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.21
     hooks:
-      - id: isort
-        name: isort (python)
-        args: ["--line-width", "100", "-p", "sparkmeter"]
-        files: ^sparkmeter/
-        exclude: ^sparkmeter/metering/_generated/
-
--   repo: https://github.com/hhatto/autopep8
-    rev: v2.3.2
-    hooks:
-      - id: autopep8
-        args: ["-i", "--select", "E,W", "--ignore", "W503", "--max-line-length", "110"]
-        files: ^sparkmeter/
-        exclude: ^sparkmeter/metering/_generated/
-
--   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
-    hooks:
-      - id: autoflake
-        args: ["--in-place", "--remove-all-unused-imports", "--remove-unused-variables"]
-        files: ^sparkmeter/
-        exclude: ^sparkmeter/metering/_generated/
-
--   repo: https://github.com/pycqa/flake8
-    rev: 7.3.0
-    hooks:
-      - id: flake8
-        args: ["--select", "F", "--max-line-length=110"]
-        files: ^sparkmeter/
-        exclude: ^sparkmeter/metering/_generated/
+      - id: ruff-check
+        args: ["--fix"]
+        exclude: ^(sparkmeter/metering/_generated/|test-data/)
+      - id: ruff-format
+        exclude: ^(sparkmeter/metering/_generated/|test-data/)
 
 -   repo: local
     hooks:

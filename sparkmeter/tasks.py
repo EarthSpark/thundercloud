@@ -19,6 +19,7 @@ def process_events():
     """
     from sparkmeter.event.eventdomain import Event
     from sparkmeter.models import session_scope
+
     with current_app.app_context(), session_scope() as session:
         for event in Event.get_unprocessed():
             # FIXME: Investigate splitting this into subtasks, need to do some profiling

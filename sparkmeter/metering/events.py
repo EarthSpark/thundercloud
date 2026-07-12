@@ -31,8 +31,9 @@ from sparkmeter.metering._generated.models.log_event import LogEvent
 from sparkmeter.metering._generated.models.log_level import LogLevel
 from sparkmeter.metering._generated.models.meter_reading_event import MeterReadingEvent
 from sparkmeter.metering._generated.models.meter_reading_phased_event import MeterReadingPhasedEvent
-from sparkmeter.metering._generated.models.stream_events_v_1_events_get_200_response import \
-    StreamEventsV1EventsGet200ResponseDiscriminator
+from sparkmeter.metering._generated.models.stream_events_v_1_events_get_200_response import (
+    StreamEventsV1EventsGet200ResponseDiscriminator,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -59,9 +60,7 @@ def build_handlers(app: "FastAPI") -> list["EventHandler"]:
     ]
 
 
-async def dispatch_dict_event(
-    raw: dict[str, Any], handlers: list["EventHandler"]
-) -> None:
+async def dispatch_dict_event(raw: dict[str, Any], handlers: list["EventHandler"]) -> None:
     """Structure a raw SSE dict into the right typed event and dispatch it."""
     event_type = raw.get("event_type")
     if not event_type:
@@ -189,9 +188,7 @@ def _write_readings_sync(
                         tags={"action": "reading"},
                     )
                 except DuplicateReadingException:
-                    logger.warning(
-                        "discarding duplicate reading from meter %s", event.meter_id
-                    )
+                    logger.warning("discarding duplicate reading from meter %s", event.meter_id)
             except Exception:  # noqa: BLE001
                 logger.exception(
                     "failed to write reading for meter_id=%s",
@@ -234,9 +231,7 @@ def build_watchdog(app: "FastAPI") -> "EventHandler":
     import os
 
     min_nodes_for_check = int(os.environ.get("METERING_WATCHDOG_MIN_NODES", "10"))
-    max_consecutive_dropouts = int(
-        os.environ.get("METERING_WATCHDOG_MAX_DROPOUTS", "3")
-    )
+    max_consecutive_dropouts = int(os.environ.get("METERING_WATCHDOG_MAX_DROPOUTS", "3"))
 
     state = {"consecutive_dropouts": 0, "warned": False}
 
@@ -249,22 +244,16 @@ def build_watchdog(app: "FastAPI") -> "EventHandler":
             state["warned"] = False
             return
 
-        all_dropped = (
-            event.meters_attempted > 0 and event.meters_responded == 0
-        )
+        all_dropped = event.meters_attempted > 0 and event.meters_responded == 0
         if all_dropped:
             state["consecutive_dropouts"] += 1
         else:
             state["consecutive_dropouts"] = 0
             state["warned"] = False
 
-        if (
-            state["consecutive_dropouts"] >= max_consecutive_dropouts
-            and not state["warned"]
-        ):
+        if state["consecutive_dropouts"] >= max_consecutive_dropouts and not state["warned"]:
             logger.warning(
-                "metering watchdog: %d consecutive dropout heartbeats; "
-                "provider may be stuck",
+                "metering watchdog: %d consecutive dropout heartbeats; provider may be stuck",
                 state["consecutive_dropouts"],
             )
             state["warned"] = True

@@ -7,7 +7,6 @@ from builtins import object
 
 
 class classproperty(object):
-
     """A property for class attributes."""
 
     def __init__(self, func):
@@ -29,7 +28,6 @@ class ClassInitMeta(type):
 
 
 class ClassInittable(object, metaclass=ClassInitMeta):
-
     """Class with a __class_init__ method."""
 
     @classmethod
@@ -39,7 +37,6 @@ class ClassInittable(object, metaclass=ClassInitMeta):
 
 
 class Unset(object):
-
     """Used as a singleton to indicate unset value.
 
     This is distinct for None which is used to indicate an
@@ -48,8 +45,8 @@ class Unset(object):
 
     def __repr__(self):
         # type: () -> str
-        """"Textual representation of unset."""
-        return 'unset'
+        """ "Textual representation of unset."""
+        return "unset"
 
 
 unset = Unset()

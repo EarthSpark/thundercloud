@@ -8,8 +8,8 @@ Create Date: 2018-03-01 10:43:35.415350
 
 """
 
-revision = '0.59'
-down_revision = '0.58'
+revision = "0.59"
+down_revision = "0.58"
 
 
 def upgrade():

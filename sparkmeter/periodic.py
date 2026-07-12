@@ -40,6 +40,7 @@ async def _run_blocking(fn: Callable[[], None], flask_app: "Flask") -> None:
     app context on the same thread — the inner push stacks on the outer
     and is correctly popped by its `with` block.
     """
+
     def _wrapped() -> None:
         with flask_app.app_context():
             fn()

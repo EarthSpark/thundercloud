@@ -4,8 +4,7 @@
 
 """SymmetricDS domain classess."""
 
-from sqlalchemy import (BigInteger, Column, DateTime, ForeignKey, ForeignKeyConstraint, Integer,
-                        String)
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import func
@@ -22,32 +21,27 @@ def sym_table(name):
 
 
 class SymmetricDSBaseDomain(ORMObject):
-
     """Base class for all SymmetricDS domain objects."""
 
     __abstract__ = True
 
 
 class SymmetricDSTrackUpdatesDomain(SymmetricDSBaseDomain):
-
     """Base class for all SymmetricDS domain objects that track updates."""
 
     __abstract__ = True
 
     #: Timestamp when this entry was created.
-    create_time = Column(DateTime, default=func.current_timestamp(),
-                         nullable=True)
+    create_time = Column(DateTime, default=func.current_timestamp(), nullable=True)
 
     #: The user who last updated this entry.
     last_update_by = Column(String(50), nullable=True)
 
     #: Timestamp when a user last updated this entry.
-    last_update_time = Column(DateTime, default=func.current_timestamp(),
-                              nullable=True)
+    last_update_time = Column(DateTime, default=func.current_timestamp(), nullable=True)
 
 
 class NodeGroup(SymmetricDSTrackUpdatesDomain):
-
     """
     Node Group.
 
@@ -57,7 +51,7 @@ class NodeGroup(SymmetricDSTrackUpdatesDomain):
     """
 
     __tablename__ = sym_table("node_group")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
     #: Unique identifier for a node group, usually named something meaningful,
     #: like 'store' or 'warehouse'.
@@ -70,13 +64,14 @@ class NodeGroup(SymmetricDSTrackUpdatesDomain):
         """Link two node groups together."""
         if action is None:
             action = NodeGroupLink.ACTION_PUSH
-        return NodeGroupLink(source_node_group_id=self.node_group_id,
-                             target_node_group_id=target.node_group_id,
-                             data_event_action=action)
+        return NodeGroupLink(
+            source_node_group_id=self.node_group_id,
+            target_node_group_id=target.node_group_id,
+            data_event_action=action,
+        )
 
 
 class Node(SymmetricDSBaseDomain):
-
     """
     Node.
 
@@ -87,7 +82,7 @@ class Node(SymmetricDSBaseDomain):
     """
 
     __tablename__ = sym_table("node")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
     #: A unique identifier for a node.
     node_id = Column(String(50), primary_key=True)
@@ -144,11 +139,10 @@ class Node(SymmetricDSBaseDomain):
     #: Deprecated. Use node_host.timezone_offset instead.
     timezone_offset = Column(String(6), nullable=True)
 
-    node_group = relationship('NodeGroup')
+    node_group = relationship("NodeGroup")
 
 
 class NodeIdentity(SymmetricDSBaseDomain):
-
     """
     Node Identity.
 
@@ -157,14 +151,13 @@ class NodeIdentity(SymmetricDSBaseDomain):
     """
 
     __tablename__ = sym_table("node_identity")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
     #: Unique identifier for a node.
     node_id = Column(String(50), primary_key=True)
 
 
 class NodeGroupLink(SymmetricDSTrackUpdatesDomain):
-
     """
     Node Group Link.
 
@@ -173,21 +166,17 @@ class NodeGroupLink(SymmetricDSTrackUpdatesDomain):
     """
 
     __tablename__ = sym_table("node_group_link")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
-    ACTION_WAIT_ON_PULL = 'W'
-    ACTION_PUSH = 'P'
-    ACTION_ROUTE_ONLY = 'R'
+    ACTION_WAIT_ON_PULL = "W"
+    ACTION_PUSH = "P"
+    ACTION_ROUTE_ONLY = "R"
 
     #: The node group where data changes should be captured
-    source_node_group_id = Column(String(50),
-                                  ForeignKey(NodeGroup.node_group_id),
-                                  primary_key=True)
+    source_node_group_id = Column(String(50), ForeignKey(NodeGroup.node_group_id), primary_key=True)
 
     #: The node group where data changes will be sent.
-    target_node_group_id = Column(String(50),
-                                  ForeignKey(NodeGroup.node_group_id),
-                                  primary_key=True)
+    target_node_group_id = Column(String(50), ForeignKey(NodeGroup.node_group_id), primary_key=True)
 
     #: The notification scheme used to send data changes to the target node group.
     data_event_action = Column(String, nullable=False)
@@ -198,7 +187,6 @@ class NodeGroupLink(SymmetricDSTrackUpdatesDomain):
 
 
 class Channel(SymmetricDSTrackUpdatesDomain):
-
     """
     Channel.
 
@@ -208,11 +196,11 @@ class Channel(SymmetricDSTrackUpdatesDomain):
     """
 
     __tablename__ = sym_table("channel")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
-    BATCH_ALGORITHM_DEFAULT = 'default'
-    BATCH_ALGORITHM_TRANSACTIONAL = 'transactional'
-    BATCH_ALGORITHM_NONTRANSACTIONAL = 'nontransactional'
+    BATCH_ALGORITHM_DEFAULT = "default"
+    BATCH_ALGORITHM_TRANSACTIONAL = "transactional"
+    BATCH_ALGORITHM_NONTRANSACTIONAL = "nontransactional"
 
     #: A unique identifer, usually named something meaningful, like 'sales' or 'inventory'.
     channel_id = Column(String(128), primary_key=True)
@@ -269,14 +257,13 @@ class Channel(SymmetricDSTrackUpdatesDomain):
     #: Identify the type of data loader this channel should use. Allows for the default
     #: dataloader to be swapped out via configuration for more efficient platform
     #: specific data loaders.
-    data_loader_type = Column(String(50), default='default', nullable=False)
+    data_loader_type = Column(String(50), default="default", nullable=False)
 
     #: Description on the type of data carried in this channel.
     description = Column(String(255), nullable=False)
 
 
 class Router(SymmetricDSTrackUpdatesDomain):
-
     """
     Router.
 
@@ -286,48 +273,49 @@ class Router(SymmetricDSTrackUpdatesDomain):
 
     __tablename__ = sym_table("router")
     __table_args__ = (
-        ForeignKeyConstraint(['source_node_group_id', 'target_node_group_id'],
-                             [NodeGroupLink.source_node_group_id,
-                              NodeGroupLink.target_node_group_id]),
-        {'schema': SCHEMA_NAME},
+        ForeignKeyConstraint(
+            ["source_node_group_id", "target_node_group_id"],
+            [NodeGroupLink.source_node_group_id, NodeGroupLink.target_node_group_id],
+        ),
+        {"schema": SCHEMA_NAME},
     )
 
     #: A router that inserts into an automatically created audit table. It records
     #: captured changes to tables that it is linked to.
     #: See http://www.symmetricds.org/doc/3.7/html/user-guide.html#_audit_table_router
-    TYPE_AUDIT = 'audit'
+    TYPE_AUDIT = "audit"
 
     #: A router that executes a Bean Shell script expression in order to select
     #: nodes to route to. The script can use the old and new column values
     #: See http://www.symmetricds.org/doc/3.7/html/user-guide.html#_beanshell_router
-    TYPE_BSH = 'bsh'
+    TYPE_BSH = "bsh"
 
     #: A router that compares old or new column values in a captured data
     #: row to a constant value or the value of a target node’s external id or
     #: node id.
     #: See http://www.symmetricds.org/doc/3.7/html/user-guide.html#_column_match_router
-    TYPE_COLUMN = 'column'
+    TYPE_COLUMN = "column"
 
     #: A router that sends all captured data to all nodes that belong to
     #: the target node group defined in the router.
     #: See: http://www.symmetricds.org/doc/3.7/html/user-guide.html#_default_router
-    TYPE_DEFAULT = 'default'
+    TYPE_DEFAULT = "default"
 
     #: A router that executes a Java expression in order to select nodes to route to.
     #: The script can use the old and new column values.
     #: See http://www.symmetricds.org/doc/3.7/html/user-guide.html#Java Router
-    TYPE_JAVA = 'java'
+    TYPE_JAVA = "java"
 
     #: A router which can be configured to determine routing based on an existing or
     #: ancillary table specifically for the purpose of routing data.
     #: See http://www.symmetricds.org/doc/3.7/html/user-guide.html#_lookup_table_router
-    TYPE_LOOKUPTABLE = 'lookuptable'
+    TYPE_LOOKUPTABLE = "lookuptable"
 
     #: A router that executes a SQL expression against the database to select
     #: nodes to route to. This SQL expression can be passed values of old and
     #: new column values.
     #: See http://www.symmetricds.org/doc/3.7/html/user-guide.html#_subselect_router
-    TYPE_SUBSELECT = 'subselect'
+    TYPE_SUBSELECT = "subselect"
 
     #: Unique description of a specific router
     router_id = Column(String(50), primary_key=True, nullable=False)
@@ -383,8 +371,7 @@ class Router(SymmetricDSTrackUpdatesDomain):
 
 
 class Trigger(SymmetricDSTrackUpdatesDomain):
-
-    u"""
+    """
     Trigger.
 
     Configures database triggers that capture changes in the database.
@@ -394,7 +381,7 @@ class Trigger(SymmetricDSTrackUpdatesDomain):
     """
 
     __tablename__ = sym_table("trigger")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
     #: Unique identifier for a trigger.
     trigger_id = Column(String(128), primary_key=True, nullable=False)
@@ -418,12 +405,10 @@ class Trigger(SymmetricDSTrackUpdatesDomain):
     source_table_name = Column(String(255), nullable=False)
 
     #: The channel_id of the channel that data changes will flow through.
-    channel_id = Column(String(128), ForeignKey(Channel.channel_id),
-                        nullable=False)
+    channel_id = Column(String(128), ForeignKey(Channel.channel_id), nullable=False)
 
     #: The channel_id of the channel that will be used for reloads.
-    reload_channel_id = Column(String(128), ForeignKey(Channel.channel_id),
-                               nullable=False, default='reload')
+    reload_channel_id = Column(String(128), ForeignKey(Channel.channel_id), nullable=False, default="reload")
 
     #: Whether or not to install an update trigger.
     sync_on_update = Column(IntBoolean, default=True, nullable=False)
@@ -520,9 +505,9 @@ class Trigger(SymmetricDSTrackUpdatesDomain):
     #: (previous state of the row before the change).
     use_handle_key_updates = Column(IntBoolean, default=False, nullable=False)
 
-    channel = relationship('Channel', foreign_keys=[channel_id])
+    channel = relationship("Channel", foreign_keys=[channel_id])
 
-    reload_channel = relationship('Channel', foreign_keys=[reload_channel_id])
+    reload_channel = relationship("Channel", foreign_keys=[reload_channel_id])
 
     def map_router(self, router, initial_load_order=1):
         """Map this trigger to a router.
@@ -531,28 +516,23 @@ class Trigger(SymmetricDSTrackUpdatesDomain):
         :param initial_load_order: initial load order
         :returns: a TriggerRouter.
         """
-        return TriggerRouter(trigger=self,
-                             router=router,
-                             initial_load_order=initial_load_order)
+        return TriggerRouter(trigger=self, router=router, initial_load_order=initial_load_order)
 
 
 class TriggerRouter(SymmetricDSTrackUpdatesDomain):
-
     """Trigger Router.
 
     Map a trigger to a router.
     """
 
     __tablename__ = sym_table("trigger_router")
-    __table_args__ = {'schema': SCHEMA_NAME}
+    __table_args__ = {"schema": SCHEMA_NAME}
 
     #: The id of a trigger.
-    trigger_id = Column(String(128), ForeignKey(Trigger.trigger_id),
-                        primary_key=True, nullable=False)
+    trigger_id = Column(String(128), ForeignKey(Trigger.trigger_id), primary_key=True, nullable=False)
 
     #: The id of a router.
-    router_id = Column(String(50), ForeignKey(Router.router_id),
-                       primary_key=True, nullable=False)
+    router_id = Column(String(50), ForeignKey(Router.router_id), primary_key=True, nullable=False)
 
     #: Indicates whether this trigger router is enabled or not.
     enabled = Column(IntBoolean, default=True, nullable=False)
@@ -585,13 +565,12 @@ class TriggerRouter(SymmetricDSTrackUpdatesDomain):
     #: sync_on_incoming_batch is set to 1.
     ping_back_enabled = Column(IntBoolean, default=False, nullable=False)
 
-    trigger = relationship('Trigger', foreign_keys=[trigger_id])
+    trigger = relationship("Trigger", foreign_keys=[trigger_id])
 
-    router = relationship('Router', foreign_keys=[router_id])
+    router = relationship("Router", foreign_keys=[router_id])
 
 
 class Conflict(SymmetricDSTrackUpdatesDomain):
-
     """
     Conflict.
 
@@ -600,10 +579,11 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
 
     __tablename__ = sym_table("conflict")
     __table_args__ = (
-        ForeignKeyConstraint(['source_node_group_id', 'target_node_group_id'],
-                             [NodeGroupLink.source_node_group_id,
-                              NodeGroupLink.target_node_group_id]),
-        {'schema': SCHEMA_NAME},
+        ForeignKeyConstraint(
+            ["source_node_group_id", "target_node_group_id"],
+            [NodeGroupLink.source_node_group_id, NodeGroupLink.target_node_group_id],
+        ),
+        {"schema": SCHEMA_NAME},
     )
 
     #: Indicates that only the primary key is used to detect a conflict.
@@ -611,7 +591,7 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
     #: detected during an update or a delete. Updates and deletes rows are
     #: resolved using only the primary key columns. If a row already exists
     #: during an insert then a conflict has been detected.
-    DETECT_TYPE_USE_PK_DATA = 'USE_PK_DATA'
+    DETECT_TYPE_USE_PK_DATA = "USE_PK_DATA"
 
     #: Indicates that the primary key plus any data that has changed on
     #: the source system will be used to detect a conflict. If a row exists
@@ -619,7 +599,7 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
     #: source system for the columns that have changed on the source system,
     #: then no conflict is detected during an update or a delete. If a row
     #: already exists during an insert then a conflict has been detected.
-    DETECT_TYPE_USE_CHANGED_DATA = 'USE_CHANGED_DATA'
+    DETECT_TYPE_USE_CHANGED_DATA = "USE_CHANGED_DATA"
 
     #: Indicates that all of the old data values are used to detect a
     #: conflict. Old data is the data values of the row on the source
@@ -627,21 +607,21 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
     #: values on the target system as they were on the source system,
     #: then no conflict is detected during an update or a delete. If a row
     #: already exists during an insert then a conflict has been detected.
-    DETECT_TYPE_USE_OLD_DATA = 'USE_OLD_DATA'
+    DETECT_TYPE_USE_OLD_DATA = "USE_OLD_DATA"
 
     #: Indicates that the primary key plus a timestamp column (as configured
     #: in detect_expression ) will indicate whether a conflict has occurred.
     #: If the target timestamp column is not equal to the old source timestamp
     #: column, then a conflict has been detected. If a row already exists during
     #: an insert then a conflict has been detected.
-    DETECT_TYPE_USE_USE_TIMESTAMP = 'USE_TIMESTAMP'
+    DETECT_TYPE_USE_USE_TIMESTAMP = "USE_TIMESTAMP"
 
     #: Indicates that the primary key plus a version column (as configured in
     #: detect_expression ) will indicate whether a conflict has occurred.
     #: If the target version column is not equal to the old source version column,
     #: then a conflict has been detected. If a row already exists during an insert
     #: then a conflict has been detected.
-    DETECT_TYPE_USE_USE_VERSION = 'USE_VERSION'
+    DETECT_TYPE_USE_USE_VERSION = "USE_VERSION"
 
     #: Indicates that when a conflict is detected the system should
     #: automatically apply the changes anyways. If the source operation
@@ -652,13 +632,13 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
     #: resolve_changes_only flag controls whether all columns will be
     #: updated or only columns that have changed will be updated during
     #: a fallback operation.
-    RESOLVE_TYPE_FALLBACK = 'FALLBACK'
+    RESOLVE_TYPE_FALLBACK = "FALLBACK"
 
     #: Indicates that when a conflict is detected the system should
     #: automatically ignore the incoming change. The resolve_row_only
     #: column controls whether the entire batch should be ignore or just
     #: the row in conflict.
-    RESOLVE_TYPE_IGNORE = 'IGNORE'
+    RESOLVE_TYPE_IGNORE = "IGNORE"
 
     #: Indicates that when a conflict is detected the batch will remain
     #: in error until manual intervention occurs. A row in error is
@@ -672,44 +652,42 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
     #: on the next load attempt instead of the original source data. The
     #: resolve_ignore flag can also be used to indicate that the row
     #: should be ignored on the next load attempt.
-    RESOLVE_TYPE_MANUAL = 'MANUAL'
+    RESOLVE_TYPE_MANUAL = "MANUAL"
 
     #: Indicates that when a conflict is detected by USE_TIMESTAMP or
     #: USE_VERSION that the either the source or the target will win
     #: based on the which side has the newer timestamp or higher version
     #: number. The resolve_row_only column controls whether the entire
     #: batch should be ignore or just the row in conflict.
-    RESOLVE_TYPE_NEWER_WINS = 'NEWER_WINS'
+    RESOLVE_TYPE_NEWER_WINS = "NEWER_WINS"
 
     #: The resolved data of the single row in the batch in conflict,
     #: along with the entire remainder of the batch, is sent back to the
     #: originating node.
-    PING_BACK_REMAINING_ROWS = 'REMAINING_ROWS'
+    PING_BACK_REMAINING_ROWS = "REMAINING_ROWS"
 
     #: The resolved data of the single row in the batch that caused the
     #: conflict is sent back to the originating node.
-    PING_BACK_SINGLE_ROW = 'SINGLE_ROW'
+    PING_BACK_SINGLE_ROW = "SINGLE_ROW"
 
     #: No data is sent back to the originating node, even if the resolved
     #: data doesn’t match the data the node sent.
-    PING_BACK_OFF = 'OFF'
+    PING_BACK_OFF = "OFF"
 
     #: Unique identifier for a specific conflict detection setting.
     conflict_id = Column(String(50), primary_key=True, nullable=False)
 
     #: The source node group for which this setting will be applied to.
     #: References a node group link.
-    source_node_group_id = Column(String(50),
-                                  ForeignKey(NodeGroup.node_group_id),
-                                  primary_key=True,
-                                  nullable=False)
+    source_node_group_id = Column(
+        String(50), ForeignKey(NodeGroup.node_group_id), primary_key=True, nullable=False
+    )
 
     #: The target node group for which this setting will be applied to.
     #: References a node group link.
-    target_node_group_id = Column(String(50),
-                                  ForeignKey(NodeGroup.node_group_id),
-                                  primary_key=True,
-                                  nullable=False)
+    target_node_group_id = Column(
+        String(50), ForeignKey(NodeGroup.node_group_id), primary_key=True, nullable=False
+    )
 
     #: Optional channel that this setting will be applied to.
     target_channel_id = Column(String(128), nullable=True)
@@ -761,7 +739,6 @@ class Conflict(SymmetricDSTrackUpdatesDomain):
 
 
 class NodeHost(SymmetricDSBaseDomain):
-
     """
     Node host.
 
@@ -771,9 +748,7 @@ class NodeHost(SymmetricDSBaseDomain):
     """
 
     __tablename__ = sym_table("node_host")
-    __table_args__ = (
-        {'schema': SCHEMA_NAME},
-    )
+    __table_args__ = ({"schema": SCHEMA_NAME},)
 
     #: A unique identifier for a node.
     node_id = Column(String(50), primary_key=True, nullable=False)
@@ -839,13 +814,7 @@ class NodeHost(SymmetricDSBaseDomain):
     def get_heartbeat_time(cls, session, node_id):
         """Get the last timestamp for a given node."""
         try:
-            self = (
-                cls.query
-                .filter_by(node_id=node_id)
-                .order_by(cls.heartbeat_time.desc())
-                .limit(1)
-                .one()
-            )
+            self = cls.query.filter_by(node_id=node_id).order_by(cls.heartbeat_time.desc()).limit(1).one()
             return self.heartbeat_time
         except NoResultFound:
             pass

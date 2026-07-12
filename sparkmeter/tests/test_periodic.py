@@ -7,6 +7,7 @@ a Flask request context. `_run_blocking` is the layer that pushes an
 explicit app context on the worker thread; these tests guard that
 contract so it doesn't silently regress.
 """
+
 import asyncio
 import threading
 
@@ -17,7 +18,6 @@ from sparkmeter import periodic
 
 
 class TestRunBlocking:
-
     def test_pushes_flask_context_on_worker_thread(self, app):
         """The worker thread should see `current_app` resolve to the
         passed Flask app — without this, the pre-fix periodic jobs
@@ -47,6 +47,7 @@ class TestRunBlocking:
         exceptions, not propagate (the periodic loops would die
         otherwise).
         """
+
         def _broken_job():
             raise RuntimeError("boom from inside the job")
 
@@ -56,8 +57,8 @@ class TestRunBlocking:
         # The logger.exception inside _run_blocking should have captured
         # the failure.
         assert any(
-            "boom from inside the job" in record.message or
-            "boom from inside the job" in (record.exc_text or "")
+            "boom from inside the job" in record.message
+            or "boom from inside the job" in (record.exc_text or "")
             for record in caplog.records
         )
 
@@ -74,13 +75,13 @@ class TestRunBlocking:
 
 
 class TestPeriodicLifespan:
-
     def test_raises_when_flask_app_missing(self):
         """`periodic_lifespan` must refuse to run if the ASGI
         entrypoint forgot to stash the Flask app on `app.state`.
         Otherwise the periodic jobs would silently no-op or crash
         deep inside `asyncio.to_thread`.
         """
+
         class _FakeApp:
             class state:
                 pass

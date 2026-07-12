@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """SystemVersion domain objects."""
+
 import datetime
 import logging
 from functools import total_ordering
@@ -22,14 +23,13 @@ logger = logging.getLogger(__name__)
 @total_ordering
 @syncchannel(SYNC_CHANNEL_SYSTEM)
 class SystemVersion(BaseDomain):
-
     """Domain class for storing application versions.
 
     This contains the information about which versions of the application are
     installed. It tells you when it was installed and the version number.
     """
 
-    __tablename__ = 'system_version'
+    __tablename__ = "system_version"
 
     #: When this version was added to the system, in UTC
     timestamp = Column(DateTime, default=lambda: datetime.datetime.utcnow(), nullable=False)
@@ -38,18 +38,18 @@ class SystemVersion(BaseDomain):
     version = Column(String, unique=True, nullable=False)
 
     #: Old versions of the app
-    STATUS_OLD = 'old'
+    STATUS_OLD = "old"
 
     #: The current version of the app
-    STATUS_ACTIVE = 'active'
+    STATUS_ACTIVE = "active"
 
     #: New versions of the app
-    STATUS_NEW = 'new'
+    STATUS_NEW = "new"
 
     @classmethod
     def get_default_id(cls, context):
         """Get the default id for a SystemVersion object."""
-        return as_uuid(context.current_parameters['version'])
+        return as_uuid(context.current_parameters["version"])
 
     @property
     def status(self):
@@ -83,14 +83,13 @@ class SystemVersion(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_SYSTEM)
 class SystemState(BaseDomain):
-
     """Domain class for storing system state changes.
 
     This contains the information about which versions of the application is active.
     It tells you where in the upgrade process the system is.
     """
 
-    __tablename__ = 'system_state'
+    __tablename__ = "system_state"
 
     #: When did this state change occur, in UTC
     timestamp = Column(DateTime, default=lambda: datetime.datetime.utcnow(), nullable=False)
@@ -102,22 +101,22 @@ class SystemState(BaseDomain):
     system = Column(String, nullable=False)
 
     #: The state when the application is starting up and needs to check some parameters
-    STATE_START = 'start'
+    STATE_START = "start"
 
     #: The state when the application is upgrading itself (alembic upgrade)
-    STATE_UPGRADE = 'upgrade'
+    STATE_UPGRADE = "upgrade"
 
     #: The state when the application is running normally and has no upgrades available
-    STATE_RUN = 'run'
+    STATE_RUN = "run"
 
     #: The state when the application has an upgrade available
-    STATE_UPGRADABLE = 'upgradable'
+    STATE_UPGRADABLE = "upgradable"
 
     #: The state when the application is waiting for sync to complete before kicking off the upgrade
-    STATE_PREPARE = 'prepare'
+    STATE_PREPARE = "prepare"
 
     #: The state when the application has completed sync and needs to terminate itself to begin the upgrade
-    STATE_TERMINATE = 'terminate'
+    STATE_TERMINATE = "terminate"
 
     _valid_states = [
         STATE_START,

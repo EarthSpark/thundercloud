@@ -37,5 +37,5 @@ def format_phone_number_filter(value):
 
 def register_filters(app):
     """Register filters in the current application."""
-    app.template_filter('format_datetime')(format_datetime_filter)
-    app.template_filter('format_phone_number')(format_phone_number_filter)
+    app.template_filter("format_datetime")(format_datetime_filter)
+    app.template_filter("format_phone_number")(format_phone_number_filter)

@@ -12,25 +12,24 @@ from flask import current_app
 
 
 class JsonEncoder(json.JSONEncoder):
-
     """Class for custom encoding of our data to json."""
 
-    item_separator = ','
-    key_separator = ': '
+    item_separator = ","
+    key_separator = ": "
 
     def default(self, obj):
         """Process objects into json."""
         if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
             return obj.isoformat()
-        elif type(obj).__name__.endswith('LazyString'):
+        elif type(obj).__name__.endswith("LazyString"):
             return str(obj)
-        elif type(obj).__name__ == 'Choice':
+        elif type(obj).__name__ == "Choice":
             return str(obj.code)
-        elif type(obj).__name__ == 'Decimal':
+        elif type(obj).__name__ == "Decimal":
             return float(obj)
         elif isinstance(obj, uuid.UUID):
             return str(obj)
-        elif hasattr(obj, '__json__'):
+        elif hasattr(obj, "__json__"):
             return obj.__json__()
         else:  # pragma: nocoverage
             return super().default(obj)
@@ -43,8 +42,7 @@ def json_loads(payload):
 
 def json_dumps(obj, sort_keys=True, indent=None, separators=None):
     """Json serializer."""
-    return json.dumps(obj, cls=JsonEncoder, sort_keys=sort_keys, indent=indent,
-                      separators=separators)
+    return json.dumps(obj, cls=JsonEncoder, sort_keys=sort_keys, indent=indent, separators=separators)
 
 
 def json_dump(obj, fp):  # pragma: nocoverage
@@ -61,6 +59,6 @@ def jsonify(*args, **kwargs):
 
     # FIXME: This should probably be minified properly
     return current_app.response_class(
-        (json_dumps(data, indent=2, separators=(',', ': ')), ''),
-        mimetype='application/json',
+        (json_dumps(data, indent=2, separators=(",", ": ")), ""),
+        mimetype="application/json",
     )

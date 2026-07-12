@@ -9,8 +9,9 @@ from sparkmeter.metering._generated.models.configure_meter_command import Config
 from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
 from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
 from sparkmeter.metering._generated.models.set_balance_command import SetBalanceCommand
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import \
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
+    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
+)
 from sparkmeter.metering._generated.models.unregister_meter_command import UnregisterMeterCommand
 
 
@@ -41,21 +42,15 @@ class TestBuildConfigureMeter:
         assert body.params.configuration.throttle.count_limit == 4
 
     def test_disable(self):
-        body = dispatch._build_configure_meter(
-            {"op": "configure_meter", "node_id": 7, "command": "disable"}
-        )
+        body = dispatch._build_configure_meter({"op": "configure_meter", "node_id": 7, "command": "disable"})
         assert body.params.behavior is MeterBehaviorCommand.DISABLE
 
     def test_unknown_command_falls_back_to_none(self):
-        body = dispatch._build_configure_meter(
-            {"op": "configure_meter", "node_id": 7, "command": "wibble"}
-        )
+        body = dispatch._build_configure_meter({"op": "configure_meter", "node_id": 7, "command": "wibble"})
         assert body.params.behavior is MeterBehaviorCommand.NONE
 
     def test_correlation_id_default_starts_with_dispatch(self):
-        body = dispatch._build_configure_meter(
-            {"op": "configure_meter", "node_id": 1, "command": "enable"}
-        )
+        body = dispatch._build_configure_meter({"op": "configure_meter", "node_id": 1, "command": "enable"})
         assert body.correlation_id.startswith("dispatch-")
 
     def test_correlation_id_passed_through(self):
@@ -104,17 +99,13 @@ class TestBuildRegisterMeter:
         assert body.vendor_options["mac"] == 0xABCD
 
     def test_without_mac_omits_vendor_options(self):
-        body = dispatch._build_register_meter(
-            {"op": "register_meter", "node_id": 100, "node_type": "SM5R"}
-        )
+        body = dispatch._build_register_meter({"op": "register_meter", "node_id": 100, "node_type": "SM5R"})
         assert body.vendor_options is None
 
 
 class TestBuildUnregisterMeter:
     def test_basic(self):
-        body = dispatch._build_unregister_meter(
-            {"op": "unregister_meter", "node_id": 55}
-        )
+        body = dispatch._build_unregister_meter({"op": "unregister_meter", "node_id": 55})
         assert isinstance(body, UnregisterMeterCommand)
         assert body.command_type is CommandTypeEnum.UNREGISTER_METER
         assert body.params.meter_id == "55"

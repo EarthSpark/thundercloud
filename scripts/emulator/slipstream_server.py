@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class SlipstreamJsonProtocol(protocol.Protocol):
-
     """Protocol for handling incoming slipstream json packets."""
 
     def dataReceived(self, data):
@@ -29,13 +28,13 @@ class SlipstreamJsonProtocol(protocol.Protocol):
         try:
             json_data = json.loads(data)
         except:
-            logger.debug("start of data\n%s\nend of data" % (data, ))
+            logger.debug("start of data\n%s\nend of data" % (data,))
             raise
         logger.debug(json_data)
 
         # random delay in response
         delay = random.randint(0, 3) + 0.1
-        logger.debug("sleeping for %f" % (delay, ))
+        logger.debug("sleeping for %f" % (delay,))
         time.sleep(delay)
 
         # parse json data to figure out what kind of request this is.
@@ -43,9 +42,9 @@ class SlipstreamJsonProtocol(protocol.Protocol):
             response_packet = self.factory.microgrid.gateway.get_pkt(json_data)
             response = json.dumps(response_packet)
             logger.debug(response)
-            self.transport.write(response + '\n')
+            self.transport.write(response + "\n")
         except Exception as e:
-            logger.debug("no response received from microgrid: %r" % (e, ))
+            logger.debug("no response received from microgrid: %r" % (e,))
             pass
 
         logger.debug("end request\n\n\n")
@@ -54,7 +53,6 @@ class SlipstreamJsonProtocol(protocol.Protocol):
 
 
 class SlipstreamJsonProtocolFactory(protocol.Factory):
-
     """Slipsteam Protocol Factory."""
 
     # This will be used by the default buildProtocol to create new protocols:
@@ -66,14 +64,14 @@ class SlipstreamJsonProtocolFactory(protocol.Factory):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Microgrid Emulator')
+    parser = argparse.ArgumentParser(description="Microgrid Emulator")
     parser.add_argument(
-        '--config',
-        dest='config',
-        nargs='?',
-        type=argparse.FileType('r'),
+        "--config",
+        dest="config",
+        nargs="?",
+        type=argparse.FileType("r"),
         default=sys.stdin,
-        help='config file to create grid from',
+        help="config file to create grid from",
     )
 
     args = parser.parse_args()

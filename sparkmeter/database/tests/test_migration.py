@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """Database migration unittests."""
+
 import pytest
 from freezegun import freeze_time
 from sqlalchemy import create_engine
@@ -11,8 +12,7 @@ from sqlalchemy.sql.ddl import CreateTable
 
 from sparkmeter.config.configdomain import ConfigParameter
 from sparkmeter.database.database import get_schema_tables
-from sparkmeter.database.tests.databasetestbase import (MIGRATION_TEST_URI,
-                                                        bootstrap_migration_database)
+from sparkmeter.database.tests.databasetestbase import MIGRATION_TEST_URI, bootstrap_migration_database
 from sparkmeter.misc.jsonutils import json_dumps
 from sparkmeter.tests.base import SparkMeterTestCaseBase
 
@@ -29,7 +29,6 @@ def migration_session():
 
 
 class MigrationTest(SparkMeterTestCaseBase):
-
     """This test verifies that the state system in the current/latest
     schema is similar to what it was from the beginning.
 
@@ -51,7 +50,7 @@ class MigrationTest(SparkMeterTestCaseBase):
                 objs.append(dict(row._mapping))
             content = json_dumps(objs)
             table_ignore = []
-            if table.name in ('sym_channel', 'sym_trigger', 'sym_router', 'sym_trigger_router'):
+            if table.name in ("sym_channel", "sym_trigger", "sym_router", "sym_trigger_router"):
                 # SymmetricDS-generated timestamps: filter only the value
                 # (fixed-width lookbehind on the key) so the key/structure stay
                 # asserted -> "create_time": "%% FILTERED BY UNITTEST %%".
@@ -59,17 +58,18 @@ class MigrationTest(SparkMeterTestCaseBase):
                     r'(?<="create_time": ")\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+',
                     r'(?<="last_update_time": ")\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+',
                 ]
-            if table.name == 'user':
+            if table.name == "user":
                 # fs_uniquifier is generated randomly by the migration. Match
                 # only the value (fixed-width lookbehind on the key) so the
                 # snapshot keeps the key and structure and filters just the
                 # random hex: "fs_uniquifier": "%% FILTERED BY UNITTEST %%".
                 table_ignore.append(r'(?<="fs_uniquifier": ")[a-f0-9]+')
-            self.verify_json_content(content, variant=table.name,
-                                     ignore_values=ignore_values, ignore_regexes=table_ignore)
+            self.verify_json_content(
+                content, variant=table.name, ignore_values=ignore_values, ignore_regexes=table_ignore
+            )
 
             schema = str(CreateTable(table))
-            schema = schema.replace('\n\n', '\n')
-            schema = schema.replace('\t', ' ' * 4)
-            schema = schema.replace(' \n', '\n')
-            self.verify_file_content('sql', schema, variant=table.name)
+            schema = schema.replace("\n\n", "\n")
+            schema = schema.replace("\t", " " * 4)
+            schema = schema.replace(" \n", "\n")
+            self.verify_file_content("sql", schema, variant=table.name)

@@ -2,12 +2,14 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """ORM Database utilities."""
+
 import contextlib
 import logging
 import os
 import time
 
 import psycopg2.errors
+
 # AsIs removed - no longer needed with SQLAlchemy 2.0
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
@@ -24,8 +26,7 @@ def create_database_if_not_exists(default_url, dbname):
     :param dbname: name of the new database.
     :returns: ``True`` if the database was created, ``False`` otherwise.
     """
-    engine = create_engine_for_database(default_url, "postgres",
-                                        isolation_level="AUTOCOMMIT")
+    engine = create_engine_for_database(default_url, "postgres", isolation_level="AUTOCOMMIT")
     with engine.connect() as conn:
         results = conn.execute(text("SELECT 1 FROM pg_database WHERE datname=:dbname;"), {"dbname": dbname})
         if results.first() != (1,):  # pragma nocoverage
@@ -42,8 +43,7 @@ def drop_database_if_exists(default_url, dbname):
     :param default_url: the default database url
     :param dbname: name of the new database.
     """
-    engine = create_engine_for_database(default_url, "postgres",
-                                        isolation_level="AUTOCOMMIT")
+    engine = create_engine_for_database(default_url, "postgres", isolation_level="AUTOCOMMIT")
     with engine.connect() as conn:
         conn.execute(text("DROP DATABASE IF EXISTS %s" % (dbname,)))
 
@@ -57,7 +57,7 @@ def create_engine_for_database(default_url, dbname, **options):
     """
     sql_url = make_url(default_url)
     sql_url = sql_url.set(database=dbname)
-    if dbname != 'postgres':  # pragma: nocoverage
+    if dbname != "postgres":  # pragma: nocoverage
         logger.info("Connected to %s" % (sql_url,))
     return create_engine(sql_url, **options)
 
@@ -94,8 +94,8 @@ def database_exists(engine, database):
     """
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT COUNT(*) FROM pg_database WHERE datname = :datname;"),
-            {"datname": database})
+            text("SELECT COUNT(*) FROM pg_database WHERE datname = :datname;"), {"datname": database}
+        )
         return result.first()[0] > 0
 
 
@@ -128,7 +128,8 @@ def database_has_table(engine, table):  # pragma: nocoverage
     """
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT COUNT(*) FROM pg_tables WHERE tablename = :table"), {"table": table})
+            text("SELECT COUNT(*) FROM pg_tables WHERE tablename = :table"), {"table": table}
+        )
         return result.first()[0] == 1
 
 
@@ -143,9 +144,11 @@ def database_has_constraint(engine, constraint_name):
     """
     with engine.connect() as conn:
         result = conn.execute(
-            text('SELECT COUNT(*) '
-                 'FROM information_schema.constraint_table_usage '
-                 'WHERE constraint_name = :constraint_name;'),
+            text(
+                "SELECT COUNT(*) "
+                "FROM information_schema.constraint_table_usage "
+                "WHERE constraint_name = :constraint_name;"
+            ),
             {"constraint_name": constraint_name},
         )
         return result.fetchone() != (0,)
@@ -166,27 +169,25 @@ def sync_triggers_disabled(conn):
     :return:
     """
     result = conn.execute(
-        text('SELECT DISTINCT event_object_table '
-             'FROM information_schema.triggers '
-             'WHERE event_object_table NOT LIKE \'sym_%%\' AND'
-             '      event_object_table NOT LIKE \'%%_view\';')
+        text(
+            "SELECT DISTINCT event_object_table "
+            "FROM information_schema.triggers "
+            "WHERE event_object_table NOT LIKE 'sym_%%' AND"
+            "      event_object_table NOT LIKE '%%_view';"
+        )
     )
     tables = sorted([row[0] for row in result])
     logger.info("Disabling triggers for tables: %s", tables)
     for table in tables:  # pragma: nocoverage
         # Table names cannot be parameterized, so use string formatting
         # This is safe because table names come from information_schema
-        conn.execute(
-            text(f'ALTER TABLE IF EXISTS "{table}" DISABLE TRIGGER USER;')
-        )
+        conn.execute(text(f'ALTER TABLE IF EXISTS "{table}" DISABLE TRIGGER USER;'))
     yield
     logger.info("Re-enabling triggers for tables %s", tables)
     for table in tables:  # pragma: nocoverage
         # Table names cannot be parameterized, so use string formatting
         # This is safe because table names come from information_schema
-        conn.execute(
-            text(f'ALTER TABLE IF EXISTS "{table}" ENABLE TRIGGER USER;')
-        )
+        conn.execute(text(f'ALTER TABLE IF EXISTS "{table}" ENABLE TRIGGER USER;'))
 
 
 def wait_for_table(engine, tablename, wait_seconds=2):
@@ -243,10 +244,7 @@ def wait_for_triggers(engine, wait_seconds=10):
     conn = engine.connect()
 
     while True:
-
-        res = conn.execute(
-            text("SELECT count(*) FROM information_schema.triggers;")
-        )
+        res = conn.execute(text("SELECT count(*) FROM information_schema.triggers;"))
         current_count = res.fetchone()[0]
 
         if current_count == 0:
@@ -272,9 +270,7 @@ def get_table_count(connection, tablename):
     :param tablename:
     :type tablename: str
     """
-    res = connection.execute(
-        text(f'SELECT COUNT(*) FROM public.{tablename};')
-    )
+    res = connection.execute(text(f"SELECT COUNT(*) FROM public.{tablename};"))
     return res.fetchone()[0]
 
 
@@ -340,9 +336,12 @@ def wait_for_ground_host(engine, wait_seconds=2):
     while True:
         conn = engine.connect()
         res = conn.execute(
-            text("SELECT COUNT(*) FROM sym_node_host, sym_node "
-                 "WHERE sym_node_host.node_id = sym_node.node_id "
-                 "AND sym_node.node_group_id = 'ground-group';"))
+            text(
+                "SELECT COUNT(*) FROM sym_node_host, sym_node "
+                "WHERE sym_node_host.node_id = sym_node.node_id "
+                "AND sym_node.node_group_id = 'ground-group';"
+            )
+        )
         count = res.fetchone()[0]
         conn.close()
         if count >= 1:
@@ -381,17 +380,17 @@ def bootstrap_production(app):
     from sparkmeter.salesaccount.salesaccountdomain import SalesAccount
     from sparkmeter.user.userdomain import Role, User
 
-    engine = wait_for_postgres(app.config['SQLALCHEMY_DATABASE_URI'])
+    engine = wait_for_postgres(app.config["SQLALCHEMY_DATABASE_URI"])
 
-    init_demo = os.environ.get('INIT_DEMO_ON_STARTUP') == "true"
+    init_demo = os.environ.get("INIT_DEMO_ON_STARTUP") == "true"
 
     # is this a brand new database with nothing in it
-    if not database_has_table(engine, 'alembic_version'):
+    if not database_has_table(engine, "alembic_version"):
         logger.info("Creating an empty schema")
         with app.app_context():
             app.setup_databases()
             # if INIT_CREATE_DEFAULTS = true then reset the db with defaults
-            empty = os.environ.get('INIT_CREATE_DEFAULTS') != 'true'
+            empty = os.environ.get("INIT_CREATE_DEFAULTS") != "true"
             resetdb(force=True, empty=empty, resetschema=False, engine=engine)
     else:
         # this is not a new database.
@@ -400,17 +399,18 @@ def bootstrap_production(app):
         # this allows the app to take care of itself and
         # allow the infrastructure to not need to interfere
         # with the application in a difficult way.
-        if app.config['HEROKU']:
+        if app.config["HEROKU"]:
             logger.info("Attempting schema upgrade")
             with app.app_context():
                 from alembic import command
 
                 from sparkmeter.alembic.migrationhelper import get_alembic_config
+
                 app.setup_databases()
                 alembic_cfg = get_alembic_config()
-                command.upgrade(alembic_cfg, 'head')
+                command.upgrade(alembic_cfg, "head")
                 sql.session.commit()
-                logger.info('Finished upgrading schema')
+                logger.info("Finished upgrading schema")
 
     # create the initial ground if the system has no ground
     if table_is_empty(engine, "ground") and not init_demo:
@@ -422,8 +422,8 @@ def bootstrap_production(app):
             # to create a ground and cloud otherwise we will fall back to
             # the original behavior of not creating them in the cloud on boot
             required_ground_fields = {
-                'INIT_GROUND_NAME',
-                'INIT_GROUND_SERIAL',
+                "INIT_GROUND_NAME",
+                "INIT_GROUND_SERIAL",
             }
             missing_ground_fields = required_ground_fields - set(os.environ.keys())
 
@@ -433,39 +433,40 @@ def bootstrap_production(app):
                 # It is only here because it is how deploy uses the app currently.
                 # Once that is gone this should be come a failure.
                 logger.warning(
-                    'Skipping creation of ground because required fields are missing %s',
-                    sorted(missing_ground_fields)
+                    "Skipping creation of ground because required fields are missing %s",
+                    sorted(missing_ground_fields),
                 )
             else:
                 with session_scope() as session:
-                    logger.info('Creating the initial ground')
+                    logger.info("Creating the initial ground")
                     Ground.create_empty(
                         session,
-                        serial=os.environ['INIT_GROUND_SERIAL'],
-                        name=os.environ['INIT_GROUND_NAME'],
-                        secret_key='unused',
+                        serial=os.environ["INIT_GROUND_SERIAL"],
+                        name=os.environ["INIT_GROUND_NAME"],
+                        secret_key="unused",
                     )
-                    logger.info('ground created')
+                    logger.info("ground created")
 
     # init sync (create symmetricds tables and register triggers)
-    if app.config['HEROKU'] and not app.config.get('STANDALONE_SPARKAPP', 0):
+    if app.config["HEROKU"] and not app.config.get("STANDALONE_SPARKAPP", 0):
         # The last thing symadmin create-sym-tables does is to
         # insert 4 entries into the sym_sequence table
-        wait_for_table_count(engine, 'sym_sequence', 4)
+        wait_for_table_count(engine, "sym_sequence", 4)
 
         if table_is_empty(engine, "sym_trigger_hist"):
             logger.info("Running init-sync")
             app.setup_databases()
 
             from sparkmeter.database.sync import create_default_policy
+
             with app.app_context():
                 create_default_policy(
                     app.sql.session,
-                    external_id=os.environ.get('EXTERNAL_ID', 'cloud'),
+                    external_id=os.environ.get("EXTERNAL_ID", "cloud"),
                 )
 
             # wait until symmetricds has created at least one sym trigger
-            wait_for_table_count(engine, 'sym_trigger_hist', 1)
+            wait_for_table_count(engine, "sym_trigger_hist", 1)
 
             # wait for symmetricds to place all triggers on sparkmeter tables
             # this means it is safe to insert data after this point
@@ -473,7 +474,7 @@ def bootstrap_production(app):
 
     # Create the initial admin user if this database has no users in it and this is the cloud.
     # this is after sync has been started so that this user is synced to the ground.
-    if table_is_empty(engine, "user") and app.config.get('INIT_ADMIN_USERNAME') and not init_demo:
+    if table_is_empty(engine, "user") and app.config.get("INIT_ADMIN_USERNAME") and not init_demo:
         logger.info("No admin user found in this database")
         with app.app_context():
             app.setup_databases()
@@ -482,9 +483,9 @@ def bootstrap_production(app):
             # to create a ground and cloud otherwise we will fall back to
             # the original behavior of not creating them in the cloud on boot
             required_admin_fields = {
-                'INIT_ADMIN_USERNAME',
-                'INIT_ADMIN_PASSWORD',
-                'INIT_ADMIN_EMAIL',
+                "INIT_ADMIN_USERNAME",
+                "INIT_ADMIN_PASSWORD",
+                "INIT_ADMIN_EMAIL",
             }
             missing_admin_fields = required_admin_fields - set(os.environ.keys())
 
@@ -494,25 +495,25 @@ def bootstrap_production(app):
                 # It is only here because it is how deploy uses the app currently.
                 # Once that is gone this should be come a failure.
                 logger.warning(
-                    'Skipping creation of the admin because required fields are missing %s',
+                    "Skipping creation of the admin because required fields are missing %s",
                     list(missing_admin_fields),
                 )
             else:
                 with session_scope() as session:
-                    logger.info('Creating the initial admin user')
+                    logger.info("Creating the initial admin user")
                     created, user = User.get_one_or_create(
                         session=session,
-                        id=as_uuid(os.environ['INIT_ADMIN_USERNAME']),
-                        username=os.environ['INIT_ADMIN_USERNAME'],
+                        id=as_uuid(os.environ["INIT_ADMIN_USERNAME"]),
+                        username=os.environ["INIT_ADMIN_USERNAME"],
                     )
-                    user.roles = [Role.get_by_name('operator')]
-                    user.password = hash_password(os.environ['INIT_ADMIN_PASSWORD'])
-                    user.email = os.environ['INIT_ADMIN_EMAIL']
+                    user.roles = [Role.get_by_name("operator")]
+                    user.password = hash_password(os.environ["INIT_ADMIN_PASSWORD"])
+                    user.email = os.environ["INIT_ADMIN_EMAIL"]
                     user.grounds = Ground.get_all()
                     user.accounts = SalesAccount.get_all()
                     user.account_all_access = True
                     user.ground_all_access = True
-                    logger.info('admin user created')
+                    logger.info("admin user created")
 
     # TODO: we should also have a param to init the ground on the ground on startup using the same
     # env params as we do in the cloud to remove one more responsibility from chef.
@@ -520,7 +521,7 @@ def bootstrap_production(app):
     # TODO: we should get rid of all this demo code, it doesn't belong here.
     # Or at least update it to use the standard process for creating a ground and admin user.
     if init_demo:
-        if app.config['HEROKU'] and not app.config.get('STANDALONE_SPARKAPP', 0):  # pragma: nocoverage
+        if app.config["HEROKU"] and not app.config.get("STANDALONE_SPARKAPP", 0):  # pragma: nocoverage
             wait_for_ground_host(engine)
         else:
             # FIXME: Remove when we move over integration testing with sync
@@ -534,11 +535,13 @@ def bootstrap_production(app):
             with app.app_context():
                 resetdb(force=True, resetschema=False)
                 data = DemoExamples(sql.session)
-                if os.environ.get('SM_SERIAL_GROUND1'):
-                    data.create_ground(os.environ['SM_MICROGRID_NAME_GROUND1'],
-                                       os.environ['SM_SERIAL_GROUND1'])
-                    data.create_ground(os.environ['SM_MICROGRID_NAME_GROUND2'],
-                                       os.environ['SM_SERIAL_GROUND2'])
+                if os.environ.get("SM_SERIAL_GROUND1"):
+                    data.create_ground(
+                        os.environ["SM_MICROGRID_NAME_GROUND1"], os.environ["SM_SERIAL_GROUND1"]
+                    )
+                    data.create_ground(
+                        os.environ["SM_MICROGRID_NAME_GROUND2"], os.environ["SM_SERIAL_GROUND2"]
+                    )
                 else:
                     data.create_ground()
                 data.create_all()
@@ -550,10 +553,7 @@ def load_database_schemas(engine):
 
     :param engine: database engine to import on
     """
-    filenames = [
-        'meterschema.sql',
-        'transactionschema.sql'
-    ]
+    filenames = ["meterschema.sql", "transactionschema.sql"]
     for filename in filenames:
         load_schema(engine, filename)
 
@@ -565,12 +565,12 @@ def load_schema(engine, filename):
     :param filename: sql file to import
     """
     logger.info("Loading schema %s", filename)
-    filename = os.path.join(os.path.dirname(__file__), 'schemas', filename)
+    filename = os.path.join(os.path.dirname(__file__), "schemas", filename)
     with open(filename) as f:
         data = f.read()
         # Get raw psycopg2 connection to avoid SQLAlchemy parameter escaping
         # In test sessions, engine may be a Connection bound to the test transaction
-        actual_engine = engine.engine if hasattr(engine, 'engine') else engine
+        actual_engine = engine.engine if hasattr(engine, "engine") else engine
         raw_conn = actual_engine.raw_connection()
         try:
             cursor = raw_conn.cursor()
@@ -588,7 +588,8 @@ def get_schema_tables():
     This excludes views and symmetricds tables.
     """
     from sparkmeter.database.alchemy import sql
+
     for table in sql.metadata.tables.values():
-        if table.name.endswith('_view'):
+        if table.name.endswith("_view"):
             continue
         yield table

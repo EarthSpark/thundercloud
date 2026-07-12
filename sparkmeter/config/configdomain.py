@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Configuration parameter domain objects."""
+
 import datetime
 import logging
 
@@ -22,40 +23,38 @@ logger = logging.getLogger(__name__)
 
 @syncchannel(SYNC_CHANNEL_CONFIG)
 class ConfigParameter(BaseDomain):
-
     """Domain class for storing a configuration parameter.
 
     This contains the information about a specific parameter which
     has a name, value, type, ground/user reference and a timestmap.
     """
 
-    __tablename__ = 'config_parameter'
+    __tablename__ = "config_parameter"
 
     #: Name of the config parameter, for example: negative-balance-type
     name = Column(String, nullable=False)
 
     #: Raw/Database value of the config parameter, serialization depends on
     #: the ParameterType subclass. Use the .value property to read/write.
-    raw_value = Column(String, nullable=True, name='value')
+    raw_value = Column(String, nullable=True, name="value")
 
     #: Type of config parameter, this is mapped to a ParameterType
     value_type = Column(String, nullable=False)
 
     #: Ground which this parameter applies to
-    ground_id = Column(ForeignKey('ground.id'), nullable=True)
+    ground_id = Column(ForeignKey("ground.id"), nullable=True)
 
     #: User which has most recently updated the parameter
-    updated_by_id = Column(ForeignKey('user.id'), nullable=True)
+    updated_by_id = Column(ForeignKey("user.id"), nullable=True)
 
     #: Last the the config parameter was modified, in UTC
-    last_modified = Column(DateTime, default=lambda: datetime.datetime.utcnow(),
-                           nullable=False)
+    last_modified = Column(DateTime, default=lambda: datetime.datetime.utcnow(), nullable=False)
 
     #: Reference to the ground, if set
-    ground = relationship('Ground')
+    ground = relationship("Ground")
 
     #: Reference to the user that updated the parameter
-    updated_by = relationship('User')
+    updated_by = relationship("User")
 
     #: Method API: Configuration page
 
@@ -67,7 +66,7 @@ class ConfigParameter(BaseDomain):
     @classmethod
     def get_default_id(cls, context):
         """Get the default id for a ConfigParameter object."""
-        return as_uuid(context.current_parameters['name'])
+        return as_uuid(context.current_parameters["name"])
 
     @classmethod
     def get_by_name(cls, name):

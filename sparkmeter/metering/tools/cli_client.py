@@ -28,12 +28,11 @@ import click
 from sparkmeter.metering._generated import APIClient, ClientConfig, HttpxTransport
 from sparkmeter.metering._generated.models.ping_meter_command import PingMeterCommand
 from sparkmeter.metering._generated.models.ping_meter_params import PingMeterParams
-from sparkmeter.metering._generated.models.query_meter_neighbors_command import \
-    QueryMeterNeighborsCommand
-from sparkmeter.metering._generated.models.query_meter_neighbors_params import \
-    QueryMeterNeighborsParams
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import \
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum
+from sparkmeter.metering._generated.models.query_meter_neighbors_command import QueryMeterNeighborsCommand
+from sparkmeter.metering._generated.models.query_meter_neighbors_params import QueryMeterNeighborsParams
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
+    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +61,7 @@ async def submit_ping(client: APIClient, meter_id: str, correlation_id: str) -> 
     await client.default.submit_command_v1_commands_post(body)
 
 
-async def submit_query_neighbors(
-    client: APIClient, meter_id: str, correlation_id: str
-) -> None:
+async def submit_query_neighbors(client: APIClient, meter_id: str, correlation_id: str) -> None:
     body = QueryMeterNeighborsCommand(
         command_type=CommandTypeEnum.QUERY_METER_NEIGHBORS,
         correlation_id=correlation_id,
@@ -76,9 +73,7 @@ async def submit_query_neighbors(
 CommandSubmitter = Callable[[APIClient, str, str], Awaitable[None]]
 
 
-async def run_per_meter_command(
-    submitter: CommandSubmitter, meter_ids: list[str]
-) -> None:
+async def run_per_meter_command(submitter: CommandSubmitter, meter_ids: list[str]) -> None:
     """Submit `submitter` for each meter, then tail SSE for replies.
 
     Per-meter outcome is printed on a single line. Exit code is 0 on
@@ -89,9 +84,7 @@ async def run_per_meter_command(
         click.echo("no meters to query", err=True)
         return
 
-    correlation_to_meter: dict[str, str] = {
-        f"cli-{uuid.uuid4().hex[:12]}": mid for mid in meter_ids
-    }
+    correlation_to_meter: dict[str, str] = {f"cli-{uuid.uuid4().hex[:12]}": mid for mid in meter_ids}
     pending = set(correlation_to_meter)
 
     client = _make_client()
@@ -104,9 +97,7 @@ async def run_per_meter_command(
                 click.echo(f"failed to submit to provider: {exc!r}", err=True)
                 sys.exit(2)
 
-            await _tail_until_resolved(
-                client, correlation_to_meter, pending
-            )
+            await _tail_until_resolved(client, correlation_to_meter, pending)
     finally:
         # Already inside `async with client` — but ensure close in case
         # of exception paths; APIClient.close is idempotent.

@@ -12,14 +12,14 @@ from sparkmeter.ground.grounddomain import Ground
 from sparkmeter.web.blueprint import AuthBlueprint
 
 logger = logging.getLogger(__name__)
-homepage = AuthBlueprint('homepage', __name__)
+homepage = AuthBlueprint("homepage", __name__)
 
 
 @homepage.route("/")
 def index():
     """Root page, redirect to ground list."""
-    if not config['HEROKU']:
+    if not config["HEROKU"]:
         ground = Ground.get_current()
     else:
         ground = None
-    return render_template('homepage-view.html', ground=ground)
+    return render_template("homepage-view.html", ground=ground)

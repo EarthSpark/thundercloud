@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """Dashboard domain models."""
+
 from __future__ import division
 
 import datetime
@@ -28,31 +29,31 @@ from sparkmeter.transaction.transactiondomain import Transaction
 
 @syncchannel(SYNC_CHANNEL_DASHBOARD)
 class DashboardDailyTariffSummary(BaseDomain):
-
     """DashboardDailyTariffSummary Postgres SQLAlchemy Model.
 
     A DashboardDailyTariffSummary is a daily summary of reading/meter data grouped by tariff
     for a certain time period.
     """
 
-    __tablename__ = 'dashboard_daily_tariff_summary'
+    __tablename__ = "dashboard_daily_tariff_summary"
     __table_args__ = (
-        UniqueConstraint('ground_id', 'tariff_id', 'date',
-                         name='dashboard_tariff_summary_ground_tariff_date_unique'),
+        UniqueConstraint(
+            "ground_id", "tariff_id", "date", name="dashboard_tariff_summary_ground_tariff_date_unique"
+        ),
     )
 
     #: The tariff this summary belongs to
     tariff_id = Column(
         UUIDType(binary=False),
-        ForeignKey('tariff.id'),
+        ForeignKey("tariff.id"),
         nullable=False,
-        info={'label': _('Tariff Id')},
+        info={"label": _("Tariff Id")},
     )
 
     #: The ground this summary belongs to
     ground_id = Column(
         UUIDType(binary=False),
-        ForeignKey('ground.id'),
+        ForeignKey("ground.id"),
         nullable=False,
     )
 
@@ -104,19 +105,15 @@ class DashboardDailyTariffSummary(BaseDomain):
     def create_summary(cls, ground, tariff, date):
         """Create a summary based on a tariff and date."""
         if not isinstance(ground, Ground):
-            raise TypeError("ground must be a Ground, not %s" % (
-                type(ground).__name__))
+            raise TypeError("ground must be a Ground, not %s" % (type(ground).__name__))
         if not isinstance(tariff, Tariff):
-            raise TypeError("tariff must be a Tariff, not %s" % (
-                type(tariff).__name__))
+            raise TypeError("tariff must be a Tariff, not %s" % (type(tariff).__name__))
         if not isinstance(date, datetime.date):
-            raise TypeError("date must be a datetime.date, not %s" % (
-                type(date).__name__))
+            raise TypeError("date must be a datetime.date, not %s" % (type(date).__name__))
 
         # Local time when this period starts, convert it to UTC and strip tzinfo
         # Since we use UTC without tzinfo in the DB.
-        period_start = datetime.datetime(date.year, date.month, date.day,
-                                         tzinfo=tzlocal())
+        period_start = datetime.datetime(date.year, date.month, date.day, tzinfo=tzlocal())
         period_start = period_start.astimezone(tzutc()).replace(tzinfo=None)
         period_end = period_start + relativedelta(days=1)
 
@@ -129,8 +126,7 @@ class DashboardDailyTariffSummary(BaseDomain):
 
         # Readings for a specific tariff/period
         query = Reading.get_by_tariff_date(tariff, ground, period_start, period_end)
-        readings = query.with_entities(
-            func.coalesce(func.sum(Reading.kilowatt_hours), 0))
+        readings = query.with_entities(func.coalesce(func.sum(Reading.kilowatt_hours), 0))
         total_kwh = readings.one()[0]
 
         # Meters for a specific tariff
@@ -165,20 +161,18 @@ class DashboardDailyTariffSummary(BaseDomain):
         :param user: restrict the dashboard summaries to a user or ``None``
         :type user: sparkmeter.user.userdomain.User
         """
-        ground_t = get_table_by_name('ground')
+        ground_t = get_table_by_name("ground")
 
         columns = [
             Tariff.name,
             cls.date,
-            func.sum(cls.transaction_amount).label('transaction_amount'),
-            func.sum(cls.transaction_count).label('transaction_count'),
-            func.sum(cls.kwh_consumed).label('kwh_consumed'),
-            func.sum(cls.customer_count).label('customer_count'),
+            func.sum(cls.transaction_amount).label("transaction_amount"),
+            func.sum(cls.transaction_count).label("transaction_count"),
+            func.sum(cls.kwh_consumed).label("kwh_consumed"),
+            func.sum(cls.customer_count).label("customer_count"),
         ]
-        joins = (
-            cls.__table__
-            .join(ground_t, cls.ground_id == ground_t.c.id)
-            .join(Tariff, cls.tariff_id == Tariff.id)
+        joins = cls.__table__.join(ground_t, cls.ground_id == ground_t.c.id).join(
+            Tariff, cls.tariff_id == Tariff.id
         )
         wheres = [
             cls.date >= date,
@@ -188,9 +182,8 @@ class DashboardDailyTariffSummary(BaseDomain):
             wheres.append(ground_t.c.id == ground.id)
 
         if user is not None:
-            users_ground_t = get_table_by_name('users_grounds')
-            subquery = select(users_ground_t.c.ground_id).where(
-                users_ground_t.c.user_id == user.id)
+            users_ground_t = get_table_by_name("users_grounds")
+            subquery = select(users_ground_t.c.ground_id).where(users_ground_t.c.user_id == user.id)
             wheres.append(ground_t.c.id.in_(subquery))
 
         query = (
@@ -223,28 +216,33 @@ class DashboardDailyTariffSummary(BaseDomain):
         :type user: sparkmeter.user.userdomain.User
         :returns: a sql query of the summarized data
         """
-        ground_t = get_table_by_name('ground')
+        ground_t = get_table_by_name("ground")
 
         today = datetime.date.today()
         yesterday = today - relativedelta(days=1)
         first_last_month = today + relativedelta(months=-1, day=1)
         columns = [
-            Tariff.name.label('tariff_name'),
-            func.cast(func.date_trunc('month', cls.date), Date).label('date'),
-            func.sum(cls.transaction_amount).label('energy-purchase'),
-            func.sum(cls.kwh_consumed).label('monthly-consumption'),
+            Tariff.name.label("tariff_name"),
+            func.cast(func.date_trunc("month", cls.date), Date).label("date"),
+            func.sum(cls.transaction_amount).label("energy-purchase"),
+            func.sum(cls.kwh_consumed).label("monthly-consumption"),
             # SUM(consumed) / min(last day of month, yesterday)
-            (old_div(func.sum(cls.kwh_consumed),
-             func.date_part('day', func.least(
-                 # Last day of the month
-                 func.date_trunc('month', cls.date) + func.cast('1 month - 1 day', Interval),
-                 yesterday
-             )))).label('daily-avg-consumption')
+            (
+                old_div(
+                    func.sum(cls.kwh_consumed),
+                    func.date_part(
+                        "day",
+                        func.least(
+                            # Last day of the month
+                            func.date_trunc("month", cls.date) + func.cast("1 month - 1 day", Interval),
+                            yesterday,
+                        ),
+                    ),
+                )
+            ).label("daily-avg-consumption"),
         ]
-        joins = (
-            cls.__table__
-            .join(ground_t, cls.ground_id == ground_t.c.id)
-            .join(Tariff, cls.tariff_id == Tariff.id)
+        joins = cls.__table__.join(ground_t, cls.ground_id == ground_t.c.id).join(
+            Tariff, cls.tariff_id == Tariff.id
         )
         wheres = [
             cls.date >= first_last_month,
@@ -254,9 +252,8 @@ class DashboardDailyTariffSummary(BaseDomain):
             wheres.append(ground_t.c.id == ground.id)
 
         if user is not None:
-            users_ground_t = get_table_by_name('users_grounds')
-            subquery = select(users_ground_t.c.ground_id).where(
-                users_ground_t.c.user_id == user.id)
+            users_ground_t = get_table_by_name("users_grounds")
+            subquery = select(users_ground_t.c.ground_id).where(users_ground_t.c.user_id == user.id)
             wheres.append(ground_t.c.id.in_(subquery))
 
         query = (
@@ -264,7 +261,7 @@ class DashboardDailyTariffSummary(BaseDomain):
             .select_from(joins)
             .where(and_(*wheres))
             # group by month
-            .group_by(Tariff.name, func.date_trunc('month', cls.date))
+            .group_by(Tariff.name, func.date_trunc("month", cls.date))
         ).order_by(Tariff.name)
 
         return query

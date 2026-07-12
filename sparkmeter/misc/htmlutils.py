@@ -8,5 +8,4 @@ from werkzeug.utils import escape
 
 def build_link(url, label):
     """Construct a link, given an url and a label."""
-    return u'<a href="{url}">{label}</a>'.format(url=url,
-                                                 label=escape(label))
+    return '<a href="{url}">{label}</a>'.format(url=url, label=escape(label))

@@ -20,8 +20,8 @@ from sparkmeter.database.sync import SYNC_CHANNEL_SNAPSHOT
 from sparkmeter.misc.jsonutils import json_dumps, json_loads
 from sparkmeter.misc.uuidutils import as_uuid
 
-revision = '0.77'
-down_revision = '0.76'
+revision = "0.77"
+down_revision = "0.76"
 
 logger = logging.getLogger(__name__)
 
@@ -29,28 +29,24 @@ logger = logging.getLogger(__name__)
 def upgrade():
     """Upgrade the database schema from 0.76 to 0.77."""
     create_synced_table(
-        'snapshot',
+        "snapshot",
         SYNC_CHANNEL_SNAPSHOT,
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('hash', sa.String(64), unique=True, nullable=False),
-        sa.Column('payload', sa.Text, nullable=False),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("hash", sa.String(64), unique=True, nullable=False),
+        sa.Column("payload", sa.Text, nullable=False),
     )
     empty_id = create_empty_snapshot()
-    op.add_column('reading', sa.Column('snapshot_id', postgresql.UUID(as_uuid=True), nullable=True))
-    op.add_column('event', sa.Column('snapshot_id', postgresql.UUID(as_uuid=True), nullable=True))
-    op.add_column('transactions', sa.Column('to_snapshot_id', postgresql.UUID(as_uuid=True), nullable=True))
-    op.add_column('transactions', sa.Column('from_snapshot_id', postgresql.UUID(as_uuid=True), nullable=True))
-    op.create_foreign_key(u'event_snapshot_id_fkey', 'event', 'snapshot', ['snapshot_id'], ['id'])
-    op.create_foreign_key(u'transactions_to_snapshot_id_fkey',
-                          'transactions',
-                          'snapshot',
-                          ['to_snapshot_id'],
-                          ['id'])
-    op.create_foreign_key(u'transactions_from_snapshot_id_fkey',
-                          'transactions',
-                          'snapshot',
-                          ['from_snapshot_id'],
-                          ['id'])
+    op.add_column("reading", sa.Column("snapshot_id", postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column("event", sa.Column("snapshot_id", postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column("transactions", sa.Column("to_snapshot_id", postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column("transactions", sa.Column("from_snapshot_id", postgresql.UUID(as_uuid=True), nullable=True))
+    op.create_foreign_key("event_snapshot_id_fkey", "event", "snapshot", ["snapshot_id"], ["id"])
+    op.create_foreign_key(
+        "transactions_to_snapshot_id_fkey", "transactions", "snapshot", ["to_snapshot_id"], ["id"]
+    )
+    op.create_foreign_key(
+        "transactions_from_snapshot_id_fkey", "transactions", "snapshot", ["from_snapshot_id"], ["id"]
+    )
     apply_reading_snapshots(empty_id)
     apply_event_snapshots(empty_id)
     apply_transaction_snapshots(empty_id)
@@ -59,14 +55,14 @@ def upgrade():
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.77 to 0.76."""
     op.execute("DROP VIEW transaction_view")
-    op.drop_constraint(u'event_snapshot_id_fkey', 'event', type_='foreignkey')
-    op.drop_constraint(u'transactions_from_snapshot_id_fkey', 'transactions', type_='foreignkey')
-    op.drop_constraint(u'transactions_to_snapshot_id_fkey', 'transactions', type_='foreignkey')
-    op.drop_column('reading', 'snapshot_id')
-    op.drop_column('event', 'snapshot_id')
-    op.drop_column('transactions', 'to_snapshot_id')
-    op.drop_column('transactions', 'from_snapshot_id')
-    op.drop_table('snapshot')
+    op.drop_constraint("event_snapshot_id_fkey", "event", type_="foreignkey")
+    op.drop_constraint("transactions_from_snapshot_id_fkey", "transactions", type_="foreignkey")
+    op.drop_constraint("transactions_to_snapshot_id_fkey", "transactions", type_="foreignkey")
+    op.drop_column("reading", "snapshot_id")
+    op.drop_column("event", "snapshot_id")
+    op.drop_column("transactions", "to_snapshot_id")
+    op.drop_column("transactions", "from_snapshot_id")
+    op.drop_table("snapshot")
 
 
 def dict_to_snapshot(snap_data):
@@ -76,19 +72,21 @@ def dict_to_snapshot(snap_data):
     :returns: A tuple of ID, hash, and payload.
     """
     serialized = json_dumps(snap_data, sort_keys=True)
-    computed_hash = sha256(serialized.encode('utf-8')).hexdigest()
+    computed_hash = sha256(serialized.encode("utf-8")).hexdigest()
     computed_id = as_uuid(computed_hash)
     return (computed_id, computed_hash, serialized)
 
 
 def create_snapshot(conn, snap_id, snap_hash, snap_payload):
     """Create a snapshot with the given data."""
-    conn.execute(sa.text("""INSERT INTO snapshot (id, hash, payload)
+    conn.execute(
+        sa.text("""INSERT INTO snapshot (id, hash, payload)
                          SELECT :id, :hash, :payload
                          WHERE NOT EXISTS (SELECT id FROM snapshot WHERE id = :id)"""),
-                 id=snap_id,
-                 hash=snap_hash,
-                 payload=snap_payload)
+        id=snap_id,
+        hash=snap_hash,
+        payload=snap_payload,
+    )
 
 
 def create_empty_snapshot():
@@ -149,11 +147,13 @@ def create_sales_account_snapshot(conn, sales_account_row):
 def apply_reading_snapshots(empty_id):
     """Apply snapshots to all readings."""
     conn = op.get_bind()
-    logger.info('Entering reading snapshots')
-    meters = conn.execute("""{}
+    logger.info("Entering reading snapshots")
+    meters = conn.execute(
+        """{}
                           WHERE meter.code IN (
                             SELECT DISTINCT NULLIF(meter, '')::int FROM reading
-                          ) {}""".format(METER_VIEW_SELECT, METER_VIEW_GROUP_BY))
+                          ) {}""".format(METER_VIEW_SELECT, METER_VIEW_GROUP_BY)
+    )
     for meter in meters:
         create_meter_snapshot(conn, meter)
 
@@ -161,30 +161,37 @@ def apply_reading_snapshots(empty_id):
 def apply_event_snapshots(empty_id):
     """Apply snapshots to all events."""
     conn = op.get_bind()
-    logger.info('Entering event snapshots')
-    meter_events = conn.execute("""{}
+    logger.info("Entering event snapshots")
+    meter_events = conn.execute(
+        """{}
                                 WHERE meter.id IN (
                                     SELECT DISTINCT object_id FROM event WHERE object_table = 'meter'
-                                ) {}""".format(METER_VIEW_SELECT, METER_VIEW_GROUP_BY))
+                                ) {}""".format(METER_VIEW_SELECT, METER_VIEW_GROUP_BY)
+    )
     for meter in meter_events:  # pragma: nocoverage
         snap_id = create_meter_snapshot(conn, meter)
-        conn.execute(sa.text("""UPDATE event SET snapshot_id = :snap_id
+        conn.execute(
+            sa.text("""UPDATE event SET snapshot_id = :snap_id
                      WHERE object_id = :meter_id AND object_table = 'meter'"""),
-                     snap_id=snap_id,
-                     meter_id=meter["id"])
+            snap_id=snap_id,
+            meter_id=meter["id"],
+        )
 
     grounds = conn.execute(
         """SELECT ground.id, name, serial, street1, street2, city, state, postalcode, coords
            FROM ground
            JOIN grounds_addresses ON grounds_addresses.ground_id = ground.id
-           JOIN address ON address.id = grounds_addresses.address_id""")
+           JOIN address ON address.id = grounds_addresses.address_id"""
+    )
     for ground in grounds:
-        ground = dict(ground._mapping) if hasattr(ground, '_mapping') else ground
+        ground = dict(ground._mapping) if hasattr(ground, "_mapping") else ground
         snap_id = create_ground_snapshot(conn, ground)
-        conn.execute(sa.text("""UPDATE event SET snapshot_id = :snap_id
+        conn.execute(
+            sa.text("""UPDATE event SET snapshot_id = :snap_id
                      WHERE object_id = :ground_id AND object_table = 'ground'"""),
-                     snap_id=snap_id,
-                     ground_id=ground["id"])
+            snap_id=snap_id,
+            ground_id=ground["id"],
+        )
 
     tariff_events = conn.execute("""SELECT * FROM tariff
                                  WHERE tariff.id IN (
@@ -192,39 +199,47 @@ def apply_event_snapshots(empty_id):
                                  )""")
     for tariff in tariff_events:
         snap_id = create_tariff_snapshot(conn, tariff)
-        tariff_id = tariff._mapping["id"] if hasattr(tariff, '_mapping') else tariff["id"]
-        conn.execute(sa.text("""UPDATE event SET snapshot_id = :snap_id
+        tariff_id = tariff._mapping["id"] if hasattr(tariff, "_mapping") else tariff["id"]
+        conn.execute(
+            sa.text("""UPDATE event SET snapshot_id = :snap_id
                      WHERE object_id = :tariff_id AND object_table = 'tariff'"""),
-                     snap_id=snap_id,
-                     tariff_id=tariff_id)
+            snap_id=snap_id,
+            tariff_id=tariff_id,
+        )
 
-    meter_wallet_events = conn.execute("""SELECT DISTINCT meter_view.*, wallet.id AS wallet_id
+    meter_wallet_events = conn.execute(
+        """SELECT DISTINCT meter_view.*, wallet.id AS wallet_id
                                        FROM event
                                        JOIN wallet ON wallet.id = event.object_id
                                        JOIN ({}) AS meter_view ON meter_view.id = wallet.meter_id
                                        ORDER BY meter_view.id ASC
-                                       """.format(METER_VIEW_QUERY))
+                                       """.format(METER_VIEW_QUERY)
+    )
     last_meter_id = None
     current_snap_id = None
     for meter in meter_wallet_events:  # pragma: nocoverage
-        meter = dict(meter._mapping) if hasattr(meter, '_mapping') else meter
+        meter = dict(meter._mapping) if hasattr(meter, "_mapping") else meter
         if last_meter_id != meter["id"]:  # Don't reprocess if multiple associated wallets have events
             current_snap_id = create_meter_snapshot(conn, meter)
-        conn.execute(sa.text("""UPDATE event SET snapshot_id = :snap_id
+        conn.execute(
+            sa.text("""UPDATE event SET snapshot_id = :snap_id
                      WHERE object_id = :wallet_id AND object_table = 'wallet'"""),
-                     snap_id=current_snap_id,
-                     wallet_id=meter["wallet_id"])
+            snap_id=current_snap_id,
+            wallet_id=meter["wallet_id"],
+        )
         last_meter_id = meter["id"]
 
-    conn.execute(sa.text("UPDATE event SET snapshot_id = :snap_id WHERE snapshot_id IS NULL"),
-                 snap_id=empty_id)
+    conn.execute(
+        sa.text("UPDATE event SET snapshot_id = :snap_id WHERE snapshot_id IS NULL"), snap_id=empty_id
+    )
 
 
 def apply_transaction_snapshots(empty_id):
     """Apply snapshots to all transactions."""
     conn = op.get_bind()
-    logger.info('Entering transaction snapshots')
-    transaction_wallets = conn.execute("""SELECT * FROM (
+    logger.info("Entering transaction snapshots")
+    transaction_wallets = conn.execute(
+        """SELECT * FROM (
                                            SELECT from_wallet_id wallet_id FROM transactions
                                            UNION SELECT to_wallet_id wallet_id FROM transactions
                                        ) AS wallet_ids
@@ -232,11 +247,12 @@ def apply_transaction_snapshots(empty_id):
                                        LEFT OUTER JOIN sales_account
                                            ON sales_account.id = wallet.sales_account_id
                                        LEFT OUTER JOIN ({}) AS meter_view ON meter_view.id = wallet.meter_id
-                                       """.format(METER_VIEW_QUERY))
+                                       """.format(METER_VIEW_QUERY)
+    )
     last_object_id = None
     current_snap_id = None
     for wallet in transaction_wallets:
-        wallet = dict(wallet._mapping) if hasattr(wallet, '_mapping') else wallet
+        wallet = dict(wallet._mapping) if hasattr(wallet, "_mapping") else wallet
         if wallet["meter_id"] is not None:
             if wallet["meter_id"] != last_object_id:
                 current_snap_id = create_meter_snapshot(conn, wallet)
@@ -245,20 +261,27 @@ def apply_transaction_snapshots(empty_id):
             if wallet["sales_account_id"] != last_object_id:
                 current_snap_id = create_sales_account_snapshot(conn, wallet)
                 last_object_id = wallet["sales_account_id"]
-        conn.execute(sa.text("""UPDATE transactions SET to_snapshot_id = :snap_id
+        conn.execute(
+            sa.text("""UPDATE transactions SET to_snapshot_id = :snap_id
                      WHERE to_wallet_id = :wallet_id"""),
-                     snap_id=current_snap_id,
-                     wallet_id=wallet["wallet_id"])
-        conn.execute(sa.text("""UPDATE transactions SET from_snapshot_id = :snap_id
+            snap_id=current_snap_id,
+            wallet_id=wallet["wallet_id"],
+        )
+        conn.execute(
+            sa.text("""UPDATE transactions SET from_snapshot_id = :snap_id
                      WHERE from_wallet_id = :wallet_id"""),
-                     snap_id=current_snap_id,
-                     wallet_id=wallet["wallet_id"])
+            snap_id=current_snap_id,
+            wallet_id=wallet["wallet_id"],
+        )
 
-    conn.execute(sa.text("UPDATE transactions SET to_snapshot_id = :snap_id WHERE to_snapshot_id IS NULL"),
-                 snap_id=empty_id)
+    conn.execute(
+        sa.text("UPDATE transactions SET to_snapshot_id = :snap_id WHERE to_snapshot_id IS NULL"),
+        snap_id=empty_id,
+    )
     conn.execute(
         sa.text("UPDATE transactions SET from_snapshot_id = :snap_id WHERE from_snapshot_id IS NULL"),
-        snap_id=empty_id)
+        snap_id=empty_id,
+    )
 
 
 def make_base_snapshot(snapshot_type, payload):
@@ -276,24 +299,27 @@ def make_base_snapshot(snapshot_type, payload):
 
 def get_meter_view_snapshot(meter):
     """Get a snapshot of a meter_view record."""
-    if hasattr(meter, '_mapping'):
+    if hasattr(meter, "_mapping"):
         meter = dict(meter._mapping)
-    snap = make_base_snapshot("meter", {
-        "id": meter["id"],
-        "code": meter["code"],
-        "serial": meter["serial"],
-        "type": meter["meter_type"],
-        "address": {
-            "street1": meter["address_street1"],
-            "street2": meter["address_street2"],
-            "city": meter["address_city"],
-            "state": meter["address_state"],
-            "postalcode": meter["address_postalcode"],
-            "coords": meter["address_coords"],
+    snap = make_base_snapshot(
+        "meter",
+        {
+            "id": meter["id"],
+            "code": meter["code"],
+            "serial": meter["serial"],
+            "type": meter["meter_type"],
+            "address": {
+                "street1": meter["address_street1"],
+                "street2": meter["address_street2"],
+                "city": meter["address_city"],
+                "state": meter["address_state"],
+                "postalcode": meter["address_postalcode"],
+                "coords": meter["address_coords"],
+            },
+            "model_name": meter["model_name"],
+            "tags": meter["tags"] or [],
         },
-        "model_name": meter["model_name"],
-        "tags": meter["tags"] or [],
-    })
+    )
     if meter["meter_type"] == "customer":
         snap["customer"] = {
             "id": meter["customer_id"],
@@ -310,25 +336,28 @@ def get_meter_view_snapshot(meter):
 
 def get_ground_snapshot(ground):
     """Get a snapshot of a ground record."""
-    if hasattr(ground, '_mapping'):
+    if hasattr(ground, "_mapping"):
         ground = dict(ground._mapping)
-    snap = make_base_snapshot("ground", {
-        "id": ground["id"],
-        "name": ground["name"],
-        "serial": ground["serial"],
-        "address": {
-            "street1": ground["street1"],
-            "street2": ground["street2"],
-            "city": ground["city"],
-            "state": ground["state"],
-            "postalcode": ground["postalcode"],
-            "coords": ground["coords"],
-        }
-    })
+    snap = make_base_snapshot(
+        "ground",
+        {
+            "id": ground["id"],
+            "name": ground["name"],
+            "serial": ground["serial"],
+            "address": {
+                "street1": ground["street1"],
+                "street2": ground["street2"],
+                "city": ground["city"],
+                "state": ground["state"],
+                "postalcode": ground["postalcode"],
+                "coords": ground["coords"],
+            },
+        },
+    )
     return snap
 
 
-def _maybe_json(field):   # pragma: nocoverage
+def _maybe_json(field):  # pragma: nocoverage
     """If the field is a JSON string, and should be unpacked, do it."""
     if isinstance(field, str):
         try:
@@ -340,38 +369,44 @@ def _maybe_json(field):   # pragma: nocoverage
 
 def get_tariff_snapshot(tariff):
     """Get a snapshot of a tariff record."""
-    snap = make_base_snapshot("tariff", {
-        "id": tariff.id,
-        "tariff_type": tariff.tariff_type,
-        "blockrates": _maybe_json(tariff.blockrates),
-        "flat_price": tariff.flat_price,
-        "flat_load_limit": tariff.flat_load_limit,
-        "load_limits": _maybe_json(tariff.load_limits),
-        "load_limit_type": tariff.load_limit_type,
-        "plan_enabled": tariff.plan_enabled,
-        "plan_price": tariff.plan_price,
-        "plan_fixed_fee": tariff.plan_fixed_fee,
-        "cycle_start_day_of_month": tariff.cycle_start_day_of_month,
-        "name": tariff.name,
-        "tou_enabled": tariff.tou_enabled,
-        "tous": _maybe_json(tariff.tous),
-        "low_balance_threshold": tariff.low_balance_threshold,
-        "daily_energy_limit_enabled": tariff.daily_energy_limit_enabled,
-        "daily_energy_limit_reset_hour": tariff.daily_energy_limit_reset_hour,
-        "daily_energy_limit_value": tariff.daily_energy_limit_value,
-    })
+    snap = make_base_snapshot(
+        "tariff",
+        {
+            "id": tariff.id,
+            "tariff_type": tariff.tariff_type,
+            "blockrates": _maybe_json(tariff.blockrates),
+            "flat_price": tariff.flat_price,
+            "flat_load_limit": tariff.flat_load_limit,
+            "load_limits": _maybe_json(tariff.load_limits),
+            "load_limit_type": tariff.load_limit_type,
+            "plan_enabled": tariff.plan_enabled,
+            "plan_price": tariff.plan_price,
+            "plan_fixed_fee": tariff.plan_fixed_fee,
+            "cycle_start_day_of_month": tariff.cycle_start_day_of_month,
+            "name": tariff.name,
+            "tou_enabled": tariff.tou_enabled,
+            "tous": _maybe_json(tariff.tous),
+            "low_balance_threshold": tariff.low_balance_threshold,
+            "daily_energy_limit_enabled": tariff.daily_energy_limit_enabled,
+            "daily_energy_limit_reset_hour": tariff.daily_energy_limit_reset_hour,
+            "daily_energy_limit_value": tariff.daily_energy_limit_value,
+        },
+    )
     return snap
 
 
 def get_sales_account_snapshot(sales_acct):
     """Get a snapshot of a sales account record."""
-    if hasattr(sales_acct, '_mapping'):
+    if hasattr(sales_acct, "_mapping"):
         sales_acct = dict(sales_acct._mapping)
-    snap = make_base_snapshot("sales_account", {
-        "id": sales_acct["sales_account_id"],
-        "name": sales_acct["name"],
-        "is_system_account": sales_acct["system"],
-    })
+    snap = make_base_snapshot(
+        "sales_account",
+        {
+            "id": sales_acct["sales_account_id"],
+            "name": sales_acct["name"],
+            "is_system_account": sales_acct["system"],
+        },
+    )
     return snap
 
 

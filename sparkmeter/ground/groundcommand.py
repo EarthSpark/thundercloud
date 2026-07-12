@@ -10,15 +10,16 @@ from zope.component import getUtility
 from sparkmeter.interface import IApplication
 
 
-@click.command('create-ground')
-@click.option('-s', '--serial', default=None, help='Serial of ground')
-@click.option('-n', '--name', default=None, help='Name of ground')
-@click.option('-k', '--secret-key', default=None, help='Secret API key')
+@click.command("create-ground")
+@click.option("-s", "--serial", default=None, help="Serial of ground")
+@click.option("-n", "--name", default=None, help="Name of ground")
+@click.option("-k", "--secret-key", default=None, help="Secret API key")
 @with_appcontext
 def create_ground(serial, name, secret_key):
     """Create and save a new ground instance, along with tariffs."""
     from sparkmeter.ground.grounddomain import Ground
     from sparkmeter.models import session_scope
+
     app = getUtility(IApplication)
     app.setup_databases()
     with session_scope() as session:

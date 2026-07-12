@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """Configuration parameter types."""
+
 import logging
 
 from sparkmeter.misc.pythonutils import ClassInittable
@@ -10,21 +11,20 @@ logger = logging.getLogger(__name__)
 
 
 class ParameterType(ClassInittable):
-
     """Abstract parameter type.
 
     Contains a type name and functions to convert to/from python
     and database.
     """
 
-    type_name = ''
+    type_name = ""
     types = {}
     python_type = None
 
     @classmethod
     def __class_init__(cls):
         """Initialize the class."""
-        if cls.__name__ != 'ParameterType':
+        if cls.__name__ != "ParameterType":
             cls.types[cls.type_name] = cls
 
     def to_python(self, value):
@@ -47,7 +47,6 @@ class ParameterType(ClassInittable):
 
 
 class Bool(ParameterType):
-
     """
     A boolean parameter.
 
@@ -55,7 +54,7 @@ class Bool(ParameterType):
     the True/False boolean values in Python.
     """
 
-    type_name = 'bool'
+    type_name = "bool"
     python_type = bool
 
     def to_python(self, value):
@@ -65,9 +64,9 @@ class Bool(ParameterType):
         :param value: the database value to convert.
         :return: the converted python value
         """
-        if value == 'true':
+        if value == "true":
             python_value = True
-        elif value == 'false':
+        elif value == "false":
             python_value = False
         else:
             msg = "Could not convert {!r} to a boolean value".format(value)
@@ -83,23 +82,22 @@ class Bool(ParameterType):
         :return: the converted database value
         """
         if value is True:
-            return u'true'
+            return "true"
         elif value is False:
-            return u'false'
+            return "false"
         else:
             msg = "boolean parameters must be True or False, not {!r}.".format(value)
             raise TypeError(msg)
 
 
 class Float(ParameterType):
-
     """
     A float parameter.
 
     This is represented as float in the database and python.
     """
 
-    type_name = 'float'
+    type_name = "float"
     python_type = float
 
     def __init__(self, min_value=None, max_value=None):
@@ -122,9 +120,7 @@ class Float(ParameterType):
         try:
             python_value = float(value)
         except (ValueError, TypeError):
-            logger.warning("Could not convert database value {!r} to a python float".format(
-                value
-            ))
+            logger.warning("Could not convert database value {!r} to a python float".format(value))
             python_value = 0.0
         return self._validate_value(python_value)
 
@@ -155,7 +151,6 @@ class Float(ParameterType):
 
 
 class Percent(Float):
-
     """
     A percentage parameter.
 
@@ -163,7 +158,7 @@ class Percent(Float):
     a maxmimum allowed value of 100.
     """
 
-    type_name = 'percent'
+    type_name = "percent"
 
     def __init__(self):
         """Create a new percent type."""
@@ -171,7 +166,6 @@ class Percent(Float):
 
 
 class Voltage(Float):
-
     """
     A voltage parameter.
 
@@ -179,7 +173,7 @@ class Voltage(Float):
     a maxmimum allowed value of 240
     """
 
-    type_name = 'voltage'
+    type_name = "voltage"
     allowed = [110.0, 120.0, 220.0, 230.0, 240.0]
 
     def __init__(self):
@@ -189,5 +183,5 @@ class Voltage(Float):
     def _validate_value(self, value):
         retval = float(value)
         if retval not in self.allowed:
-            raise TypeError("value must be one of: {}".format(', '.join(str(val) for val in self.allowed)))
+            raise TypeError("value must be one of: {}".format(", ".join(str(val) for val in self.allowed)))
         return retval

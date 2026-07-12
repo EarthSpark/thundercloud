@@ -2,6 +2,7 @@
 # Copyright © 2019 SparkMeter, Inc.
 # All Rights Reserved.
 """API v0 event views."""
+
 import http.client
 
 from flask_security import roles_accepted
@@ -11,60 +12,60 @@ from sparkmeter.event.eventdomain import Event
 from sparkmeter.exceptions import APIError
 
 
-@api.route('/event/<uuid:event_id>')
-@roles_accepted('api')
+@api.route("/event/<uuid:event_id>")
+@roles_accepted("api")
 def get_event(event_id):
     """Get event status.
-    ---
-   parameters:
-    - name: event_id
-      in: path
-      description: The ID of the event
-      required: true
-      schema:
-        type: string
-        format: uuid
-    get:
-      summary: get the status of an event
-      description: >
-        This call requests the status of a system event by ID. Based on the
-        event type, the payload can contain additional event-specific
-        information.
+     ---
+    parameters:
+     - name: event_id
+       in: path
+       description: The ID of the event
+       required: true
+       schema:
+         type: string
+         format: uuid
+     get:
+       summary: get the status of an event
+       description: >
+         This call requests the status of a system event by ID. Based on the
+         event type, the payload can contain additional event-specific
+         information.
 
 
-        _Typical use cases:_
+         _Typical use cases:_
 
-        * Determine when a customer wallet zero event has been processed.
-      responses:
-        200:
-          description: the status of the event
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventStatusModel'
-              examples:
-                Base:
-                  value:
-                    error: null
-                    status: success
-                    event:
-                      id: e2b94357-4b34-4871-86ef-51745a6247d4
-                      created: '2013-01-01T01:01:01'
-                      status: pending
-                Customer Wallet:
-                  value:
-                    error: null
-                    status: success
-                    event:
-                      id: e2b94357-4b34-4871-86ef-51745a6247d4
-                      created: '2013-01-01T01:01:01'
-                      status: pending
-                      customer: 063d4c95-c3af-4bef-9941-16305da1c96e
-                      wallet: credit
+         * Determine when a customer wallet zero event has been processed.
+       responses:
+         200:
+           description: the status of the event
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/EventStatusModel'
+               examples:
+                 Base:
+                   value:
+                     error: null
+                     status: success
+                     event:
+                       id: e2b94357-4b34-4871-86ef-51745a6247d4
+                       created: '2013-01-01T01:01:01'
+                       status: pending
+                 Customer Wallet:
+                   value:
+                     error: null
+                     status: success
+                     event:
+                       id: e2b94357-4b34-4871-86ef-51745a6247d4
+                       created: '2013-01-01T01:01:01'
+                       status: pending
+                       customer: 063d4c95-c3af-4bef-9941-16305da1c96e
+                       wallet: credit
     """
     event = Event.get_by_id(event_id)
     if event is None:
-        raise APIError('no such event', status_code=http.client.NOT_FOUND)
+        raise APIError("no such event", status_code=http.client.NOT_FOUND)
     return success(event=event.to_json(), type=event.get_info().label)
 
 

@@ -42,12 +42,7 @@ def build_flask() -> Flask:
         if request.method == "POST":
             session["user"] = request.form["user"]
             return redirect(url_for("whoami"))
-        return (
-            '<form method="POST">'
-            '<input name="user" />'
-            '<button type="submit">Login</button>'
-            '</form>'
-        )
+        return '<form method="POST"><input name="user" /><button type="submit">Login</button></form>'
 
     @flask_app.route("/whoami")
     def whoami():
@@ -82,6 +77,7 @@ def check(label):
     def deco(fn):
         CHECKS.append((label, fn))
         return fn
+
     return deco
 
 

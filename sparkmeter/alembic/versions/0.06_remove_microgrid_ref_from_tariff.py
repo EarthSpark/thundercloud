@@ -12,17 +12,17 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision = '0.06'
-down_revision = '0.05'
+revision = "0.06"
+down_revision = "0.05"
 
 
 def upgrade():
     """Upgrade the database schema from 0.05 to 0.06."""
-    op.drop_constraint(u'tariff_microgrid_id_fkey', 'tariff', type_='foreignkey')
-    op.drop_column('tariff', 'microgrid_id')
+    op.drop_constraint("tariff_microgrid_id_fkey", "tariff", type_="foreignkey")
+    op.drop_column("tariff", "microgrid_id")
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.06 to 0.05."""
-    op.add_column('tariff', sa.Column('microgrid_id', postgresql.UUID(), autoincrement=False, nullable=False))
-    op.create_foreign_key(u'tariff_microgrid_id_fkey', 'tariff', 'microgrid', ['microgrid_id'], ['id'])
+    op.add_column("tariff", sa.Column("microgrid_id", postgresql.UUID(), autoincrement=False, nullable=False))
+    op.create_foreign_key("tariff_microgrid_id_fkey", "tariff", "microgrid", ["microgrid_id"], ["id"])

@@ -32,7 +32,6 @@ def session_scope():
 
 
 class BaseDomain(ORMObject):
-
     """Abstract domain class for all tables with a UUID column."""
 
     __abstract__ = True
@@ -49,8 +48,9 @@ class BaseDomain(ORMObject):
         cls = get_class_by_tablename(table.name)
         return cls.get_default_id(context)
 
-    id = Column(UUIDType(binary=False), default=default_id, primary_key=True,
-                server_default=func.uuid_generate_v4())
+    id = Column(
+        UUIDType(binary=False), default=default_id, primary_key=True, server_default=func.uuid_generate_v4()
+    )
 
     @classmethod
     def sync_init(cls, group):
@@ -65,15 +65,10 @@ class BaseDomain(ORMObject):
     def _data(self):
         """Get the stored data as a dict."""
         self.id
-        return {
-            i: j
-            for i, j in list(self.__dict__.items())
-            if i != '_sa_instance_state'
-        }
+        return {i: j for i, j in list(self.__dict__.items()) if i != "_sa_instance_state"}
 
 
 class BaseView(BaseDomain):
-
     """Abstract domain class for a view."""
 
     __abstract__ = True

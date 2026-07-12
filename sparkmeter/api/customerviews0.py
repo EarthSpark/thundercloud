@@ -2,6 +2,7 @@
 # Copyright © 2013-2019 SparkMeter, Inc.
 # All Rights Reserved.
 """API v0 customer views."""
+
 import http.client
 import json
 import logging
@@ -43,13 +44,14 @@ def _format_customer(meter_view, fetch_latest_reading=False):
     """
     if meter_view.customer_phone_number:
         phone_number = parse_phone_number(meter_view.customer_phone_number)
-        phone_number = format_phone_number(phone_number, format='E164')
+        phone_number = format_phone_number(phone_number, format="E164")
     else:
         phone_number = None
-    meter = sql.session.query(Meter).options(
-        joinedload(Meter.system_info),
-        joinedload(Meter.billing)
-    ).get(meter_view.id)
+    meter = (
+        sql.session.query(Meter)
+        .options(joinedload(Meter.system_info), joinedload(Meter.billing))
+        .get(meter_view.id)
+    )
     address_parts = [
         meter_view.address_street1,
         meter_view.address_street2,
@@ -61,7 +63,7 @@ def _format_customer(meter_view, fetch_latest_reading=False):
 
     meter_object = dict(
         active=meter_view.active,
-        address=', '.join([p for p in address_parts if p]),
+        address=", ".join([p for p in address_parts if p]),
         street1=meter_view.address_street1,
         street2=meter_view.address_street2,
         city=meter_view.address_city,
@@ -99,7 +101,7 @@ def _format_customer(meter_view, fetch_latest_reading=False):
         latest_reading = meter.get_latest_reading()
         if latest_reading:
             reading_object = _format_reading(latest_reading)
-            meter_object['latest_reading'] = reading_object
+            meter_object["latest_reading"] = reading_object
 
     return dict(
         code=meter_view.customer_code,
@@ -118,17 +120,18 @@ def _format_customer(meter_view, fetch_latest_reading=False):
 
 
 def _update_customer(
-        meter_view,
-        active,
-        name,
-        code,
-        phone_number,
-        meter_tariff_name,
-        operating_mode,
-        address,
-        events,
-        coords,
-        tags):
+    meter_view,
+    active,
+    name,
+    code,
+    phone_number,
+    meter_tariff_name,
+    operating_mode,
+    address,
+    events,
+    coords,
+    tags,
+):
     # Meter active/hidden
     if active is not None:
         meter_view.active = active
@@ -146,7 +149,7 @@ def _update_customer(
 
     # Customer Phone number
     if phone_number is not None:
-        number = format_phone_number(phone_number, format='E164')
+        number = format_phone_number(phone_number, format="E164")
         meter_view.customer_phone_number = number
         meter_view.customer_phone_number_verified = True
 
@@ -176,12 +179,12 @@ def _update_customer(
 
     # Address
     if isinstance(address, dict):
-        meter_view.address_street1 = address['street1']
-        meter_view.address_street2 = address['street2']
-        meter_view.address_city = address['city']
-        meter_view.address_state = address['state']
-        meter_view.address_postalcode = address['postalcode']
-        meter_view.address_country = address['country']
+        meter_view.address_street1 = address["street1"]
+        meter_view.address_street2 = address["street2"]
+        meter_view.address_city = address["city"]
+        meter_view.address_state = address["state"]
+        meter_view.address_postalcode = address["postalcode"]
+        meter_view.address_country = address["country"]
     elif address is not None:
         meter_view.address_street1 = address
     if coords is not None:
@@ -224,7 +227,7 @@ def _get_address(params):
 
     :returns: A string if an address singleton, a dict of address fields if all are present, or None.
     """
-    address_fields = frozenset(['street1', 'street2', 'city', 'state', 'postalcode', 'country'])
+    address_fields = frozenset(["street1", "street2", "city", "state", "postalcode", "country"])
     common = set(params.keys()) & address_fields
     if len(common) == len(address_fields):
         return {
@@ -232,12 +235,13 @@ def _get_address(params):
             for field_name in address_fields
         }
     elif common:
-        raise APIError('must specify all address fields. Missing: {}'.format(
-            ', '.join(sorted(address_fields - common))))
-    elif 'address' in params:
-        if isinstance(params['address'], str) or params['address'] is None:
-            return params['address']
-        raise APIError('The address field must be a string')
+        raise APIError(
+            "must specify all address fields. Missing: {}".format(", ".join(sorted(address_fields - common)))
+        )
+    elif "address" in params:
+        if isinstance(params["address"], str) or params["address"] is None:
+            return params["address"]
+        raise APIError("The address field must be a string")
     return None
 
 
@@ -250,16 +254,13 @@ def _validate_tags(tags):
     """
     invalid_tags = []
     for tag in tags:
-        if (
-            not isinstance(tag, str)
-            or ',' in tag
-            or ' ' in tag
-            or tag == ''
-        ):
+        if not isinstance(tag, str) or "," in tag or " " in tag or tag == "":
             invalid_tags.append(tag)
     if invalid_tags:
-        error_message = "the tags '{}' are invalid. ".format(", ".join([str(tag) for tag in invalid_tags]))\
+        error_message = (
+            "the tags '{}' are invalid. ".format(", ".join([str(tag) for tag in invalid_tags]))
             + "Tags must be strings, and cannot contain commas or spaces."
+        )
 
         raise APIError(error_message)
 
@@ -276,12 +277,12 @@ def _encode_tag(tag):
     :rtype: str
     """
     replacements = {
-        chr(7): r'\a',    # BELL
-        chr(8): r'\b',    # BACKSPACE
-        '\t': r'\t',
-        '\r': r'\r',
-        '\n': r'\n',
-        '\f': r'\f',
+        chr(7): r"\a",  # BELL
+        chr(8): r"\b",  # BACKSPACE
+        "\t": r"\t",
+        "\r": r"\r",
+        "\n": r"\n",
+        "\f": r"\f",
     }
     for char, escaped in replacements.items():
         tag = tag.replace(char, escaped)
@@ -342,19 +343,18 @@ def _format_reading(reading):
             rate=reading.rate,
             tou_modifier=reading.tou_modifier,
             cost=reading.cost,
-            frequency=reading.frequency
+            frequency=reading.frequency,
         )
 
 
-@api.route('/customer/', methods=['POST'])
-@roles_accepted('api')
+@api.route("/customer/", methods=["POST"])
+@roles_accepted("api")
 def customer_add():
     """Create customer."""
     params = get_params()
 
     # Ground serial
-    ground_serial = check_param(
-        params, 'ground_serial', required=False)
+    ground_serial = check_param(params, "ground_serial", required=False)
     if ground_serial is not None:
         ground = Ground.get_by_serial(ground_serial)
     else:
@@ -367,18 +367,14 @@ def customer_add():
         raise APIError("no such ground", status_code=http.client.NOT_FOUND)
 
     # Serial & Code
-    serial = check_param(
-        params, 'serial', required=True)
+    serial = check_param(params, "serial", required=True)
     try:
-        meter_view = MeterView.create_meter(meter_type=Meter.TYPE_CUSTOMER,
-                                            ground=ground,
-                                            serial=serial)
+        meter_view = MeterView.create_meter(meter_type=Meter.TYPE_CUSTOMER, ground=ground, serial=serial)
     except MeterError as e:
         if e.code == MeterError.INVALID_SERIAL:
             raise APIError("Invalid meter serial, must look like 'SMXXX-XX-XXXXXXXX'.")
         elif e.code == MeterError.DUPLICATE_SERIAL:
-            raise APIError("customer already exists with same meter serial",
-                           status_code=http.client.LOCKED)
+            raise APIError("customer already exists with same meter serial", status_code=http.client.LOCKED)
         else:
             raise APIError("server error: {}".format(e.code))
 
@@ -389,28 +385,23 @@ def customer_add():
         # Meters should be created active, thus not requiring any additional
         # actions via the normal Web UI.
         active=True,
-        name=check_param(
-            params, 'name', required=False),
-        code=check_param(
-            params, 'code', str, required=False),
+        name=check_param(params, "name", required=False),
+        code=check_param(params, "code", str, required=False),
         phone_number=check_param(
-            params, 'phone_number', parse_phone_number,
-            name='phone number', required=False),
-        meter_tariff_name=check_param(
-            params, 'meter_tariff_name', required=True),
-        operating_mode=check_param(
-            params, 'operating_mode', default='off', required=False),
+            params, "phone_number", parse_phone_number, name="phone number", required=False
+        ),
+        meter_tariff_name=check_param(params, "meter_tariff_name", required=True),
+        operating_mode=check_param(params, "operating_mode", default="off", required=False),
         address=address,
         events=None,
-        coords=check_param(
-            params, 'coords', str, required=False),
-        tags=check_param(params, 'tags', list, required=False),
+        coords=check_param(params, "coords", str, required=False),
+        tags=check_param(params, "tags", list, required=False),
     )
 
     # Start credit balance
     meter_view.credit_value = check_param(
-        params, 'starting_credit_balance', float,
-        name='number', default=0.0, required=False)
+        params, "starting_credit_balance", float, name="number", default=0.0, required=False
+    )
 
     sql.session.add(meter_view)
     meter_view.finish_creation()
@@ -418,13 +409,12 @@ def customer_add():
 
     r = success(customer_id=meter_view.customer_id)
     r.status_code = http.client.CREATED
-    r.headers['Location'] = url_for('.customer_view',
-                                    customer_id=str(meter_view.customer_id))
+    r.headers["Location"] = url_for(".customer_view", customer_id=str(meter_view.customer_id))
     return r
 
 
-@api.route('/customers/<uuid:customer_id>', methods=['PUT'])
-@roles_accepted('api')
+@api.route("/customers/<uuid:customer_id>", methods=["PUT"])
+@roles_accepted("api")
 def customer_edit(customer_id):
     """Edit Customer."""
     params = get_params()
@@ -433,61 +423,78 @@ def customer_edit(customer_id):
         raise APIError("no such customer", status_code=http.client.NOT_FOUND)
     assert_one_of_params(
         params,
-        ('active', 'name', 'code', 'phone_number', 'meter_tariff_name',
-         'operating_mode', 'address', 'street1', 'street2', 'city', 'state',
-         'postalcode', 'country', 'coords', 'tags'))
+        (
+            "active",
+            "name",
+            "code",
+            "phone_number",
+            "meter_tariff_name",
+            "operating_mode",
+            "address",
+            "street1",
+            "street2",
+            "city",
+            "state",
+            "postalcode",
+            "country",
+            "coords",
+            "tags",
+        ),
+    )
     events = []
     address = _get_address(params)
 
     _update_customer(
         meter_view,
-        active=check_param(params, 'active', bool, required=False),
-        name=check_param(
-            params, 'name', required=False),
-        code=check_param(
-            params, 'code', str, required=False),
+        active=check_param(params, "active", bool, required=False),
+        name=check_param(params, "name", required=False),
+        code=check_param(params, "code", str, required=False),
         phone_number=check_param(
-            params, 'phone_number', parse_phone_number,
-            name='phone number', required=False),
-        meter_tariff_name=check_param(
-            params, 'meter_tariff_name', required=False),
-        operating_mode=check_param(
-            params, 'operating_mode', required=False),
+            params, "phone_number", parse_phone_number, name="phone number", required=False
+        ),
+        meter_tariff_name=check_param(params, "meter_tariff_name", required=False),
+        operating_mode=check_param(params, "operating_mode", required=False),
         address=address,
         events=events,
-        coords=check_param(
-            params, 'coords', str, required=False),
-        tags=check_param(params, 'tags', list, required=False),
+        coords=check_param(params, "coords", str, required=False),
+        tags=check_param(params, "tags", list, required=False),
     )
 
     sql.session.add(meter_view)
-    if not config['HEROKU']:
+    if not config["HEROKU"]:
         for event in events:
             event.process()
     sql.session.commit()
 
     r = success(customer_id=customer_id)
     r.status_code = http.client.OK
-    r.headers['Location'] = url_for('.customer_view',
-                                    customer_id=str(customer_id))
+    r.headers["Location"] = url_for(".customer_view", customer_id=str(customer_id))
     return r
 
 
-@api.route('/customers')
-@roles_accepted('api')
+@api.route("/customers")
+@roles_accepted("api")
 def customer_list():
     params = request.args.copy()
-    customer_code = check_param(params, 'customer_code', required=False)
-    customer_phone_number = check_param(params, 'customer_phone_number', required=False)
-    meter_serial = check_param(params, 'meter_serial', required=False)
-    meter_tariff_name = check_param(params, 'meter_tariff_name', required=False)
-    ground_id = check_param(params, 'ground_id', required=False, param_type=uuid.UUID, name='uuid')
-    ground_name = check_param(params, 'ground_name', required=False)
-    customers_only = check_param(params, 'customers_only', param_type=bool, default=False)
-    reading_details = check_param(params, 'reading_details', param_type=bool, required=False)
+    customer_code = check_param(params, "customer_code", required=False)
+    customer_phone_number = check_param(params, "customer_phone_number", required=False)
+    meter_serial = check_param(params, "meter_serial", required=False)
+    meter_tariff_name = check_param(params, "meter_tariff_name", required=False)
+    ground_id = check_param(params, "ground_id", required=False, param_type=uuid.UUID, name="uuid")
+    ground_name = check_param(params, "ground_name", required=False)
+    customers_only = check_param(params, "customers_only", param_type=bool, default=False)
+    reading_details = check_param(params, "reading_details", param_type=bool, required=False)
 
-    for name in ['customer_code', 'customer_phone_number', 'meter_serial', 'meter_tariff_name',
-                 'ground_id', 'ground_name', 'customers_only', 'reading_details']:
+    for name in [
+        "customer_code",
+        "customer_phone_number",
+        "meter_serial",
+        "meter_tariff_name",
+        "ground_id",
+        "ground_name",
+        "customers_only",
+        "reading_details",
+    ]:
         params.pop(name, None)
     if params:
         raise APIError("unknown parameter(s): %r" % (list(params.keys()),))
@@ -519,21 +526,25 @@ def customer_list():
         except NoResultFound:
             raise APIError("no such tariff", status_code=http.client.NOT_FOUND)
 
-    meters = MeterView.get_view(customer_code=customer_code,
-                                customer_phone_number=customer_phone_number,
-                                meter=meter,
-                                meter_type=Meter.TYPE_CUSTOMER if customers_only else None,
-                                tariff=tariff,
-                                ground=ground)
+    meters = MeterView.get_view(
+        customer_code=customer_code,
+        customer_phone_number=customer_phone_number,
+        meter=meter,
+        meter_type=Meter.TYPE_CUSTOMER if customers_only else None,
+        tariff=tariff,
+        ground=ground,
+    )
     total_meters = meters.count()
     if not total_meters:
         raise APIError("no such customer", status_code=http.client.NOT_FOUND)
     # The `direct_passthrough` kwarg is needed to bypass gzip compression so the response can be streamed to
     #  API clients. Otherwise, ThunderCloud will block until the generator exhausts itself, defeating the
     #  purpose of streaming this endpoint's response.
-    return current_app.response_class(stream_with_context(iter_customers(meters, reading_details)),
-                                      mimetype="application/json",
-                                      direct_passthrough=True)
+    return current_app.response_class(
+        stream_with_context(iter_customers(meters, reading_details)),
+        mimetype="application/json",
+        direct_passthrough=True,
+    )
 
 
 def iter_customers(meters, reading_details):
@@ -552,24 +563,24 @@ def iter_customers(meters, reading_details):
     yield '\n], "error": null, "status": "success"}'
 
 
-@api.route('/customers/<uuid:customer_id>')
-@roles_accepted('api')
+@api.route("/customers/<uuid:customer_id>")
+@roles_accepted("api")
 def customer_view(customer_id):
     """Get Customer Info."""
     params = request.args
-    reading_details = check_param(params, 'reading_details', param_type=bool, required=False, default=False)
+    reading_details = check_param(params, "reading_details", param_type=bool, required=False, default=False)
     customer = MeterView.get_by_customer_id(customer_id)
     if customer is None:
         raise APIError("no such customer", status_code=http.client.NOT_FOUND)
     return success(customer=_format_customer(customer, fetch_latest_reading=reading_details))
 
 
-@api.route('/customer/<string:customer_code>')
-@roles_accepted('api')
+@api.route("/customer/<string:customer_code>")
+@roles_accepted("api")
 def customer_code_view(customer_code):
     """Get Customer Info."""
     params = request.args.copy()
-    reading_details = check_param(params, 'reading_details', param_type=bool, required=False, default=False)
+    reading_details = check_param(params, "reading_details", param_type=bool, required=False, default=False)
     customers = []
 
     for meter_view in MeterView.get_view(customer_code=customer_code):
@@ -579,8 +590,8 @@ def customer_code_view(customer_code):
     return success(customers=customers)
 
 
-@api.route('/customers/<uuid:customer_id>/wallet/<string:wallet_type>/zero-balance', methods=['POST'])
-@roles_accepted('api')
+@api.route("/customers/<uuid:customer_id>/wallet/<string:wallet_type>/zero-balance", methods=["POST"])
+@roles_accepted("api")
 def zero_customer_wallet(customer_id, wallet_type):
     """Zero the balance of the specified customer wallet.
     ---
@@ -632,13 +643,14 @@ def zero_customer_wallet(customer_id, wallet_type):
     try:
         SalesAccount.get_system().check_can_sell_from(user)
     except TransactionError as e:
-        raise APIError(e.code + '-' + e.message)
+        raise APIError(e.code + "-" + e.message)
     customer = MeterView.get_by_customer_id(customer_id)
     if customer is None:
         raise APIError("no such customer", status_code=http.client.NOT_FOUND)
     if wallet_type not in Wallet.TYPES:
-        raise APIError("invalid wallet type {}, must be one of: {}".format(
-            wallet_type, ", ".join(Wallet.TYPES)))
+        raise APIError(
+            "invalid wallet type {}, must be one of: {}".format(wallet_type, ", ".join(Wallet.TYPES))
+        )
     wallet = customer.meter.get_wallet(wallet_type)
     event = wallet.request_zero()
     sql.session.commit()
@@ -647,8 +659,8 @@ def zero_customer_wallet(customer_id, wallet_type):
     return r
 
 
-@api.route('/customers/<uuid:customer_id>/reset-meter', methods=['POST'])
-@roles_accepted('api')
+@api.route("/customers/<uuid:customer_id>/reset-meter", methods=["POST"])
+@roles_accepted("api")
 def reset_meter(customer_id):
     """
     Reset meter state.
@@ -661,8 +673,9 @@ def reset_meter(customer_id):
 
     meter = customer.meter
     if not meter.is_customer_meter():
-        raise APIError("invalid meter type. Only customer meters can be reset",
-                       status_code=http.client.FORBIDDEN)
+        raise APIError(
+            "invalid meter type. Only customer meters can be reset", status_code=http.client.FORBIDDEN
+        )
 
     meter.reset_state()
     sql.session.commit()

@@ -10,10 +10,10 @@ from sparkmeter.tests.base import WebViewTestCaseBase
 
 
 class UWSGITest(WebViewTestCaseBase):
-    @log_capture('sparkmeter.web.uwsgiutils')
-    @mock.patch('time.sleep')
+    @log_capture("sparkmeter.web.uwsgiutils")
+    @mock.patch("time.sleep")
     def test_uwsgi_worker_lock(self, sleep, logger):
-        sys.modules['uwsgi'] = uwsgi = mock.Mock()
+        sys.modules["uwsgi"] = uwsgi = mock.Mock()
         from sparkmeter.web.uwsgiutils import uwsgi_worker_lock
 
         uwsgi.is_locked.return_value = False
@@ -40,10 +40,6 @@ class UWSGITest(WebViewTestCaseBase):
             mock.call(1),
         ]
         logger.check(
-            ('sparkmeter.web.uwsgiutils',
-             'INFO',
-             'UWSGI Lock #1 found, waiting for it to be released'),
-            ('sparkmeter.web.uwsgiutils',
-             'INFO',
-             'UWSGI Lock #1 released, starting up normally'),
+            ("sparkmeter.web.uwsgiutils", "INFO", "UWSGI Lock #1 found, waiting for it to be released"),
+            ("sparkmeter.web.uwsgiutils", "INFO", "UWSGI Lock #1 released, starting up normally"),
         )

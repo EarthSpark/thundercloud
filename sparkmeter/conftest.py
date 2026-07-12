@@ -8,6 +8,7 @@ A template database is populated once per session with the full schema
 and default data. Each test gets its own clone, so there is zero
 cross-test pollution and tests can run in parallel with pytest-xdist.
 """
+
 import os
 import uuid
 from contextlib import contextmanager
@@ -23,12 +24,13 @@ from sparkmeter.misc.logutils import setup_logging
 
 setup_logging()
 
-TEMPLATE_DB_NAME = 'test_template'
+TEMPLATE_DB_NAME = "test_template"
 
 
 # ---------------------------------------------------------------------------
 # Session-scoped: bootstrap the app and create the template database
 # ---------------------------------------------------------------------------
+
 
 def _create_template_db(sql):
     """Create the template database from the current app database.
@@ -39,30 +41,29 @@ def _create_template_db(sql):
     source_db = sql.engine.url.database
     _base_url = sql.engine.url.render_as_string(hide_password=False)
     maintenance_engine = create_engine(
-        make_url(_base_url).set(database='postgres'),
-        isolation_level='AUTOCOMMIT',
+        make_url(_base_url).set(database="postgres"),
+        isolation_level="AUTOCOMMIT",
     )
     with maintenance_engine.connect() as conn:
         # Check if template already exists (another worker may have created it)
-        result = conn.execute(text(
-            "SELECT 1 FROM pg_database WHERE datname = :t"
-        ), {"t": TEMPLATE_DB_NAME})
+        result = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :t"), {"t": TEMPLATE_DB_NAME})
         if result.first():
             maintenance_engine.dispose()
             return
 
         # Disconnect all other sessions from the source db first
-        conn.execute(text(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-            "WHERE datname = :db AND pid != pg_backend_pid()"
-        ), {"db": source_db})
+        conn.execute(
+            text(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                "WHERE datname = :db AND pid != pg_backend_pid()"
+            ),
+            {"db": source_db},
+        )
         # Clone source -> template
-        conn.execute(text(
-            "CREATE DATABASE %s TEMPLATE %s" % (TEMPLATE_DB_NAME, source_db)
-        ))
-        conn.execute(text(
-            "UPDATE pg_database SET datistemplate = true WHERE datname = :t"
-        ), {"t": TEMPLATE_DB_NAME})
+        conn.execute(text("CREATE DATABASE %s TEMPLATE %s" % (TEMPLATE_DB_NAME, source_db)))
+        conn.execute(
+            text("UPDATE pg_database SET datistemplate = true WHERE datname = :t"), {"t": TEMPLATE_DB_NAME}
+        )
     maintenance_engine.dispose()
 
 
@@ -70,8 +71,9 @@ def _create_template_db(sql):
 def bootstrap_testsuite():
     """Bootstrap the Flask app and create a template database with schema + defaults."""
     from sparkmeter.app import SparkmeterApplication
-    os.environ['SPARKMETER_SETTINGS'] = "sparkmeter/tests/settings.py"
-    os.environ['SPARKMETER_TESTING'] = '1'
+
+    os.environ["SPARKMETER_SETTINGS"] = "sparkmeter/tests/settings.py"
+    os.environ["SPARKMETER_TESTING"] = "1"
     app = SparkmeterApplication(mode=SparkmeterApplication.MODE_UNITTEST)
     app.bootstrap()
     # Preload pandas/numpy in the parent process so the lazy imports added
@@ -90,38 +92,42 @@ def bootstrap_testsuite():
     # The template is reused across runs to keep tests fast. Set
     # SM_REBUILD_TEST_TEMPLATE to drop and rebuild it (once per run; the marker
     # is in the container-local /tmp, fresh for each `docker compose run`).
-    lock = filelock.FileLock('/tmp/sparkmeter_test_template.lock')
-    built_marker = '/tmp/sparkmeter_template_built'
+    lock = filelock.FileLock("/tmp/sparkmeter_test_template.lock")
+    built_marker = "/tmp/sparkmeter_template_built"
     with lock:
         _base_url = sql.engine.url.render_as_string(hide_password=False)
         maint = create_engine(
-            make_url(_base_url).set(database='postgres'),
-            isolation_level='AUTOCOMMIT',
+            make_url(_base_url).set(database="postgres"),
+            isolation_level="AUTOCOMMIT",
         )
         with maint.connect() as conn:
-            exists = conn.execute(text(
-                "SELECT 1 FROM pg_database WHERE datname = :t"
-            ), {"t": TEMPLATE_DB_NAME}).first()
-            if (exists and os.environ.get('SM_REBUILD_TEST_TEMPLATE')
-                    and not os.path.exists(built_marker)):
-                conn.execute(text(
-                    "UPDATE pg_database SET datistemplate = false "
-                    "WHERE datname = :t"), {"t": TEMPLATE_DB_NAME})
-                conn.execute(text(
-                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-                    "WHERE datname = :t AND pid != pg_backend_pid()"),
-                    {"t": TEMPLATE_DB_NAME})
+            exists = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :t"), {"t": TEMPLATE_DB_NAME}
+            ).first()
+            if exists and os.environ.get("SM_REBUILD_TEST_TEMPLATE") and not os.path.exists(built_marker):
+                conn.execute(
+                    text("UPDATE pg_database SET datistemplate = false WHERE datname = :t"),
+                    {"t": TEMPLATE_DB_NAME},
+                )
+                conn.execute(
+                    text(
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                        "WHERE datname = :t AND pid != pg_backend_pid()"
+                    ),
+                    {"t": TEMPLATE_DB_NAME},
+                )
                 conn.execute(text("DROP DATABASE %s" % TEMPLATE_DB_NAME))
                 exists = False
         maint.dispose()
 
         if not exists:
             from sparkmeter.controller import resetdb
+
             resetdb(force=True)
             sql.session.remove()
             sql.engine.dispose()
             _create_template_db(sql)
-            open(built_marker, 'w').close()
+            open(built_marker, "w").close()
 
     # Close the app's connection — each test gets its own cloned database.
     sql.session.remove()
@@ -140,6 +146,7 @@ def app(bootstrap_testsuite):
 # Function-scoped: clone template → per-test database, reconfigure engine
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def session(app):
     """Per-test database session.
@@ -154,15 +161,13 @@ def session(app):
     base_url = sql.engine.url.render_as_string(hide_password=False)
 
     # Unique database name for this test
-    test_db = 'test_' + uuid.uuid4().hex[:12]
+    test_db = "test_" + uuid.uuid4().hex[:12]
 
     # Create the per-test database from template
-    maint_url = make_url(base_url).set(database='postgres').render_as_string(hide_password=False)
-    maintenance_engine = create_engine(maint_url, isolation_level='AUTOCOMMIT')
+    maint_url = make_url(base_url).set(database="postgres").render_as_string(hide_password=False)
+    maintenance_engine = create_engine(maint_url, isolation_level="AUTOCOMMIT")
     with maintenance_engine.connect() as conn:
-        conn.execute(text(
-            "CREATE DATABASE %s TEMPLATE %s" % (test_db, TEMPLATE_DB_NAME)
-        ))
+        conn.execute(text("CREATE DATABASE %s TEMPLATE %s" % (test_db, TEMPLATE_DB_NAME)))
     maintenance_engine.dispose()
 
     # Create a new engine for the test database
@@ -173,6 +178,7 @@ def session(app):
     sql.session.remove()
     sql.engine.dispose()
     from flask import current_app
+
     flask_app = current_app._get_current_object()
     sql._app_engines[flask_app][None] = new_engine
 
@@ -183,6 +189,7 @@ def session(app):
     import threading
 
     from sqlalchemy.orm import scoped_session as sa_scoped_session
+
     original_session = sql.session
     test_scoped = sa_scoped_session(
         sql.session.session_factory,
@@ -198,7 +205,7 @@ def session(app):
 
     # Flask-SQLAlchemy track_modifications needs this
     raw = session()
-    if not hasattr(raw, '_model_changes'):
+    if not hasattr(raw, "_model_changes"):
         raw._model_changes = {}
 
     # Clear stale user references from previous tests
@@ -206,6 +213,7 @@ def session(app):
 
     # Setup factory_boy
     from sparkmeter.tests.test_data_factory import BaseFactory, DomainFactory
+
     BaseFactory.setup(session)
     DomainFactory.setup(session)
 
@@ -214,10 +222,11 @@ def session(app):
     # Clear Flask-Login/Security state from g (which lives on the app
     # context in Flask 3.x and persists between tests)
     from flask import g
-    g.pop('_login_user', None)
-    g.pop('fs_authn_via', None)
-    g.pop('fs_paa', None)
-    g.pop('identity', None)
+
+    g.pop("_login_user", None)
+    g.pop("fs_authn_via", None)
+    g.pop("fs_paa", None)
+    g.pop("identity", None)
 
     # Properly remove the scoped session (not the no-op lambda)
     # to clear the identity map and detach all objects
@@ -225,12 +234,15 @@ def session(app):
     sql.session = original_session
     new_engine.dispose()
 
-    drop_engine = create_engine(maint_url, isolation_level='AUTOCOMMIT')
+    drop_engine = create_engine(maint_url, isolation_level="AUTOCOMMIT")
     with drop_engine.connect() as conn:
-        conn.execute(text(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-            "WHERE datname = :db AND pid != pg_backend_pid()"
-        ), {"db": test_db})
+        conn.execute(
+            text(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                "WHERE datname = :db AND pid != pg_backend_pid()"
+            ),
+            {"db": test_db},
+        )
         conn.execute(text("DROP DATABASE IF EXISTS %s" % test_db))
     drop_engine.dispose()
 
@@ -253,16 +265,18 @@ def client(app):
     # xdist worker). Must happen after the client context exits so any
     # teardown requests don't re-populate it.
     from flask import g
-    g.pop('_login_user', None)
-    g.pop('fs_authn_via', None)
-    g.pop('fs_paa', None)
-    g.pop('identity', None)
+
+    g.pop("_login_user", None)
+    g.pop("fs_authn_via", None)
+    g.pop("fs_paa", None)
+    g.pop("identity", None)
 
 
 @pytest.fixture()
 def config():
     """Test fixture for app config."""
     from sparkmeter.config.configdict import config
+
     old_config = config.copy()
     yield config
     config.clear()
@@ -294,7 +308,7 @@ def session_manager(session):
 
         def create(self, name):
             if name in self.sessions:  # pragma: nocoverage
-                raise KeyError('Duplicate name')
+                raise KeyError("Duplicate name")
             new_session = SASession(bind=engine)
             self.sessions[name] = new_session
             self._sessions_to_close.append(new_session)
@@ -317,41 +331,44 @@ def session_manager(session):
 # Convenience fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def Role():
     """Test fixture for Role class."""
     from sparkmeter.user.userdomain import Role
+
     yield Role
 
 
 @pytest.fixture()
 def api_role(session, Role):
     """Test fixture for API role."""
-    return session.query(Role).filter_by(name='api').one()
+    return session.query(Role).filter_by(name="api").one()
 
 
 @pytest.fixture()
 def vendor_role(session, Role):
     """Test fixture for Vendor role."""
-    return session.query(Role).filter_by(name='vendor').one()
+    return session.query(Role).filter_by(name="vendor").one()
 
 
 @pytest.fixture()
 def operator_role(session, Role):
     """Test fixture for Operator role."""
-    return session.query(Role).filter_by(name='operator').one()
+    return session.query(Role).filter_by(name="operator").one()
 
 
 @pytest.fixture(scope="function")
 def send_set_config(mocker):
     """Test fixture for sending a set config packet."""
-    yield mocker.patch('sparkmeter.meter.meterdomain.send_set_config')
+    yield mocker.patch("sparkmeter.meter.meterdomain.send_set_config")
 
 
 @contextmanager
 def scoped_session_context():
     """Provide a commit/rollback scope around a series of operations."""
     from sparkmeter.database.alchemy import sql
+
     try:
         yield sql.session
         sql.session.commit()
@@ -369,5 +386,5 @@ def scoped_session():
 @pytest.fixture()
 def sentry_logger():
     """Sentry proxy log context fixture."""
-    with LogCapture('sparkmeter.sentry') as logger:
+    with LogCapture("sparkmeter.sentry") as logger:
         yield logger

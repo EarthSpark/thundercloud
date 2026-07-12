@@ -8,7 +8,6 @@ from sqlalchemy.sql.expression import ColumnElement
 
 
 class JSONAgg(ColumnElement):
-
     """DDLElement wrapper for the function json_agg."""
 
     def __init__(self, items, order_by=None):
@@ -20,10 +19,10 @@ class JSONAgg(ColumnElement):
 @compiles(JSONAgg)
 def compile_json_agg(element, compiler, **kw):
     """Compile json_agg into a SQL statement."""
-    s = 'json_agg(row_to_json((SELECT r FROM (SELECT '
-    s += ', '.join([compiler.process(item) for item in element.items])
-    s += ') r) )'
+    s = "json_agg(row_to_json((SELECT r FROM (SELECT "
+    s += ", ".join([compiler.process(item) for item in element.items])
+    s += ") r) )"
     if element.order_by is not None:
-        s += ' ORDER BY ' + ','.join([compiler.process(item) for item in element.order_by])
-    s += ')'
+        s += " ORDER BY " + ",".join([compiler.process(item) for item in element.order_by])
+    s += ")"
     return s

@@ -24,29 +24,28 @@ logger = logging.getLogger(__name__)
 
 
 class MigrationHelper(object):
-
     """Helper to initialize and configure alembic."""
 
     def __init__(self):
         """Load configuration and application."""
-        self._app = SparkmeterApplication(mode='alembic')
+        self._app = SparkmeterApplication(mode="alembic")
         self._app.provide()
         self._app.setup_databases()
 
     def _get_database_url(self):  # pragma: nocoverage
-        url = context.config.get_main_option('sqlalchemy.url')
+        url = context.config.get_main_option("sqlalchemy.url")
         if url:
             return url
-        return self._app.config.get('SQLALCHEMY_DATABASE_URI')
+        return self._app.config.get("SQLALCHEMY_DATABASE_URI")
 
     def include_object(self, object, name, type_, reflected, compare_to):  # pragma: nocoverage
         """Check which objects should be included when reflecting domain objects.
 
         This is used when generating a new patch version.
         """
-        if object.info.get('is_view', False):
+        if object.info.get("is_view", False):
             return False
-        if type_ == 'table' and name.startswith('sym_'):
+        if type_ == "table" and name.startswith("sym_"):
             return False
         return True
 
@@ -55,11 +54,13 @@ class MigrationHelper(object):
         url = self._get_database_url()
         engine = create_engine(url)
         connection = engine.connect()
-        context.configure(include_schemas=True,
-                          include_object=self.include_object,
-                          connection=connection,
-                          target_metadata=self._app.sql.metadata,
-                          compare_type=True)
+        context.configure(
+            include_schemas=True,
+            include_object=self.include_object,
+            connection=connection,
+            target_metadata=self._app.sql.metadata,
+            compare_type=True,
+        )
 
         try:
             with sync_triggers_disabled(connection):
@@ -75,9 +76,10 @@ class MigrationHelper(object):
                 load_database_schemas(engine)
             session = Session(engine)
             from sparkmeter.config.configdomain import ConfigParameter
+
             has_config_params = session.query(ConfigParameter).count() > 0
             # Assume that, if there are no config parameters, this is a new system and sync isn't initialized.
-            if not config['HEROKU'] or not has_config_params:
+            if not config["HEROKU"] or not has_config_params:
                 ConfigParameter.add_defaults(session)
                 session.commit()
         finally:
@@ -134,8 +136,7 @@ def create_migration(engine, message, sql_file, version_num=None):
     """
     alembic_cfg = get_alembic_config()
 
-    command.revision(alembic_cfg, message=message, autogenerate=True,
-                     rev_id=version_num)
+    command.revision(alembic_cfg, message=message, autogenerate=True, rev_id=version_num)
 
 
 def get_latest_patch(alembic_cfg=None):
@@ -146,7 +147,7 @@ def get_latest_patch(alembic_cfg=None):
     if alembic_cfg is None:
         alembic_cfg = get_alembic_config()
     script_dir = alembic_cfg.get_main_option("version_locations")
-    items = sorted(glob.glob(script_dir + '/*.py'))
+    items = sorted(glob.glob(script_dir + "/*.py"))
     last_patch_filename = items[-2]  # -1 is __init__.py
-    last_patch = os.path.basename(last_patch_filename).split('_', 1)[0]
+    last_patch = os.path.basename(last_patch_filename).split("_", 1)[0]
     return map(int, last_patch.split("."))

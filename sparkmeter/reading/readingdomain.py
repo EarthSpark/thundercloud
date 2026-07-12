@@ -14,8 +14,12 @@ from sqlalchemy.sql.expression import cast, func
 from sqlalchemy.sql.schema import Column, UniqueConstraint
 from sqlalchemy.sql.sqltypes import DateTime, Float, Integer, String
 
-from sparkmeter.database.sync import (SYNC_CHANNEL_READING, SYNC_DIRECTION_GROUND_TO_CLOUD,
-                                      SYNC_GROUP_GROUND, syncchannel)
+from sparkmeter.database.sync import (
+    SYNC_CHANNEL_READING,
+    SYNC_DIRECTION_GROUND_TO_CLOUD,
+    SYNC_GROUP_GROUND,
+    syncchannel,
+)
 from sparkmeter.database.tables import get_table_by_name
 from sparkmeter.models import BaseDomain
 
@@ -27,6 +31,7 @@ class ReadingViewResult(object):
     The result from a call to Reading.get_latest_reading_view(), which can be used
     in conjunction with a type checking.
     """
+
     city = None  # type: unicode
     state = None  # type: unicode
     street1 = None  # type: unicode
@@ -52,16 +57,15 @@ class ReadingViewResult(object):
 
 @syncchannel(SYNC_CHANNEL_READING)
 class Reading(BaseDomain):
-
     """Reading Postgres SQLAlchemy Model.
 
     A reading captures all the meter state for a specific time period.
     """
 
-    __tablename__ = 'reading'
+    __tablename__ = "reading"
     __table_args__ = (
-        UniqueConstraint('meter', 'heartbeat_start', name='meter_heartbeat_start_unique'),
-        UniqueConstraint('meter', 'heartbeat_end', name='meter_heartbeat_end_unique'),
+        UniqueConstraint("meter", "heartbeat_start", name="meter_heartbeat_start_unique"),
+        UniqueConstraint("meter", "heartbeat_end", name="meter_heartbeat_end_unique"),
     )
 
     # Readings are only synced from Ground to Cloud
@@ -69,88 +73,88 @@ class Reading(BaseDomain):
 
     # FIXME: Change this into a proper meter reference
     #: Meter code
-    meter = Column(String(64), info={'label': _('Meter')})
+    meter = Column(String(64), info={"label": _("Meter")})
 
     #: The start of the time period this reading capture (in UTC)
-    heartbeat_start = Column(DateTime, info={'label': _('Heartbeat Start')})
+    heartbeat_start = Column(DateTime, info={"label": _("Heartbeat Start")})
 
     #: The end of the time period this reading capture (in UTC)
-    heartbeat_end = Column(DateTime, info={'label': _('Heartbeat End')})
+    heartbeat_end = Column(DateTime, info={"label": _("Heartbeat End")})
 
     # BILLING DATA
 
     #: Kilowatt hours of energy used (in kWh)
-    kilowatt_hours = Column(Float, default=0, info={'label': _('Kilowatt Hours')})
+    kilowatt_hours = Column(Float, default=0, info={"label": _("Kilowatt Hours")})
 
     #: Kilowatt Hours Period (in seconds)
-    kilowatt_hours_period = Column(Integer, default=0, info={'label': _('Kilowatt Hours Period')})
+    kilowatt_hours_period = Column(Integer, default=0, info={"label": _("Kilowatt Hours Period")})
 
     #: Cost for the energy used during this period (in credits)
-    cost = Column(Float, default=0, info={'label': _('Cost')})
+    cost = Column(Float, default=0, info={"label": _("Cost")})
 
     #: Credit at the time of this reading (in credits)
-    acct_credit = Column(Float, default=0, info={'label': _('Credit')})
+    acct_credit = Column(Float, default=0, info={"label": _("Credit")})
 
     #: Plan credit at the time of this reading (in credits)
-    acct_plan = Column(Float, default=0, info={'label': _('Plan')})
+    acct_plan = Column(Float, default=0, info={"label": _("Plan")})
 
     #: Debit at the time of this reading (in credits)
-    acct_debt = Column(Float, default=0, info={'label': _('Debt')})
+    acct_debt = Column(Float, default=0, info={"label": _("Debt")})
 
     #: the rate that was used to calculate the cost. Either flat or an block rate average
-    rate = Column(Float, default=0, info={'label': _('Rate applied')})
+    rate = Column(Float, default=0, info={"label": _("Rate applied")})
 
     #: if a tou was used, this stores the modifier value, which is percentage / 100
-    tou_modifier = Column(Float, default=0, info={'label': 'TOU modifier'})
+    tou_modifier = Column(Float, default=0, info={"label": "TOU modifier"})
 
     # READING DATA
 
     #: Minimum voltage during the heartbeat of this reading (in volts)
-    voltage_min = Column(Float, default=999999, info={'label': 'Min Voltage'})
+    voltage_min = Column(Float, default=999999, info={"label": "Min Voltage"})
 
     #: Maximum voltage during the heartbeat of this reading (in volts)
-    voltage_max = Column(Float, default=0, info={'label': 'Max Voltage'})
+    voltage_max = Column(Float, default=0, info={"label": "Max Voltage"})
 
     #: Average voltage during the heartbeat of this reading (in volts)
-    voltage_avg = Column(Float, default=0, info={'label': 'Avg Voltage'})
+    voltage_avg = Column(Float, default=0, info={"label": "Avg Voltage"})
 
     #: Average power factor during the heartbeat of this reading (in volt-amperes reactive)
-    power_factor_avg = Column(Float, default=0, info={'label': 'Avg Power Factor'})
+    power_factor_avg = Column(Float, default=0, info={"label": "Avg Power Factor"})
 
     #: Average true power during the heartbeat of this reading (in watts)
-    true_power_avg = Column(Float, default=0, info={'label': 'Avg True Power'})
+    true_power_avg = Column(Float, default=0, info={"label": "Avg True Power"})
 
     #: Minimum current during the heartbeat of this reading (in amps)
-    current_min = Column(Float, default=0, info={'label': 'Min Current'})
+    current_min = Column(Float, default=0, info={"label": "Min Current"})
 
     #: Maximum current during the heartbeat of this reading (in amps)
-    current_max = Column(Float, default=0, info={'label': 'Max Current'})
+    current_max = Column(Float, default=0, info={"label": "Max Current"})
 
     #: Average current during the heartbeat of this reading (in amps)
-    current_avg = Column(Float, default=0, info={'label': 'Avg Current'})
+    current_avg = Column(Float, default=0, info={"label": "Avg Current"})
 
     #: Frequency during the heartbeat of this reading (in Hz)
-    frequency = Column(Float, info={'label': _('Frequency')})
+    frequency = Column(Float, info={"label": _("Frequency")})
 
     #: Instantaneous True Power during the heartbeat of this reading (in watts)
-    true_power_inst = Column(Float, info={'label': _('Instantaneous True Power')})
+    true_power_inst = Column(Float, info={"label": _("Instantaneous True Power")})
 
     #: Energy used (in kWh)
-    energy = Column(Float, info={'label': _('Energy')})
+    energy = Column(Float, info={"label": _("Energy")})
 
     #: Total uptime since the last time the meter was restarted (in seconds)
-    uptime = Column(Integer, info={'label': _('Uptime')})
+    uptime = Column(Integer, info={"label": _("Uptime")})
 
     #: State of the meter at the time of heartbeat end.
-    state = Column(Integer, info={'label': _('State')})
+    state = Column(Integer, info={"label": _("State")})
 
     #: The ID of the meter snapshot
     snapshot_id = Column(postgresql.UUID, nullable=True)
 
-    user_power_limit = Column(Integer, info={'label': _('User Power Limit')})
-    true_power_avg = Column(Float, info={'label': _('Avg True Power')})
-    power_factor_avg = Column(Float, info={'label': _('Avg Power Factor')})
-    apparent_power_avg = Column(Float, info={'label': _('Avg Apparent Power')})
+    user_power_limit = Column(Integer, info={"label": _("User Power Limit")})
+    true_power_avg = Column(Float, info={"label": _("Avg True Power")})
+    power_factor_avg = Column(Float, info={"label": _("Avg Power Factor")})
+    apparent_power_avg = Column(Float, info={"label": _("Avg Apparent Power")})
 
     @classmethod
     def sync_init(cls, group):
@@ -166,8 +170,7 @@ class Reading(BaseDomain):
         :returns: max total amount or 0.0 if there has been no readings for the period.
         """
         result = (
-            cls.query
-            .with_entities(func.max(cls.acct_credit + cls.acct_plan))
+            cls.query.with_entities(func.max(cls.acct_credit + cls.acct_plan))
             .filter_by(meter=str(meter.code))
             .filter(cls.heartbeat_end >= since)
             .one()
@@ -188,11 +191,10 @@ class Reading(BaseDomain):
         :param end: end of the range
         :returns a query
         """
-        meter_t = get_table_by_name('meter')
-        meter_billing_t = get_table_by_name('meter_billing')
+        meter_t = get_table_by_name("meter")
+        meter_billing_t = get_table_by_name("meter_billing")
         return (
-            cls.query
-            .filter(cls.meter == cast(meter_t.c.code, String))
+            cls.query.filter(cls.meter == cast(meter_t.c.code, String))
             .filter(cls.heartbeat_start.between(start, end))
             .filter(meter_billing_t.c.meter_id == meter_t.c.id)
             .filter(meter_billing_t.c.tariff_id == tariff.id)
@@ -225,43 +227,42 @@ class Reading(BaseDomain):
         :type user: sparkmeter.user.userdomain.User
         :returns: a list of attributes that will be used in the latest reading page.
         """
-        address_t = get_table_by_name('address')
-        customer_t = get_table_by_name('customer')
-        meter_t = get_table_by_name('meter')
-        meter_config_t = get_table_by_name('meter_config')
-        meter_system_info_t = get_table_by_name('meter_system_info')
-        ground_t = get_table_by_name('ground')
+        address_t = get_table_by_name("address")
+        customer_t = get_table_by_name("customer")
+        meter_t = get_table_by_name("meter")
+        meter_config_t = get_table_by_name("meter_config")
+        meter_system_info_t = get_table_by_name("meter_system_info")
+        ground_t = get_table_by_name("ground")
 
         columns = [
             address_t.c.city,
             address_t.c.state,
             address_t.c.street1,
             address_t.c.street2,
-            meter_t.c.serial.label('serial'),
-            customer_t.c.name.label('customer_name'),
-            customer_t.c.code.label('customer_code'),
+            meter_t.c.serial.label("serial"),
+            customer_t.c.name.label("customer_name"),
+            customer_t.c.code.label("customer_code"),
             cls.current_avg,
             cls.current_max,
             cls.current_min,
             cls.energy,
             cls.frequency,
             cls.heartbeat_end,
-            cls.id.label('reading_id'),
-            cls.state.label('reading_state'),  # Conflicts w/ address.state
+            cls.id.label("reading_id"),
+            cls.state.label("reading_state"),  # Conflicts w/ address.state
             cls.true_power_inst,
             cls.uptime,
             cls.user_power_limit,
             cls.voltage_avg,
             cls.voltage_max,
             cls.voltage_min,
-            ground_t.c.name.label('ground_name'),
-            ground_t.c.serial.label('ground_serial'),
+            ground_t.c.name.label("ground_name"),
+            ground_t.c.serial.label("ground_serial"),
         ]
         joins = (
             # Readings might not be present if the meter has never received on,
             # so do an left outer join meaning that this can be empty
-            meter_system_info_t
-            .outerjoin(cls, meter_system_info_t.c.reading_id == Reading.id)
+            meter_system_info_t.outerjoin(cls, meter_system_info_t.c.reading_id == Reading.id)
             .join(meter_t, meter_system_info_t.c.meter_id == meter_t.c.id)
             .outerjoin(customer_t, meter_system_info_t.c.meter_id == customer_t.c.meter_id)
             .join(address_t, meter_t.c.address_id == address_t.c.id)
@@ -276,17 +277,11 @@ class Reading(BaseDomain):
             wheres.append(ground_t.c.id == ground.id)
 
         if user is not None:
-            users_ground_t = get_table_by_name('users_grounds')
-            subquery = select(users_ground_t.c.ground_id).where(
-                users_ground_t.c.user_id == user.id)
+            users_ground_t = get_table_by_name("users_grounds")
+            subquery = select(users_ground_t.c.ground_id).where(users_ground_t.c.user_id == user.id)
             wheres.append(ground_t.c.id.in_(subquery))
 
-        query = (
-            select(*columns)
-            .select_from(joins)
-            .where(and_(*wheres))
-            .order_by(meter_t.c.code)
-        )
+        query = select(*columns).select_from(joins).where(and_(*wheres)).order_by(meter_t.c.code)
         return query
 
     def update_kilowatt_hours(self, last_energy, last_energy_datetime):
@@ -308,7 +303,8 @@ class Reading(BaseDomain):
                 "Something has gone wrong with meter %s. The energy value decreased from %f to %f.",
                 self.meter,
                 last_energy,
-                self.energy)
+                self.energy,
+            )
         # Normal reading, usage is delta between current reading and last
         else:
             kilowatt_hours = self.energy - last_energy
@@ -318,7 +314,8 @@ class Reading(BaseDomain):
             self.meter,
             kilowatt_hours,
             last_energy,
-            self.energy)
+            self.energy,
+        )
         self.kilowatt_hours = kilowatt_hours
 
         heartbeat_end_utc = self.heartbeat_end.replace(tzinfo=tzutc())

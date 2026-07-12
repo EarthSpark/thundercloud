@@ -101,13 +101,21 @@ dev = [
     "httmock",
     "testfixtures",
     "html5lib",
-    "flake8",
-    "isort",
+    "ruff>=0.15.21",
     "pydocstyle",
-    "autopep8",
     "pre-commit",
     "grpcio-tools",
     "pyopenapi-gen",
     "pytest-diagnose @ git+https://github.com/tescalada/pytest-diagnose.git",
     "pytest-randomly>=4.1.0",
 ]
+
+[tool.ruff]
+line-length = 110
+extend-exclude = ["sparkmeter/metering/_generated", "test-data"]
+
+[tool.ruff.lint]
+select = ["F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sparkmeter"]

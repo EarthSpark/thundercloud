@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """Billing related functionality."""
+
 from __future__ import division
 
 import datetime
@@ -21,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class CalculateBilling(object):
-
     """
     Calculate a readings billing data.
 
@@ -45,15 +45,13 @@ class CalculateBilling(object):
         :param session: an sql session
         """
         if not isinstance(meter, Meter):  # pragma: nocoverage
-            raise TypeError("CalculateBilling needs a Meter, not %s" % (
-                repr(meter)))
+            raise TypeError("CalculateBilling needs a Meter, not %s" % (repr(meter)))
         self.reading = reading
         self.meter = meter
         self.session = session
         # Dates from postgres lacks tzinfo but are in UTC
         self.sr_heartbeat_end_utc = self.reading.heartbeat_end.replace(tzinfo=tzutc())
-        self.last_energy_datetime_utc = self.meter.system_info.last_energy_datetime.replace(
-            tzinfo=tzutc())
+        self.last_energy_datetime_utc = self.meter.system_info.last_energy_datetime.replace(tzinfo=tzutc())
 
     def update_tariff_cost(self):
         """Update the cost of a reading delta based on a tariff."""
@@ -76,15 +74,13 @@ class CalculateBilling(object):
                 start = self.last_energy_datetime_utc.astimezone(tzlocal())
                 end = self.sr_heartbeat_end_utc.astimezone(tzlocal())
                 if tou_period.superset_of(start, end):
-                    logger.info("Applying TOU period modifier %.4f%% to rate %.4f" % (
-                        tou_period.value, rate))
+                    logger.info("Applying TOU period modifier %.4f%% to rate %.4f" % (tou_period.value, rate))
                     modifier = old_div(tou_period.value, 100.0)
                     rate *= modifier
                     self.reading.tou_modifier = modifier
                     break
             else:
-                logger.info("Not applying TOU period modifier, %s->%s" % (
-                    start, end))
+                logger.info("Not applying TOU period modifier, %s->%s" % (start, end))
 
         # Multiply the cost by the number of kWh that was used in the current period
         cost = rate * self.reading.kilowatt_hours
@@ -94,8 +90,13 @@ class CalculateBilling(object):
 
     def _calculate_flat_rate(self, tariff):
         rate = tariff.flat_price
-        logger.info("Using tariff '%s' with a flat rate of %r" % (
-            tariff.name, rate, ))
+        logger.info(
+            "Using tariff '%s' with a flat rate of %r"
+            % (
+                tariff.name,
+                rate,
+            )
+        )
         # None currently means free, perhaps we want a NOT NULL in the database
         if rate is None:
             rate = 0.0
@@ -126,8 +127,10 @@ class CalculateBilling(object):
         # get_average_block_rate() will return the average: 1.5 (total/usage) which
         # will be multiplied by the actual usage below
         rate = tariff.get_average_block_rate(start_energy, end_energy)
-        logger.info("Using tariff '%s' with an average block rate of %.4f (%.4f->%.4f) " % (
-            tariff.name, rate, start_energy, end_energy))
+        logger.info(
+            "Using tariff '%s' with an average block rate of %.4f (%.4f->%.4f) "
+            % (tariff.name, rate, start_energy, end_energy)
+        )
         return rate
 
     def _pay_off_customer_debt(self):
@@ -136,15 +139,10 @@ class CalculateBilling(object):
         financing_charge = self.reading.cost * parameters.DEBT_PAYBACK_PERCENT * 1.0 / 100
         for wallet in (self.meter.plan_wallet, self.meter.credit_wallet):
             # clamp the deduction
-            deduction = max(
-                0.0,
-                min(financing_charge, wallet.value, self.meter.debt_wallet.value))
+            deduction = max(0.0, min(financing_charge, wallet.value, self.meter.debt_wallet.value))
             financing_charge -= deduction
             if deduction > 0:
-                logger.info(
-                    'Paying a debt of %.4f from %s wallet',
-                    deduction,
-                    wallet.wallet_type)
+                logger.info("Paying a debt of %.4f from %s wallet", deduction, wallet.wallet_type)
                 wallet.value -= deduction
                 self.meter.debt_wallet.value -= deduction
                 self.session.merge(wallet)
@@ -152,13 +150,17 @@ class CalculateBilling(object):
 
     def _update_customer_credit(self):
         """Decrease the meters account credit by the amount used in this minute."""
-        logger.info('Paying the reading cost of %.4f, reducing credit %.4f->%.4f' % (
-            self.reading.cost,
-            self.meter.credit_wallet.value,
-            self.meter.credit_wallet.value - self.reading.cost))
+        logger.info(
+            "Paying the reading cost of %.4f, reducing credit %.4f->%.4f"
+            % (
+                self.reading.cost,
+                self.meter.credit_wallet.value,
+                self.meter.credit_wallet.value - self.reading.cost,
+            )
+        )
 
         plan_cost = min(self.reading.cost, self.meter.plan_wallet.value)
-        self.meter.credit_wallet.value -= (self.reading.cost - plan_cost)
+        self.meter.credit_wallet.value -= self.reading.cost - plan_cost
         self.meter.plan_wallet.value -= plan_cost
         self.meter.maybe_convert_negative_balance_to_debt()
 
@@ -176,15 +178,16 @@ class CalculateBilling(object):
             return False
 
         if self.meter.billing.last_cycle_start is not None:
-            logger.info("Start a new billing periodic cycle. Last cycle start date was %s",
-                        self.meter.billing.last_cycle_start.isoformat())
+            logger.info(
+                "Start a new billing periodic cycle. Last cycle start date was %s",
+                self.meter.billing.last_cycle_start.isoformat(),
+            )
         else:
             logger.info("Start a new billing periodic cycle. First cycle recorded.")
 
         # Start a new cycle. The cycle start indicates a reset of total_cycle_energy.
         self.meter.billing.last_cycle_start = date
-        logger.info("New cycle start date is %s",
-                    self.meter.billing.last_cycle_start.isoformat())
+        logger.info("New cycle start date is %s", self.meter.billing.last_cycle_start.isoformat())
 
         self.meter.billing.total_cycle_energy = 0
         # Apply changes
@@ -201,9 +204,7 @@ class CalculateBilling(object):
         if not self.meter.tariff.plan_enabled:
             return False
 
-        if (self.meter.billing.is_running_plan
-                and date >= self.meter.billing.last_plan_expiration_date):
-
+        if self.meter.billing.is_running_plan and date >= self.meter.billing.last_plan_expiration_date:
             self.meter.billing.is_running_plan = False
             self.meter.plan_wallet.value = 0
             return True
@@ -226,15 +227,16 @@ class CalculateBilling(object):
         # -  the meter is mode Auto and prepay Credits Account has enough credits to pay for the plan)
         if tariff.plan_enabled and not meter.billing.is_running_plan:
             tariff_cost = tariff.plan_price + tariff.plan_fixed_fee
-            if (meter.config.state == MeterConfig.STATE_ON
-                or (meter.config.state == MeterConfig.STATE_AUTO
-                    and meter.credit_wallet.value >= tariff_cost)):
+            if meter.config.state == MeterConfig.STATE_ON or (
+                meter.config.state == MeterConfig.STATE_AUTO and meter.credit_wallet.value >= tariff_cost
+            ):
                 logger.info("Filling up plan with %.4f", tariff.plan_price)
                 logger.info("Deducting %.4f for cost of plan", tariff.plan_fixed_fee)
                 meter.billing.is_running_plan = True
                 meter.billing.last_plan_payment_date = self.reading.heartbeat_end
                 meter.billing.last_plan_expiration_date = tariff.get_next_cycle_start(
-                    self.reading.heartbeat_end)
+                    self.reading.heartbeat_end
+                )
                 meter.credit_wallet.value -= tariff.plan_fixed_fee
                 meter.credit_wallet.value -= tariff.plan_price
                 meter.plan_wallet.value += tariff.plan_price
@@ -268,11 +270,11 @@ class CalculateBilling(object):
                 return
 
         logger.info(
-            'Customer balance ({balance:.4f}) is below tariff ({tariff:s}) '
-            'threshold ({threshold:.4f}), creating an event.'.format(
-                balance=credit_plan_total,
-                tariff=repr(tariff.name),
-                threshold=tariff.low_balance_threshold))
+            "Customer balance ({balance:.4f}) is below tariff ({tariff:s}) "
+            "threshold ({threshold:.4f}), creating an event.".format(
+                balance=credit_plan_total, tariff=repr(tariff.name), threshold=tariff.low_balance_threshold
+            )
+        )
         event = Event.create(Event.TYPE_CUSTOMER_LOW_BALANCE, obj=meter)
         self.session.add(event)
 
@@ -289,10 +291,9 @@ class CalculateBilling(object):
         # the actual rule to turn off the meter is managed via property Meter.state_value,
         # called independently. There's no guarantee that this action will result in the
         # meter being turned Off, or that it would not be turned Off in other cases.
-        if ((meter.tariff.plan_enabled
-            and not meter.billing.is_running_plan)
-            or (meter.credit_wallet.value <= 0
-                and meter.plan_wallet.value <= 0)):
+        if (meter.tariff.plan_enabled and not meter.billing.is_running_plan) or (
+            meter.credit_wallet.value <= 0 and meter.plan_wallet.value <= 0
+        ):
             logger.info("Turning off meter due to lack of funds.")
 
     def calculate(self):

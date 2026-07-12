@@ -22,9 +22,15 @@ from sparkmeter.meter.meterdomain import MeterConfig
 from sparkmeter.models import session_scope
 from sparkmeter.tariff.tariffdomain import Tariff
 from sparkmeter.tests.base import SparkMeterTestCaseBase
-from sparkmeter.tests.test_data_factory import (EventFactory, MeterFactory, OperatorFactory,
-                                                ReadingFactory, SalesAccountFactory, TariffFactory,
-                                                TransactionSourceFactory)
+from sparkmeter.tests.test_data_factory import (
+    EventFactory,
+    MeterFactory,
+    OperatorFactory,
+    ReadingFactory,
+    SalesAccountFactory,
+    TariffFactory,
+    TransactionSourceFactory,
+)
 from sparkmeter.transaction.transactiondomain import Transaction, Wallet
 
 logger = logging.getLogger(__name__)
@@ -46,7 +52,6 @@ class MockValidator(object):
 
 
 class BillingTest(SparkMeterTestCaseBase):
-
     def _set_heartbeat_time(self, reading, dt, minutes=None):
         if minutes is None:
             minutes = 15
@@ -77,15 +82,23 @@ class BillingTest(SparkMeterTestCaseBase):
         meter.system_info.last_energy = reading.energy
         reading.energy += kwh
 
-    def _assert_meter_values(self, meter, reading,
-                             tariff, state,
-                             state_value, is_running_plan,
-                             acct_credit, acct_plan, acct_debt,
-                             total_cycle_energy,
-                             last_energy,
-                             last_plan_expiration_date,
-                             last_plan_payment_date,
-                             last_cycle_start):
+    def _assert_meter_values(
+        self,
+        meter,
+        reading,
+        tariff,
+        state,
+        state_value,
+        is_running_plan,
+        acct_credit,
+        acct_plan,
+        acct_debt,
+        total_cycle_energy,
+        last_energy,
+        last_plan_expiration_date,
+        last_plan_payment_date,
+        last_cycle_start,
+    ):
         assert meter.tariff.name == tariff
         assert meter.config.state == state
 
@@ -107,7 +120,7 @@ class BillingTest(SparkMeterTestCaseBase):
         assert meter.billing.last_cycle_start == last_cycle_start
 
     def test_calculate_billing_data(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         m = MeterFactory(
             system_info__last_energy=1,
@@ -139,13 +152,13 @@ class BillingTest(SparkMeterTestCaseBase):
         assert m.system_info.last_energy == 10
         assert m.system_info.last_energy_datetime == datetime.datetime(2013, 1, 1, 0, 45, 0)
         event_create.assert_called_once_with(
-            'customer-low-balance',
-            obj=MockValidator(lambda this, that=m: this.id == that.id))
+            "customer-low-balance", obj=MockValidator(lambda this, that=m: this.id == that.id)
+        )
 
     def test_calculate_billing_data_first_reading(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
-        tariff = TariffFactory(flat_price=1.0, tariff_type='flat')
+        tariff = TariffFactory(flat_price=1.0, tariff_type="flat")
 
         m = MeterFactory(
             system_info__last_energy=0.0,
@@ -182,11 +195,11 @@ class BillingTest(SparkMeterTestCaseBase):
         assert m.system_info.last_energy == 10
         assert m.system_info.last_energy_datetime == datetime.datetime(2013, 1, 1, 1, 1, 3)
         event_create.assert_called_once_with(
-            'customer-low-balance',
-            obj=MockValidator(lambda this, that=m: this.id == that.id))
+            "customer-low-balance", obj=MockValidator(lambda this, that=m: this.id == that.id)
+        )
 
     def test_calculate_billing_data_after_reset(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         m = MeterFactory(
             system_info__last_energy=100,
@@ -220,21 +233,20 @@ class BillingTest(SparkMeterTestCaseBase):
         assert sr.kilowatt_hours_period == 2
         # last long energy still gets updated
         assert m.system_info.last_energy == 10
-        assert (
-            m.system_info.last_energy_datetime
-            == datetime.datetime(2013, 1, 1, 1, 1, 3)
-        )
+        assert m.system_info.last_energy_datetime == datetime.datetime(2013, 1, 1, 1, 1, 3)
         event_create.assert_called_once_with(
-            'customer-low-balance',
-            obj=MockValidator(lambda this, that=m: this.id == that.id))
+            "customer-low-balance", obj=MockValidator(lambda this, that=m: this.id == that.id)
+        )
 
     @freeze_time("2010-01-01 12:00")
     def test_tariff_with_blockrate_johan(self):
         tariff = TariffFactory(tariff_type=Tariff.TYPE_BLOCKRATE)
-        tariff.blockrates = [dict(lower=0, upper=10, value=1),
-                             dict(lower=10, upper=30, value=2),
-                             dict(lower=30, upper=100, value=3),
-                             dict(lower=100, upper=0, value=4)]
+        tariff.blockrates = [
+            dict(lower=0, upper=10, value=1),
+            dict(lower=10, upper=30, value=2),
+            dict(lower=30, upper=100, value=3),
+            dict(lower=100, upper=0, value=4),
+        ]
 
         # Test block rate when it's the first reading of the month
         meter = MeterFactory(tariff=tariff, system_info__last_energy=0)
@@ -243,7 +255,7 @@ class BillingTest(SparkMeterTestCaseBase):
             heartbeat_end=datetime.datetime(2010, 1, 1, 0, 15),
             meter=str(meter.code),
             energy=1,
-            kilowatt_hours=1
+            kilowatt_hours=1,
         )
         self.session.commit()
         cb = CalculateBilling(reading, meter, self.session)
@@ -288,9 +300,11 @@ class BillingTest(SparkMeterTestCaseBase):
         # FIXME: This method is probably useless now.
         # Validates same code as test_tariff_with_blockrate_johan
         tariff = TariffFactory(tariff_type=Tariff.TYPE_BLOCKRATE)
-        tariff.blockrates = [dict(lower=0, upper=5, value=2),
-                             dict(lower=5, upper=10, value=1),
-                             dict(lower=10, upper=0, value=0.5)]
+        tariff.blockrates = [
+            dict(lower=0, upper=5, value=2),
+            dict(lower=5, upper=10, value=1),
+            dict(lower=10, upper=0, value=0.5),
+        ]
 
         meter = MeterFactory(tariff=tariff)
         # The reading to process, 30 minutes after it was received
@@ -346,11 +360,13 @@ class BillingTest(SparkMeterTestCaseBase):
         # FIXME: let's make sure timezone don't play a role in this - are we sure that
         # total_cycle_energy and block rate calculations are in sync?
         tariff = TariffFactory(tariff_type=Tariff.TYPE_BLOCKRATE)
-        tariff.blockrates = [dict(lower=0, upper=5, value=2),
-                             dict(lower=5, upper=10, value=1),
-                             dict(lower=10, upper=20, value=0.5),
-                             dict(lower=20, upper=30, value=0.4),
-                             dict(lower=30, upper=0, value=0.3)]
+        tariff.blockrates = [
+            dict(lower=0, upper=5, value=2),
+            dict(lower=5, upper=10, value=1),
+            dict(lower=10, upper=20, value=0.5),
+            dict(lower=20, upper=30, value=0.4),
+            dict(lower=30, upper=0, value=0.3),
+        ]
 
         # 1. reading ends at 00:00 on the 1st of month
         #   expected: reading counts towards the month that just ended, using the right blockrate
@@ -512,13 +528,13 @@ class BillingTest(SparkMeterTestCaseBase):
         assert meter.billing.total_cycle_energy == 20 + 10
         assert meter.billing.last_cycle_start == datetime.datetime(2010, 1, 1, 0, 44, 59)
 
-    @mock.patch('sparkmeter.billing.tzlocal', tzutc)
-    @mock.patch('sparkmeter.tariff.tariffdomain.tzlocal', tzutc)
+    @mock.patch("sparkmeter.billing.tzlocal", tzutc)
+    @mock.patch("sparkmeter.tariff.tariffdomain.tzlocal", tzutc)
     def test_flat_tariff_with_tou(self):
         tariff = TariffFactory(tariff_type=Tariff.TYPE_FLAT, flat_price=1, tou_enabled=True)
         tariff.tous = [
-            dict(start='18:00', end='20:00', value=120),
-            dict(start='23:00', end='05:00', value=80),
+            dict(start="18:00", end="20:00", value=120),
+            dict(start="23:00", end="05:00", value=80),
         ]
 
         meter = MeterFactory(tariff=tariff)
@@ -561,8 +577,8 @@ class BillingTest(SparkMeterTestCaseBase):
         assert reading.rate == 1.0
         assert reading.tou_modifier is None
 
-    @mock.patch('sparkmeter.billing.tzlocal', tzutc)
-    @mock.patch('sparkmeter.tariff.tariffdomain.tzlocal', tzutc)
+    @mock.patch("sparkmeter.billing.tzlocal", tzutc)
+    @mock.patch("sparkmeter.tariff.tariffdomain.tzlocal", tzutc)
     def test_tariff_tou_bug_ps82(self):
         def verify(day1, hour1, minute1, day2, hour2, minute2, tou):
             reading.cost = reading.rate = reading.tou_modifier = None
@@ -573,17 +589,17 @@ class BillingTest(SparkMeterTestCaseBase):
             cb = CalculateBilling(reading, meter, self.session)
             cb.update_tariff_cost()
             if tou:
-                assert reading.tou_modifier == old_div(tou['value'], 100.0)
-                assert reading.cost == tariff.flat_price * tou['value'] / 100.0
-                assert reading.rate == tariff.flat_price * tou['value'] / 100.0
+                assert reading.tou_modifier == old_div(tou["value"], 100.0)
+                assert reading.cost == tariff.flat_price * tou["value"] / 100.0
+                assert reading.rate == tariff.flat_price * tou["value"] / 100.0
             else:
                 assert reading.tou_modifier is None
                 assert reading.cost == tariff.flat_price
                 assert reading.rate == tariff.flat_price
 
         tariff = TariffFactory(tariff_type=Tariff.TYPE_FLAT, flat_price=0.47, tou_enabled=True)
-        tou1 = dict(start='15:00', end='16:00', value=90)
-        tou2 = dict(start='16:00', end='15:00', value=50)
+        tou1 = dict(start="15:00", end="16:00", value=90)
+        tou2 = dict(start="16:00", end="15:00", value=50)
         tariff.tous = [tou1, tou2]
 
         meter = MeterFactory(tariff=tariff)
@@ -630,7 +646,7 @@ class BillingTest(SparkMeterTestCaseBase):
         assert reading.rate == 0.0
 
     def test_pay_off_customer_debt_from_credit(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         parameters.DEBT_PAYBACK_PERCENT = 50.0
         event_create.reset_mock()
@@ -662,16 +678,11 @@ class BillingTest(SparkMeterTestCaseBase):
         assert event_create.mock_calls == []
 
     def test_pay_off_customer_debt_from_plan(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         parameters.DEBT_PAYBACK_PERCENT = 50.0
         event_create.reset_mock()
-        tariff = TariffFactory(
-            tariff_type=Tariff.TYPE_FLAT,
-            plan_enabled=True,
-            plan_price=10,
-            flat_price=1
-        )
+        tariff = TariffFactory(tariff_type=Tariff.TYPE_FLAT, plan_enabled=True, plan_price=10, flat_price=1)
 
         meter = MeterFactory(
             tariff=tariff,
@@ -699,16 +710,11 @@ class BillingTest(SparkMeterTestCaseBase):
         assert event_create.mock_calls == []
 
     def test_pay_off_customer_debt_from_credit_and_plan(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         parameters.DEBT_PAYBACK_PERCENT = 50.0
         event_create.reset_mock()
-        tariff = TariffFactory(
-            tariff_type=Tariff.TYPE_FLAT,
-            flat_price=1,
-            plan_enabled=True,
-            plan_price=14
-        )
+        tariff = TariffFactory(tariff_type=Tariff.TYPE_FLAT, flat_price=1, plan_enabled=True, plan_price=14)
 
         meter = MeterFactory(
             tariff=tariff,
@@ -741,16 +747,11 @@ class BillingTest(SparkMeterTestCaseBase):
         assert event_create.mock_calls == []
 
     def test_pay_off_customer_debt_from_credit_and_debt_cleared(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         parameters.DEBT_PAYBACK_PERCENT = 50.0
         event_create.reset_mock()
-        tariff = TariffFactory(
-            tariff_type=Tariff.TYPE_FLAT,
-            flat_price=1,
-            plan_enabled=True,
-            plan_price=13
-        )
+        tariff = TariffFactory(tariff_type=Tariff.TYPE_FLAT, flat_price=1, plan_enabled=True, plan_price=13)
 
         meter = MeterFactory(
             tariff=tariff,
@@ -785,37 +786,38 @@ class BillingTest(SparkMeterTestCaseBase):
         assert event_create.mock_calls == []
 
     def test_monthly_plan_with_alternate_start_day(self):
-        '''Validate use cases related to monthly plan not starting on the 1st of the month'''
+        """Validate use cases related to monthly plan not starting on the 1st of the month"""
 
-        tariff_noplan = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                      name='No_plan_tariff',
-                                      flat_price=10)
-        tariff_planday1 = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                        name='Plan_Tariff_Day1',
-                                        flat_price=40,
-                                        plan_price=400,
-                                        cycle_start_day_of_month=1,
-                                        plan_enabled=True)
-        tariff_planday5 = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                        name='Plan_Tariff_Day5',
-                                        flat_price=20,
-                                        plan_price=600,
-                                        cycle_start_day_of_month=5,
-                                        plan_enabled=True)
-        tariff_planday10 = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                         name='Plan_Tariff_Day10',
-                                         flat_price=20,
-                                         plan_price=600,
-                                         cycle_start_day_of_month=10,
-                                         plan_enabled=True)
+        tariff_noplan = TariffFactory(tariff_type=Tariff.TYPE_FLAT, name="No_plan_tariff", flat_price=10)
+        tariff_planday1 = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff_Day1",
+            flat_price=40,
+            plan_price=400,
+            cycle_start_day_of_month=1,
+            plan_enabled=True,
+        )
+        tariff_planday5 = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff_Day5",
+            flat_price=20,
+            plan_price=600,
+            cycle_start_day_of_month=5,
+            plan_enabled=True,
+        )
+        tariff_planday10 = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff_Day10",
+            flat_price=20,
+            plan_price=600,
+            cycle_start_day_of_month=10,
+            plan_enabled=True,
+        )
 
-        m = MeterFactory(tariff=tariff_planday10,
-                         system_info__last_energy=1,
-                         config__state=MeterConfig.STATE_ON)
-        r = ReadingFactory(meter=str(m.code), energy=1,
-                           acct_credit=0,
-                           acct_plan=0,
-                           acct_debt=0)
+        m = MeterFactory(
+            tariff=tariff_planday10, system_info__last_energy=1, config__state=MeterConfig.STATE_ON
+        )
+        r = ReadingFactory(meter=str(m.code), energy=1, acct_credit=0, acct_plan=0, acct_debt=0)
         self.session.commit()
 
         # On month 1 day 11, Meter is assigned Tariff starting on day 10. Validate that
@@ -828,43 +830,64 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 1)
         self._set_heartbeat_time(r, datetime.datetime(2018, 1, 11, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day10', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-600, acct_plan=580, acct_debt=0,
-                                  total_cycle_energy=1,
-                                  last_energy=1 + 1,
-                                  last_cycle_start=datetime.datetime(2018, 1, 10, 23, 59, 59),
-                                  last_plan_payment_date=datetime.datetime(2018, 1, 11, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 2, 10, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day10",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-600,
+            acct_plan=580,
+            acct_debt=0,
+            total_cycle_energy=1,
+            last_energy=1 + 1,
+            last_cycle_start=datetime.datetime(2018, 1, 10, 23, 59, 59),
+            last_plan_payment_date=datetime.datetime(2018, 1, 11, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 2, 10, 0, 0),
+        )
 
         # Reading in the middle of the month, plan is being used
         self._use_energy(r, m, 4)
         self._set_heartbeat_time(r, datetime.datetime(2018, 1, 15, 14, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day10', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-600, acct_plan=500, acct_debt=0,
-                                  total_cycle_energy=1 + 4,
-                                  last_energy=2 + 4,
-                                  last_cycle_start=datetime.datetime(2018, 1, 10, 23, 59, 59),
-                                  last_plan_payment_date=datetime.datetime(2018, 1, 11, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 2, 10, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day10",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-600,
+            acct_plan=500,
+            acct_debt=0,
+            total_cycle_energy=1 + 4,
+            last_energy=2 + 4,
+            last_cycle_start=datetime.datetime(2018, 1, 10, 23, 59, 59),
+            last_plan_payment_date=datetime.datetime(2018, 1, 11, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 2, 10, 0, 0),
+        )
 
         # At expiration date, cycle is reset and a new plan is purchased
         self._use_energy(r, m, 10)
         self._set_heartbeat_time(r, datetime.datetime(2018, 2, 10, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day10', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-600 - 600, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=6 + 10,
-                                  last_cycle_start=datetime.datetime(2018, 2, 10, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 2, 10, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 3, 10, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day10",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-600 - 600,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=6 + 10,
+            last_cycle_start=datetime.datetime(2018, 2, 10, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 2, 10, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 3, 10, 0, 0),
+        )
 
         # After meter has purchased plan, tariff is changed on month 2 day 11 to now start on day 5.
         # Validate that
@@ -882,29 +905,43 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2018, 2, 11, 14, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-1200, acct_plan=600 - 5 * 20, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=16 + 5,
-                                  last_cycle_start=datetime.datetime(2018, 2, 10, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 2, 10, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 3, 10, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-1200,
+            acct_plan=600 - 5 * 20,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=16 + 5,
+            last_cycle_start=datetime.datetime(2018, 2, 10, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 2, 10, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 3, 10, 0, 0),
+        )
 
         # Reading received during the month
         self._use_energy(r, m, 10)
         self._set_heartbeat_time(r, datetime.datetime(2018, 2, 21, 12, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-1200, acct_plan=500 - 10 * 20, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=21 + 10,
-                                  last_cycle_start=datetime.datetime(2018, 2, 10, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 2, 10, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 3, 10, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-1200,
+            acct_plan=500 - 10 * 20,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=21 + 10,
+            last_cycle_start=datetime.datetime(2018, 2, 10, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 2, 10, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 3, 10, 0, 0),
+        )
 
         # At expiration date of the previous plan, cycle is reset and a new plan is purchased,
         # expiring on day 5.
@@ -912,43 +949,64 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2018, 3, 10, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-1200 - 600, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=31 + 5,
-                                  last_cycle_start=datetime.datetime(2018, 3, 10, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 3, 10, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-1200 - 600,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=31 + 5,
+            last_cycle_start=datetime.datetime(2018, 3, 10, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 3, 10, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 4, 5, 0, 0),
+        )
 
         # Reading in the middle of the period, plan is being used
         self._use_energy(r, m, 15)
         self._set_heartbeat_time(r, datetime.datetime(2018, 3, 25, 16, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-1800, acct_plan=600 - 15 * 20, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=36 + 15,
-                                  last_cycle_start=datetime.datetime(2018, 3, 10, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 3, 10, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-1800,
+            acct_plan=600 - 15 * 20,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=36 + 15,
+            last_cycle_start=datetime.datetime(2018, 3, 10, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 3, 10, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 4, 5, 0, 0),
+        )
 
         # At expiration date, cycle is reset and a new plan is purchased
         self._use_energy(r, m, 10)
         self._set_heartbeat_time(r, datetime.datetime(2018, 4, 5, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-1800 - 600, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=51 + 10,
-                                  last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-1800 - 600,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=51 + 10,
+            last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0),
+        )
 
         # Before month 5 day 5, meter is changed to various tariffs.
         # No plan, plan with day starting on day 1, back to plan with day starting on day 5. Validate that
@@ -965,15 +1023,22 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 15)
         self._set_heartbeat_time(r, datetime.datetime(2018, 4, 15, 16, 45))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2400, acct_plan=600 - 15 * 10, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=61 + 15,
-                                  last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2400,
+            acct_plan=600 - 15 * 10,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=61 + 15,
+            last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0),
+        )
 
         # Change tariff to no plan tariff before expiration date
         m.tariff = tariff_planday1
@@ -983,29 +1048,43 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 4)
         self._set_heartbeat_time(r, datetime.datetime(2018, 4, 25, 6, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2400, acct_plan=450 - 4 * 40, acct_debt=0,
-                                  total_cycle_energy=15 + 4,
-                                  last_energy=76 + 4,
-                                  last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2400,
+            acct_plan=450 - 4 * 40,
+            acct_debt=0,
+            total_cycle_energy=15 + 4,
+            last_energy=76 + 4,
+            last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0),
+        )
 
         # Reading after day 1 but before expiration of existing plan, still same behavior
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2018, 5, 2, 14, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2400, acct_plan=290 - 5 * 40, acct_debt=0,
-                                  total_cycle_energy=19 + 5,
-                                  last_energy=80 + 5,
-                                  last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2400,
+            acct_plan=290 - 5 * 40,
+            acct_debt=0,
+            total_cycle_energy=19 + 5,
+            last_energy=80 + 5,
+            last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0),
+        )
 
         # Change back to initial tariff before expiration date
         m.tariff = tariff_planday5
@@ -1014,51 +1093,65 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2018, 5, 4, 16, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2400 - (5 * 20 - 90), acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=24 + 5,
-                                  last_energy=85 + 5,
-                                  last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2400 - (5 * 20 - 90),
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=24 + 5,
+            last_energy=85 + 5,
+            last_cycle_start=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 4, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 5, 5, 0, 0),
+        )
 
         # At expiration date, a new plan is purchased as if the plan hadn't been changed during the period.
         # Since the plan had expired, the consumption of that reading is deducted from credits.
         self._use_energy(r, m, 1)
         self._set_heartbeat_time(r, datetime.datetime(2018, 5, 5, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2410 - 20 * 1 - 600, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=90 + 1,
-                                  last_cycle_start=datetime.datetime(2018, 5, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2018, 5, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2018, 6, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2410 - 20 * 1 - 600,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=90 + 1,
+            last_cycle_start=datetime.datetime(2018, 5, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2018, 5, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2018, 6, 5, 0, 0),
+        )
 
     def test_pay_monthly_plan_fixed_fee_state_auto(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
 
         tariff = TariffFactory(
             tariff_type=Tariff.TYPE_FLAT,
-            name='Plan_Tariff',
+            name="Plan_Tariff",
             flat_price=20,
             plan_price=500,
             plan_fixed_fee=100,
-            plan_enabled=True)
+            plan_enabled=True,
+        )
 
-        m = MeterFactory(tariff=tariff,
-                         system_info__last_energy=1,
-                         config__state=MeterConfig.STATE_AUTO,
-                         credit_wallet__value=500)
-        r = ReadingFactory(meter=str(m.code), energy=1,
-                           acct_credit=0,
-                           acct_plan=0,
-                           acct_debt=0)
+        m = MeterFactory(
+            tariff=tariff,
+            system_info__last_energy=1,
+            config__state=MeterConfig.STATE_AUTO,
+            credit_wallet__value=500,
+        )
+        r = ReadingFactory(meter=str(m.code), energy=1, acct_credit=0, acct_plan=0, acct_debt=0)
         self.session.commit()
 
         # Can't buy the plan because there isn't enough credit to cover it
@@ -1075,7 +1168,7 @@ class BillingTest(SparkMeterTestCaseBase):
         assert m.debt_wallet.value == 0
 
     def test_pay_monthly_plan(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
 
         # The values in this function are based on a spreadsheet created by Arthur,
@@ -1085,37 +1178,43 @@ class BillingTest(SparkMeterTestCaseBase):
         # with a grain of salt.
         parameters.ALLOW_NEGATIVE_BALANCE = True
 
-        tariff0 = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                name='No_plan_tariff',
-                                flat_price=20)
-        tariff1 = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                name='Plan_Tariff1',
-                                flat_price=40,
-                                plan_price=400,
-                                plan_enabled=True)
-        tariff2 = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                name='Plan_Tariff2',
-                                flat_price=20,
-                                plan_price=600,
-                                plan_enabled=True)
+        tariff0 = TariffFactory(tariff_type=Tariff.TYPE_FLAT, name="No_plan_tariff", flat_price=20)
+        tariff1 = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff1",
+            flat_price=40,
+            plan_price=400,
+            plan_enabled=True,
+        )
+        tariff2 = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff2",
+            flat_price=20,
+            plan_price=600,
+            plan_enabled=True,
+        )
 
         logger.info("#00")
         m = MeterFactory(tariff=tariff0, system_info__last_energy=1)
-        r = ReadingFactory(meter=str(m.code), energy=1,
-                           acct_credit=0,
-                           acct_plan=0,
-                           acct_debt=0)
+        r = ReadingFactory(meter=str(m.code), energy=1, acct_credit=0, acct_plan=0, acct_debt=0)
         self.session.commit()
 
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=0, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=1,
-                                  last_cycle_start=None,
-                                  last_plan_payment_date=None,
-                                  last_plan_expiration_date=None)
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=0,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=1,
+            last_cycle_start=None,
+            last_plan_payment_date=None,
+            last_plan_expiration_date=None,
+        )
 
         logger.info("#01")
         self._add_credits(m, 600)
@@ -1123,29 +1222,43 @@ class BillingTest(SparkMeterTestCaseBase):
         logger.info("#02")
         self._set_heartbeat_time(r, datetime.datetime(2015, 1, 10, 10, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=False,
-                                  acct_credit=600, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=1,
-                                  last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
-                                  last_plan_payment_date=None,
-                                  last_plan_expiration_date=None)
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=False,
+            acct_credit=600,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=1,
+            last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
+            last_plan_payment_date=None,
+            last_plan_expiration_date=None,
+        )
 
         logger.info("#03")
         self._set_heartbeat_time(r, datetime.datetime(2015, 1, 12, 7, 45))
         self._use_energy(r, m, 5)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=False,
-                                  acct_credit=500, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=1 + 5,
-                                  last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
-                                  last_plan_payment_date=None,
-                                  last_plan_expiration_date=None)
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=False,
+            acct_credit=500,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=1 + 5,
+            last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
+            last_plan_payment_date=None,
+            last_plan_expiration_date=None,
+        )
 
         logger.info("#04")
         m.tariff = tariff1
@@ -1153,97 +1266,146 @@ class BillingTest(SparkMeterTestCaseBase):
         logger.info("#05")
         self._set_heartbeat_time(r, datetime.datetime(2015, 1, 12, 8, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=100, acct_plan=400, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=6,
-                                  last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 1, 12, 8, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 2, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=100,
+            acct_plan=400,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=6,
+            last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
+            last_plan_payment_date=datetime.datetime(2015, 1, 12, 8, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 2, 1, 0, 0),
+        )
 
         logger.info("#06")
         self._set_heartbeat_time(r, datetime.datetime(2015, 1, 31, 23, 45))
         self._use_energy(r, m, 8)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=100, acct_plan=80, acct_debt=0,
-                                  total_cycle_energy=13,
-                                  last_energy=6 + 8,
-                                  last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 1, 12, 8, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 2, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=100,
+            acct_plan=80,
+            acct_debt=0,
+            total_cycle_energy=13,
+            last_energy=6 + 8,
+            last_cycle_start=datetime.datetime(2015, 1, 10, 9, 59, 59),
+            last_plan_payment_date=datetime.datetime(2015, 1, 12, 8, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 2, 1, 0, 0),
+        )
         self._set_heartbeat_time(r, datetime.datetime(2015, 2, 1, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=100, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=14,
-                                  last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 1, 12, 8, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 2, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=100,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=14,
+            last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 1, 12, 8, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 2, 1, 0, 0),
+        )
 
         logger.info("#07")
         self._add_credits(m, 900)
         logger.info("#08")
         self._set_heartbeat_time(r, datetime.datetime(2015, 2, 3, 9, 45))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=600, acct_plan=400, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=14,
-                                  last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
-                                  last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=600,
+            acct_plan=400,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=14,
+            last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
+            last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0),
+        )
 
         logger.info("#09")
         self._set_heartbeat_time(r, datetime.datetime(2015, 2, 3, 10, 0))
         self._use_energy(r, m, 4)  # plan 400 -> 400 - 4*40 = 240
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=600, acct_plan=400 - 4 * 40, acct_debt=0,
-                                  total_cycle_energy=4,
-                                  last_energy=14 + 4,
-                                  last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
-                                  last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=600,
+            acct_plan=400 - 4 * 40,
+            acct_debt=0,
+            total_cycle_energy=4,
+            last_energy=14 + 4,
+            last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
+            last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0),
+        )
 
         logger.info("#10")
         self._set_heartbeat_time(r, datetime.datetime(2015, 2, 20, 14, 0))
         self._use_energy(r, m, 7)  # plan 240 -> 0. credit 600 -> 600 - 40 = 560
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=600 - 40, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=11,
-                                  last_energy=18 + 7,
-                                  last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
-                                  last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=600 - 40,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=11,
+            last_energy=18 + 7,
+            last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
+            last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0),
+        )
 
         logger.info("#11")
         self._set_heartbeat_time(r, datetime.datetime(2015, 2, 27, 8, 0))
         self._use_energy(r, m, 10)  # credit 560 -> 560 - 10*40 = 160
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff1', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=21,
-                                  last_energy=25 + 10,
-                                  last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
-                                  last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff1",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=21,
+            last_energy=25 + 10,
+            last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
+            last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0),
+        )
 
         logger.info("#12")
         m.tariff = tariff2
@@ -1254,324 +1416,492 @@ class BillingTest(SparkMeterTestCaseBase):
         logger.info("#14")
         self._set_heartbeat_time(r, datetime.datetime(2015, 2, 27, 8, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=760, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=21,
-                                  last_energy=35,
-                                  last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
-                                  last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=760,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=21,
+            last_energy=35,
+            last_cycle_start=datetime.datetime(2015, 2, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 2, 3, 9, 45),
+            last_plan_expiration_date=datetime.datetime(2015, 3, 1, 0, 0),
+        )
 
         logger.info("#15")
         self._set_heartbeat_time(r, datetime.datetime(2015, 3, 1, 0, 15))
         self._use_energy(r, m, 5)  # buying plan: credit 760 -> 160.
         # Paying consumption with plan: 0 -> 600 -> 600 - 5*20 = 500
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=500, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=35 + 5,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=500,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=35 + 5,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#16")
         self._set_heartbeat_time(r, datetime.datetime(2015, 3, 15, 14, 0))
         self._use_energy(r, m, 10)  # plan 500 -> 500 - 10*20 = 300
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=300, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=40 + 10,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=300,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=40 + 10,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#17")
         m.config.state = MeterConfig.STATE_OFF
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_OFF,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=True,
-                                  acct_credit=160, acct_plan=300, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=50,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_OFF,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=300,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=50,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#18")
         m.config.state = MeterConfig.STATE_AUTO
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=300, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=50,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=300,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=50,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#19")
         self._set_heartbeat_time(r, datetime.datetime(2015, 3, 16, 16, 15))
         self._use_energy(r, m, 0.1)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=298, acct_debt=0,
-                                  total_cycle_energy=15.1,
-                                  last_energy=50 + 0.1,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=298,
+            acct_debt=0,
+            total_cycle_energy=15.1,
+            last_energy=50 + 0.1,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#20")
         self._set_heartbeat_time(r, datetime.datetime(2015, 3, 22, 14, 30))
         self._use_energy(r, m, 10)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=98, acct_debt=0,
-                                  total_cycle_energy=25.1,
-                                  last_energy=50.1 + 10,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=98,
+            acct_debt=0,
+            total_cycle_energy=25.1,
+            last_energy=50.1 + 10,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#21")
         m.config.state = MeterConfig.STATE_ON
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=160, acct_plan=98, acct_debt=0,
-                                  total_cycle_energy=25.1,
-                                  last_energy=60.1,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=160,
+            acct_plan=98,
+            acct_debt=0,
+            total_cycle_energy=25.1,
+            last_energy=60.1,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#22")
         self._set_heartbeat_time(r, datetime.datetime(2015, 3, 27, 16, 0))
         self._use_energy(r, m, 15)  # plan 98 -> 0; credit 160 - 15*20 + 98 = -42
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-42, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=40.1,
-                                  last_energy=60.1 + 15,
-                                  last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-42,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=40.1,
+            last_energy=60.1 + 15,
+            last_cycle_start=datetime.datetime(2015, 3, 1, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2015, 3, 1, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2015, 4, 1, 0, 0),
+        )
 
         logger.info("#23")
         self._set_heartbeat_time(r, datetime.datetime(2015, 4, 1, 0, 0))
         self._use_energy(r, m, 5)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-742, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=75.1 + 5,
-                                  last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-742,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=75.1 + 5,
+            last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#24")
         self._set_heartbeat_time(r, datetime.datetime(2015, 4, 3, 13, 0))
         self._use_energy(r, m, 5)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-742, acct_plan=500, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=80.1 + 5,
-                                  last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-742,
+            acct_plan=500,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=80.1 + 5,
+            last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#25")
         self._add_credits(m, 900)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=158, acct_plan=500, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=85.1,
-                                  last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=158,
+            acct_plan=500,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=85.1,
+            last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#26")
         m.config.state = MeterConfig.STATE_AUTO
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=158, acct_plan=500, acct_debt=0,
-                                  total_cycle_energy=5,
-                                  last_energy=85.1,
-                                  last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=158,
+            acct_plan=500,
+            acct_debt=0,
+            total_cycle_energy=5,
+            last_energy=85.1,
+            last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#27")
         self._set_heartbeat_time(r, datetime.datetime(2015, 4, 27, 16, 0))
         self._use_energy(r, m, 20)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=158, acct_plan=100, acct_debt=0,
-                                  total_cycle_energy=25,
-                                  last_energy=85.1 + 20,
-                                  last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=158,
+            acct_plan=100,
+            acct_debt=0,
+            total_cycle_energy=25,
+            last_energy=85.1 + 20,
+            last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#28")
         m.config.state = MeterConfig.STATE_OFF
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_OFF,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=True,
-                                  acct_credit=158, acct_plan=100, acct_debt=0,
-                                  total_cycle_energy=25,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_OFF,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=True,
+            acct_credit=158,
+            acct_plan=100,
+            acct_debt=0,
+            total_cycle_energy=25,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#29")
         self._set_heartbeat_time(r, datetime.datetime(2015, 5, 1, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_OFF,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=158, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_OFF,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=158,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
         self._set_heartbeat_time(r, datetime.datetime(2015, 5, 1, 0, 15))
 
         logger.info("#29A")
         self._add_credits(m, 1000)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_OFF,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=1158, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_OFF,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=1158,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#30")
         self._set_heartbeat_time(r, datetime.datetime(2015, 5, 3, 16, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff2', state=MeterConfig.STATE_OFF,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=1158, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff2",
+            state=MeterConfig.STATE_OFF,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=1158,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#31")
         m.tariff = tariff0
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_OFF,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=1158, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_OFF,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=1158,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#32")
         m.config.state = MeterConfig.STATE_AUTO
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=False,
-                                  acct_credit=1158, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=False,
+            acct_credit=1158,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#33")
         self._set_heartbeat_time(r, datetime.datetime(2015, 5, 3, 16, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=False,
-                                  acct_credit=1158, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1,
-                                  last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=False,
+            acct_credit=1158,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1,
+            last_cycle_start=datetime.datetime(2015, 5, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#34")
         self._set_heartbeat_time(r, datetime.datetime(2015, 6, 1, 0, 0))
         self._use_energy(r, m, 55)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=False,
-                                  acct_credit=58, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=105.1 + 55,
-                                  last_cycle_start=datetime.datetime(2015, 6, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=False,
+            acct_credit=58,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=105.1 + 55,
+            last_cycle_start=datetime.datetime(2015, 6, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#35")
         self._set_heartbeat_time(r, datetime.datetime(2015, 6, 3, 17, 0))
         self._use_energy(r, m, 3)
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_AUTO,
-                                  state_value=MeterConfig.STATE_OFF, is_running_plan=False,
-                                  acct_credit=-2, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=3,
-                                  last_energy=160.1 + 3,
-                                  last_cycle_start=datetime.datetime(2015, 6, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_AUTO,
+            state_value=MeterConfig.STATE_OFF,
+            is_running_plan=False,
+            acct_credit=-2,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=3,
+            last_energy=160.1 + 3,
+            last_cycle_start=datetime.datetime(2015, 6, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
 
         logger.info("#36")
         m.config.state = MeterConfig.STATE_ON
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=False,
-                                  acct_credit=-2, acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=3,
-                                  last_energy=163.1,
-                                  last_cycle_start=datetime.datetime(2015, 6, 1, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=False,
+            acct_credit=-2,
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=3,
+            last_energy=163.1,
+            last_cycle_start=datetime.datetime(2015, 6, 1, 0, 0),
+            last_plan_payment_date=datetime.datetime(2015, 4, 1, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2015, 5, 1, 0, 0),
+        )
         assert event_create.mock_calls == [
-            mock.call('customer-low-balance', obj=mock.ANY),
+            mock.call("customer-low-balance", obj=mock.ANY),
         ]
 
     def test_meter_in_a_different_session(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
 
         meter = MeterFactory(code=1)
@@ -1583,27 +1913,23 @@ class BillingTest(SparkMeterTestCaseBase):
             process_reading(reading, meter, session)
 
         event_create.assert_called_once_with(
-            'customer-low-balance',
-            obj=MockValidator(lambda this, that=meter: this.id == that.id))
+            "customer-low-balance", obj=MockValidator(lambda this, that=meter: this.id == that.id)
+        )
 
-    @mock.patch('sparkmeter.event.eventdomain.Event.create')
+    @mock.patch("sparkmeter.event.eventdomain.Event.create")
     def test_low_balance_event(self, create, operator_role):
         def create_event(event_type, obj=None):
-            e = Event(
-                event_type=event_type,
-                timestamp=datetime.datetime.now())
+            e = Event(event_type=event_type, timestamp=datetime.datetime.now())
             if obj:
                 e.object = obj
                 e.ground_id = obj.ground_id
             return e
+
         create.side_effect = create_event
 
-        account = SalesAccountFactory(credit_wallet__value=1000,
-                                      debt_wallet__value=0)
+        account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(accounts=[account], roles=[operator_role], grounds=[account.ground])
         source = TransactionSourceFactory()
         m = MeterFactory(
             system_info__last_energy=1,
@@ -1667,24 +1993,24 @@ class BillingTest(SparkMeterTestCaseBase):
                 process_reading(sr, m, self.session)
                 self.session.commit()
                 logger.info(
-                    'consumed: %f, '
-                    'total_energy: %f, '
-                    'reading.heartbeat_end: %s '
-                    'reading.kilowatt_hours: %f '
-                    'reading.acct_credit: %f',
+                    "consumed: %f, "
+                    "total_energy: %f, "
+                    "reading.heartbeat_end: %s "
+                    "reading.kilowatt_hours: %f "
+                    "reading.acct_credit: %f",
                     energy,
                     self.total_energy,
                     sr.heartbeat_end,
                     sr.kilowatt_hours,
-                    sr.acct_credit)
+                    sr.acct_credit,
+                )
             return sr
 
         def verify(sr, acct_credit):
             assert sr.acct_credit == acct_credit
 
         def n_events(n):
-            assert Event.query.filter_by(
-                event_type=Event.TYPE_CUSTOMER_LOW_BALANCE).count() == n
+            assert Event.query.filter_by(event_type=Event.TYPE_CUSTOMER_LOW_BALANCE).count() == n
 
         # Fairly comprehensive test to make sure that we do not trigger too many
         # low balance events.
@@ -1731,10 +2057,12 @@ class BillingTest(SparkMeterTestCaseBase):
     def test_tariff_blockrates_as_string_values(self):
         # See also SW-345
         tariff = TariffFactory(tariff_type=Tariff.TYPE_BLOCKRATE)
-        tariff.blockrates = [dict(lower='0', upper='10', value='1.5'),
-                             dict(lower='10', upper='30', value='2.5'),
-                             dict(lower='30', upper='100', value='3.5'),
-                             dict(lower='100', upper='0', value='4.5')]
+        tariff.blockrates = [
+            dict(lower="0", upper="10", value="1.5"),
+            dict(lower="10", upper="30", value="2.5"),
+            dict(lower="30", upper="100", value="3.5"),
+            dict(lower="100", upper="0", value="4.5"),
+        ]
 
         # Test block rate when it's the first reading of the month
         meter = MeterFactory(tariff=tariff, system_info__last_energy=0)
@@ -1743,7 +2071,7 @@ class BillingTest(SparkMeterTestCaseBase):
             heartbeat_end=datetime.datetime(2010, 1, 1, 0, 15),
             meter=str(meter.code),
             energy=1,
-            kilowatt_hours=1
+            kilowatt_hours=1,
         )
         self.session.commit()
         cb = CalculateBilling(reading, meter, self.session)
@@ -1787,30 +2115,27 @@ class BillingTest(SparkMeterTestCaseBase):
     def test_daily_plan(self):
         """Validate use cases related to the daily plan."""
 
-        tariff_noplan = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                      name='No_plan_tariff',
-                                      flat_price=10)
-        tariff_daily = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                     name='Plan_Tariff_Day1Flat40',
-                                     flat_price=40,
-                                     plan_price=400,
-                                     cycle_start_day_of_month=1,
-                                     plan_enabled=True,
-                                     plan_duration_unit=Tariff.PLAN_DURATION_UNIT_DAY)
-        tariff_monthly = TariffFactory(tariff_type=Tariff.TYPE_FLAT,
-                                       name='Plan_Tariff_Day5',
-                                       flat_price=20,
-                                       plan_price=600,
-                                       cycle_start_day_of_month=5,
-                                       plan_enabled=True)
+        tariff_noplan = TariffFactory(tariff_type=Tariff.TYPE_FLAT, name="No_plan_tariff", flat_price=10)
+        tariff_daily = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff_Day1Flat40",
+            flat_price=40,
+            plan_price=400,
+            cycle_start_day_of_month=1,
+            plan_enabled=True,
+            plan_duration_unit=Tariff.PLAN_DURATION_UNIT_DAY,
+        )
+        tariff_monthly = TariffFactory(
+            tariff_type=Tariff.TYPE_FLAT,
+            name="Plan_Tariff_Day5",
+            flat_price=20,
+            plan_price=600,
+            cycle_start_day_of_month=5,
+            plan_enabled=True,
+        )
 
-        m = MeterFactory(tariff=tariff_daily,
-                         system_info__last_energy=1,
-                         config__state=MeterConfig.STATE_ON)
-        r = ReadingFactory(meter=str(m.code), energy=1,
-                           acct_credit=0,
-                           acct_plan=0,
-                           acct_debt=0)
+        m = MeterFactory(tariff=tariff_daily, system_info__last_energy=1, config__state=MeterConfig.STATE_ON)
+        r = ReadingFactory(meter=str(m.code), energy=1, acct_credit=0, acct_plan=0, acct_debt=0)
         self.session.commit()
 
         # On day 13, Meter is assigned a daily tariff. Validate that
@@ -1823,58 +2148,86 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 1)
         self._set_heartbeat_time(r, datetime.datetime(2020, 1, 13, 0, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-400, acct_plan=360, acct_debt=0,
-                                  total_cycle_energy=1,
-                                  last_energy=1 + 1,
-                                  last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2020, 1, 13, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2020, 1, 14, 0, 15))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-400,
+            acct_plan=360,
+            acct_debt=0,
+            total_cycle_energy=1,
+            last_energy=1 + 1,
+            last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2020, 1, 13, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2020, 1, 14, 0, 15),
+        )
 
         # Reading in the middle of the day, plan is being used
         self._use_energy(r, m, 4)
         self._set_heartbeat_time(r, datetime.datetime(2020, 1, 13, 12, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-400, acct_plan=200, acct_debt=0,
-                                  total_cycle_energy=1 + 4,
-                                  last_energy=2 + 4,
-                                  last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2020, 1, 13, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2020, 1, 14, 0, 15))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-400,
+            acct_plan=200,
+            acct_debt=0,
+            total_cycle_energy=1 + 4,
+            last_energy=2 + 4,
+            last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2020, 1, 13, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2020, 1, 14, 0, 15),
+        )
 
         # At expiration date, plan expires and a new plan is purchased
         self._use_energy(r, m, 10)
         self._set_heartbeat_time(r, datetime.datetime(2020, 1, 14, 0, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-400 - 600, acct_plan=400, acct_debt=0,
-                                  total_cycle_energy=5 + 10,
-                                  last_energy=6 + 10,
-                                  last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2020, 1, 14, 0, 15),
-                                  last_plan_expiration_date=datetime.datetime(2020, 1, 15, 0, 15))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-400 - 600,
+            acct_plan=400,
+            acct_debt=0,
+            total_cycle_energy=5 + 10,
+            last_energy=6 + 10,
+            last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2020, 1, 14, 0, 15),
+            last_plan_expiration_date=datetime.datetime(2020, 1, 15, 0, 15),
+        )
 
         # Meters on a daily plan have their plans expire 24 hours after the plan is purchased. This means
         #  that plans are not bound to day boundaries (i.e., midnight).
         self._use_energy(r, m, 3)
         self._set_heartbeat_time(r, datetime.datetime(2020, 1, 15, 12, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-1000 - 400, acct_plan=400 - (3 * 40), acct_debt=0,
-                                  total_cycle_energy=15 + 3,
-                                  last_energy=16 + 3,
-                                  last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2020, 1, 15, 12, 30),
-                                  last_plan_expiration_date=datetime.datetime(2020, 1, 16, 12, 30))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-1000 - 400,
+            acct_plan=400 - (3 * 40),
+            acct_debt=0,
+            total_cycle_energy=15 + 3,
+            last_energy=16 + 3,
+            last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2020, 1, 15, 12, 30),
+            last_plan_expiration_date=datetime.datetime(2020, 1, 16, 12, 30),
+        )
 
         # After a meter has purchased a daily plan, tariff is changed to a monthly plan
         # Validate that
@@ -1892,29 +2245,43 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2020, 1, 17, 14, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2000, acct_plan=600 - 5 * 20, acct_debt=0,
-                                  total_cycle_energy=18 + 5,
-                                  last_energy=19 + 5,
-                                  last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2020, 1, 17, 14, 15),
-                                  last_plan_expiration_date=datetime.datetime(2020, 2, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2000,
+            acct_plan=600 - 5 * 20,
+            acct_debt=0,
+            total_cycle_energy=18 + 5,
+            last_energy=19 + 5,
+            last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2020, 1, 17, 14, 15),
+            last_plan_expiration_date=datetime.datetime(2020, 2, 5, 0, 0),
+        )
 
         # Reading received during the month
         self._use_energy(r, m, 10)
         self._set_heartbeat_time(r, datetime.datetime(2020, 1, 21, 12, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2000, acct_plan=500 - 10 * 20, acct_debt=0,
-                                  total_cycle_energy=23 + 10,
-                                  last_energy=24 + 10,
-                                  last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
-                                  last_plan_payment_date=datetime.datetime(2020, 1, 17, 14, 15),
-                                  last_plan_expiration_date=datetime.datetime(2020, 2, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2000,
+            acct_plan=500 - 10 * 20,
+            acct_debt=0,
+            total_cycle_energy=23 + 10,
+            last_energy=24 + 10,
+            last_cycle_start=datetime.datetime(2020, 1, 13, 0, 14, 59),
+            last_plan_payment_date=datetime.datetime(2020, 1, 17, 14, 15),
+            last_plan_expiration_date=datetime.datetime(2020, 2, 5, 0, 0),
+        )
 
         # At expiration date of the previous plan, cycle is reset and a new plan is purchased,
         # expiring on day 5.
@@ -1922,43 +2289,64 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2020, 2, 5, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2000 - 600, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=34 + 5,
-                                  last_cycle_start=datetime.datetime(2020, 2, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 2, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 3, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2000 - 600,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=34 + 5,
+            last_cycle_start=datetime.datetime(2020, 2, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 2, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 3, 5, 0, 0),
+        )
 
         # Reading in the middle of the period, plan is being used
         self._use_energy(r, m, 15)
         self._set_heartbeat_time(r, datetime.datetime(2020, 2, 25, 16, 30))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2600, acct_plan=600 - 15 * 20, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=39 + 15,
-                                  last_cycle_start=datetime.datetime(2020, 2, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 2, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 3, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2600,
+            acct_plan=600 - 15 * 20,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=39 + 15,
+            last_cycle_start=datetime.datetime(2020, 2, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 2, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 3, 5, 0, 0),
+        )
 
         # At expiration date, cycle is reset and a new plan is purchased
         self._use_energy(r, m, 10)
         self._set_heartbeat_time(r, datetime.datetime(2020, 3, 5, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day5', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-2600 - 600, acct_plan=600, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=54 + 10,
-                                  last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day5",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-2600 - 600,
+            acct_plan=600,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=54 + 10,
+            last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0),
+        )
 
         # Before month 4 day 5, meter is changed to various tariffs.
         # No plan, daily plan, back to plan with day starting on day 5. Validate that
@@ -1975,15 +2363,22 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 15)
         self._set_heartbeat_time(r, datetime.datetime(2020, 3, 15, 16, 45))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='No_plan_tariff', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-3200, acct_plan=600 - 15 * 10, acct_debt=0,
-                                  total_cycle_energy=15,
-                                  last_energy=64 + 15,
-                                  last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="No_plan_tariff",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-3200,
+            acct_plan=600 - 15 * 10,
+            acct_debt=0,
+            total_cycle_energy=15,
+            last_energy=64 + 15,
+            last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0),
+        )
 
         # Change tariff to daily tariff before expiration date
         m.tariff = tariff_daily
@@ -1992,29 +2387,43 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 4)
         self._set_heartbeat_time(r, datetime.datetime(2020, 3, 25, 6, 15))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-3200, acct_plan=450 - 4 * 40, acct_debt=0,
-                                  total_cycle_energy=15 + 4,
-                                  last_energy=79 + 4,
-                                  last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-3200,
+            acct_plan=450 - 4 * 40,
+            acct_debt=0,
+            total_cycle_energy=15 + 4,
+            last_energy=79 + 4,
+            last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0),
+        )
 
         # Reading after next day but before expiration of existing plan, still same behavior
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2020, 3, 26, 14, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-3200, acct_plan=290 - 5 * 40, acct_debt=0,
-                                  total_cycle_energy=19 + 5,
-                                  last_energy=83 + 5,
-                                  last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-3200,
+            acct_plan=290 - 5 * 40,
+            acct_debt=0,
+            total_cycle_energy=19 + 5,
+            last_energy=83 + 5,
+            last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0),
+        )
 
         # Change back to initial daily tariff before expiration date
 
@@ -2022,29 +2431,43 @@ class BillingTest(SparkMeterTestCaseBase):
         self._use_energy(r, m, 5)
         self._set_heartbeat_time(r, datetime.datetime(2020, 4, 4, 16, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  # The '90' reflects the balance of the plan wallet that is zeroed before
-                                  # credit is applied
-                                  acct_credit=-3200 - (5 * 40 - 90), acct_plan=0, acct_debt=0,
-                                  total_cycle_energy=24 + 5,
-                                  last_energy=88 + 5,
-                                  last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            # The '90' reflects the balance of the plan wallet that is zeroed before
+            # credit is applied
+            acct_credit=-3200 - (5 * 40 - 90),
+            acct_plan=0,
+            acct_debt=0,
+            total_cycle_energy=24 + 5,
+            last_energy=88 + 5,
+            last_cycle_start=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 3, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 4, 5, 0, 0),
+        )
 
         # At expiration date, a new plan is purchased as if the plan hadn't been changed during the period.
         # Since the plan has expired, the consumption of that reading is deducted from credits.
         self._use_energy(r, m, 1)
         self._set_heartbeat_time(r, datetime.datetime(2020, 4, 5, 0, 0))
         process_reading(r, m, self.session)
-        self._assert_meter_values(meter=m, reading=r,
-                                  tariff='Plan_Tariff_Day1Flat40', state=MeterConfig.STATE_ON,
-                                  state_value=MeterConfig.STATE_ON, is_running_plan=True,
-                                  acct_credit=-3310 - (40 * 1) - 400, acct_plan=400, acct_debt=0,
-                                  total_cycle_energy=0,
-                                  last_energy=93 + 1,
-                                  last_cycle_start=datetime.datetime(2020, 4, 5, 0, 0),
-                                  last_plan_payment_date=datetime.datetime(2020, 4, 5, 0, 0),
-                                  last_plan_expiration_date=datetime.datetime(2020, 4, 6, 0, 0))
+        self._assert_meter_values(
+            meter=m,
+            reading=r,
+            tariff="Plan_Tariff_Day1Flat40",
+            state=MeterConfig.STATE_ON,
+            state_value=MeterConfig.STATE_ON,
+            is_running_plan=True,
+            acct_credit=-3310 - (40 * 1) - 400,
+            acct_plan=400,
+            acct_debt=0,
+            total_cycle_energy=0,
+            last_energy=93 + 1,
+            last_cycle_start=datetime.datetime(2020, 4, 5, 0, 0),
+            last_plan_payment_date=datetime.datetime(2020, 4, 5, 0, 0),
+            last_plan_expiration_date=datetime.datetime(2020, 4, 6, 0, 0),
+        )

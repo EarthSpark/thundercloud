@@ -34,27 +34,33 @@ def nightly_dashboard_tariff_summary():
     yesterday_start = yesterday_start.astimezone(tzutc()).replace(tzinfo=None)
     yesterday_end = yesterday_start + relativedelta(days=1)
 
-    logger.info('Queuing dashboard summary generation for all tariffs for %s, '
-                'start=%s, end=%s',
-                yesterday,
-                yesterday_start,
-                yesterday_end)
+    logger.info(
+        "Queuing dashboard summary generation for all tariffs for %s, start=%s, end=%s",
+        yesterday,
+        yesterday_start,
+        yesterday_end,
+    )
 
     with current_app.app_context(), session_scope() as session:
-        days_to_reprocess = [day.day_created for day in
-                             Transaction.get_processed_by_day(ground,
-                                                              yesterday_start,
-                                                              yesterday_end,
-                                                              created_before=yesterday)]
+        days_to_reprocess = [
+            day.day_created
+            for day in Transaction.get_processed_by_day(
+                ground, yesterday_start, yesterday_end, created_before=yesterday
+            )
+        ]
         for tariff in Tariff.get_all():
             if DashboardDailyTariffSummary.query.filter_by(tariff=tariff, date=yesterday).count():
-                logger.info("Skipping tariff summary for Tariff %s, existing summary found for %s" % (
-                    tariff.name, yesterday))
+                logger.info(
+                    "Skipping tariff summary for Tariff %s, existing summary found for %s"
+                    % (tariff.name, yesterday)
+                )
             else:
                 summary = DashboardDailyTariffSummary.create_summary(ground, tariff, yesterday)
                 if summary is None:
-                    logger.info("Skipping tariff summary for Tariff %s, no updates during %s" % (
-                        tariff.name, yesterday))
+                    logger.info(
+                        "Skipping tariff summary for Tariff %s, no updates during %s"
+                        % (tariff.name, yesterday)
+                    )
                 else:
                     session.add(summary)
 

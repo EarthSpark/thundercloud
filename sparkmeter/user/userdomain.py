@@ -2,6 +2,7 @@
 # Copyright © 2013-2016 SparkMeter, Inc.
 # All Rights Reserved.
 """User domain."""
+
 import logging
 import uuid
 
@@ -28,17 +29,16 @@ logger = logging.getLogger(__name__)
 
 @syncchannel(SYNC_CHANNEL_USER)
 class RolesUsers(BaseDomain):
-
     """User Role mapping table."""
 
     # FIXME: Rename this to users_roles
-    __tablename__ = 'roles_users'
+    __tablename__ = "roles_users"
 
     #: Role reference
-    role_id = Column(UUIDType(binary=False), ForeignKey('role.id'), nullable=False)
+    role_id = Column(UUIDType(binary=False), ForeignKey("role.id"), nullable=False)
 
     #: User reference
-    user_id = Column(UUIDType(binary=False), ForeignKey('user.id'), nullable=False)
+    user_id = Column(UUIDType(binary=False), ForeignKey("user.id"), nullable=False)
 
     @classmethod
     def sync_init(cls, group):
@@ -49,10 +49,9 @@ class RolesUsers(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_USER)
 class Role(BaseDomain, RoleMixin):
-
     """User Role table."""
 
-    __tablename__ = 'role'
+    __tablename__ = "role"
 
     #: Name of the role, must be unique
     name = Column(String(80), unique=True)
@@ -82,29 +81,22 @@ class Role(BaseDomain, RoleMixin):
 
 @syncchannel(SYNC_CHANNEL_USER)
 class SalesAccountsUsers(BaseDomain):
-
     """User Role mapping table."""
 
     # FIXME: Rename this to users_sales_accounts
-    __tablename__ = 'sales_accounts_users'
+    __tablename__ = "sales_accounts_users"
 
     #: SalesAccount this mapping applies to
-    sales_account_id = Column(
-        UUIDType(binary=False),
-        ForeignKey('sales_account.id'),
-        nullable=False)
+    sales_account_id = Column(UUIDType(binary=False), ForeignKey("sales_account.id"), nullable=False)
 
     #: User this mapping applies to
-    user_id = Column(
-        UUIDType(binary=False),
-        ForeignKey('user.id'),
-        nullable=False)
+    user_id = Column(UUIDType(binary=False), ForeignKey("user.id"), nullable=False)
 
     #: User reference
     user = relationship("User")
 
     #: SalesAccount reference
-    sales_account = relationship('SalesAccount')
+    sales_account = relationship("SalesAccount")
 
     @classmethod
     def sync_init(cls, group):
@@ -116,34 +108,26 @@ class SalesAccountsUsers(BaseDomain):
     @classmethod
     def get_default_id(cls, context):
         """Get the default id for a SalesAccountUsers object."""
-        return as_uuid(context.current_parameters['sales_account_id'],
-                       context.current_parameters['user_id'])
+        return as_uuid(context.current_parameters["sales_account_id"], context.current_parameters["user_id"])
 
 
 @syncchannel(SYNC_CHANNEL_USER)
 class UsersGrounds(BaseDomain):
-
     """Ground Users mapping table."""
 
-    __tablename__ = 'users_grounds'
+    __tablename__ = "users_grounds"
 
     #: Ground this mapping applies to
-    ground_id = Column(
-        UUIDType(binary=False),
-        ForeignKey('ground.id'),
-        nullable=False)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False)
 
     #: User this mapping applies to
-    user_id = Column(
-        UUIDType(binary=False),
-        ForeignKey('user.id'),
-        nullable=False)
+    user_id = Column(UUIDType(binary=False), ForeignKey("user.id"), nullable=False)
 
     #: User reference
     user = relationship("User")
 
     #: Ground reference
-    ground = relationship('Ground')
+    ground = relationship("Ground")
 
     @classmethod
     def sync_init(cls, group):
@@ -154,16 +138,14 @@ class UsersGrounds(BaseDomain):
     @classmethod
     def get_default_id(cls, context):
         """Get the default id for this table."""
-        return as_uuid(context.current_parameters['user_id'],
-                       context.current_parameters['ground_id'])
+        return as_uuid(context.current_parameters["user_id"], context.current_parameters["ground_id"])
 
 
 @syncchannel(SYNC_CHANNEL_USER)
 class User(BaseDomain, UserMixin):
-
     """User table."""
 
-    __tablename__ = 'user'
+    __tablename__ = "user"
 
     #: The username, used mainly by flask-security
     username = Column(String(100))
@@ -184,12 +166,12 @@ class User(BaseDomain, UserMixin):
     active = Column(Boolean, default=True)
 
     #: Current locale for the user, used by translation and localization
-    locale = Column(String, default='en_US')
+    locale = Column(String, default="en_US")
 
     # Sales account that is use to place transactions via the API, only for api users
     api_sales_account_id = Column(
         UUIDType(binary=False),
-        ForeignKey('sales_account.id'),
+        ForeignKey("sales_account.id"),
         nullable=True,
     )
 
@@ -200,24 +182,30 @@ class User(BaseDomain, UserMixin):
     ground_all_access = Column(Boolean, default=False, nullable=False)
 
     #: Roles that this user is assigned to
-    roles = relationship('Role', secondary=RolesUsers.__table__,
-                         backref=backref('users', lazy='dynamic'),
-                         order_by="Role.name")
+    roles = relationship(
+        "Role", secondary=RolesUsers.__table__, backref=backref("users", lazy="dynamic"), order_by="Role.name"
+    )
 
     #: List of sales account this user has access to
-    accounts = relationship('SalesAccount', secondary=SalesAccountsUsers.__table__,
-                            backref=backref('users', lazy='dynamic', overlaps="sales_account,user"),
-                            order_by=(SalesAccount.system.desc(), SalesAccount.name),
-                            overlaps="sales_account,user")
+    accounts = relationship(
+        "SalesAccount",
+        secondary=SalesAccountsUsers.__table__,
+        backref=backref("users", lazy="dynamic", overlaps="sales_account,user"),
+        order_by=(SalesAccount.system.desc(), SalesAccount.name),
+        overlaps="sales_account,user",
+    )
 
     #: List of grounds this user has access to
-    grounds = relationship('Ground', secondary=UsersGrounds.__table__,
-                           backref=backref('users', lazy='dynamic', overlaps="ground,user"),
-                           order_by='Ground.name',
-                           overlaps="ground,user")
+    grounds = relationship(
+        "Ground",
+        secondary=UsersGrounds.__table__,
+        backref=backref("users", lazy="dynamic", overlaps="ground,user"),
+        order_by="Ground.name",
+        overlaps="ground,user",
+    )
 
     #: Reference to the sales account for this user, only for api users
-    api_sales_account = relationship('SalesAccount')  # type: SalesAccount
+    api_sales_account = relationship("SalesAccount")  # type: SalesAccount
 
     @classmethod
     def sync_init(cls, group):
@@ -276,23 +264,25 @@ class User(BaseDomain, UserMixin):
         sales_account_t = SalesAccount.__table__
         sales_accounts_users_t = SalesAccountsUsers.__table__
 
-        json_agg = JSONAgg([sales_account_t.c.id,
-                            sales_account_t.c.name],
-                           order_by=[sales_account_t.c.system.desc(), sales_account_t.c.name])
+        json_agg = JSONAgg(
+            [sales_account_t.c.id, sales_account_t.c.name],
+            order_by=[sales_account_t.c.system.desc(), sales_account_t.c.name],
+        )
         columns = [
             cls.id,
             cls.active,
             cls.email,
             cls.username,
-            json_agg.label('accounts'),
+            json_agg.label("accounts"),
         ]
         joins = (
-            cls.__table__
-            .outerjoin(sales_accounts_users_t,
-                       sales_accounts_users_t.c.user_id == cls.id)
-            .outerjoin(sales_account_t,
-                       sales_account_t.c.id.in_([sales_accounts_users_t.c.sales_account_id,
-                                                 cls.api_sales_account_id]))
+            cls.__table__.outerjoin(sales_accounts_users_t, sales_accounts_users_t.c.user_id == cls.id)
+            .outerjoin(
+                sales_account_t,
+                sales_account_t.c.id.in_(
+                    [sales_accounts_users_t.c.sales_account_id, cls.api_sales_account_id]
+                ),
+            )
             .join(RolesUsers, RolesUsers.user_id == cls.id)
             .join(Role, RolesUsers.role_id == Role.id)
         )
@@ -313,6 +303,7 @@ class User(BaseDomain, UserMixin):
         """Delete a user and all its transactions."""
         logger.info("Deleting user {}".format(self.username))
         from sparkmeter.transaction.transactiondomain import Transaction, TransactionView
+
         for trans_view, _ in TransactionView.get_transaction_view(user=self):
             trans = Transaction.query.get(trans_view.id)
             sql.session.delete(trans)
@@ -323,15 +314,15 @@ class User(BaseDomain, UserMixin):
 
     def is_vendor(self):
         """Return if the user is a vendor user."""
-        return self.has_role('vendor')
+        return self.has_role("vendor")
 
     def is_operator(self):
         """Return if the user is an operator user."""
-        return self.has_role('operator')
+        return self.has_role("operator")
 
     def is_api(self):
         """Return if the user is an api user."""
-        return self.has_role('api')
+        return self.has_role("api")
 
     def generate_password(self):
         """Generate a new random password for this user."""
@@ -354,10 +345,9 @@ class User(BaseDomain, UserMixin):
     def get_login_users(cls):
         """Get all users that can login."""
         return (
-            cls.query
-            .join(RolesUsers, RolesUsers.user_id == User.id)
+            cls.query.join(RolesUsers, RolesUsers.user_id == User.id)
             .join(Role, RolesUsers.role_id == Role.id)
-            .filter(not_(Role.name.in_(['api'])))
+            .filter(not_(Role.name.in_(["api"])))
             .filter(User.active == true())
             .order_by(User.username)
         )
@@ -390,7 +380,6 @@ class User(BaseDomain, UserMixin):
 
 
 class CloudPortalUserDatastore(SQLAlchemyUserDatastore):
-
     """Wrap the SQLAlchemyUserDatastore with cloud-portal awareness.
 
     This must be able to support the SSO shared session cookie in addition to
@@ -406,27 +395,29 @@ class CloudPortalUserDatastore(SQLAlchemyUserDatastore):
         """Find the user with the given attributes."""
         # Start: Block copied from SQLAlchemyUserDatastore.find_user()
         query = self.user_model.query
-        if hasattr(self.user_model, 'roles'):
+        if hasattr(self.user_model, "roles"):
             from sqlalchemy.orm import joinedload
+
             query = query.options(joinedload(self.user_model.roles))
         # End: Block copied from SQLAlchemyUserDatastore.find_user()
 
         # Handle Flask-Security case_insensitive parameter
-        case_insensitive = kwargs.pop('case_insensitive', False)
+        case_insensitive = kwargs.pop("case_insensitive", False)
 
-        id_ = kwargs.get('id')
+        id_ = kwargs.get("id")
         # If the session user ID is a portal ID, strip the prefix and alter the query
-        if id_ and isinstance(id_, str) and id_.startswith('$'):
-            logger.debug('Cloud portal user detected, remapping query')
-            kwargs['portal_id'] = id_[1:]
-            del kwargs['id']
+        if id_ and isinstance(id_, str) and id_.startswith("$"):
+            logger.debug("Cloud portal user detected, remapping query")
+            kwargs["portal_id"] = id_[1:]
+            del kwargs["id"]
 
         # Apply case-insensitive matching for string fields if requested
         if case_insensitive:
             from sqlalchemy import func
+
             conditions = []
             for key, value in list(kwargs.items()):
-                if key in ('username', 'email') and isinstance(value, str):
+                if key in ("username", "email") and isinstance(value, str):
                     # Use case-insensitive matching for username and email
                     field = getattr(self.user_model, key)
                     conditions.append(func.lower(field) == func.lower(value))

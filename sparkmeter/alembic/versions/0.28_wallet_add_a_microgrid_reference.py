@@ -14,25 +14,24 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision = '0.28'
-down_revision = '0.27'
+revision = "0.28"
+down_revision = "0.27"
 logger = logging.getLogger()
 
 
 def upgrade():
     """Upgrade the database schema from 0.27 to 0.28."""
-    op.add_column('wallet', sa.Column('grid_id', postgresql.UUID(), nullable=True))
+    op.add_column("wallet", sa.Column("grid_id", postgresql.UUID(), nullable=True))
 
     conn = op.get_bind()
     results = conn.execute("UPDATE wallet SET grid_id = microgrid.id FROM microgrid;")
-    logger.info('Updated %r wallets' % (results.rowcount, ))
+    logger.info("Updated %r wallets" % (results.rowcount,))
 
-    op.alter_column('wallet', 'grid_id', nullable=False)
-    op.create_foreign_key(u'wallet_grid_id_fkey',
-                          'wallet', 'microgrid', ['grid_id'], ['id'])
+    op.alter_column("wallet", "grid_id", nullable=False)
+    op.create_foreign_key("wallet_grid_id_fkey", "wallet", "microgrid", ["grid_id"], ["id"])
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.28 to 0.27."""
-    op.drop_constraint(u'wallet_grid_id_fkey', 'wallet', type_='foreignkey')
-    op.drop_column('wallet', 'grid_id')
+    op.drop_constraint("wallet_grid_id_fkey", "wallet", type_="foreignkey")
+    op.drop_column("wallet", "grid_id")
