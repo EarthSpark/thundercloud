@@ -294,7 +294,7 @@ class MicrogridEmulator(object):
                 )
         else:
             route_len = random.randint(1, 5)
-            route = random.sample(xrange(64), route_len)
+            route = random.sample(range(64), route_len)
             route += reversed(route[1:])
             for mac in route:
                 topology.append(

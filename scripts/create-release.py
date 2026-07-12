@@ -110,7 +110,7 @@ def main(args):
     git_commit(version_info)
     git_tag(version_info)
     git_show_log()
-    response = raw_input("About to release {} on branch {}, confirm? [y/N] ".format(version, branch))
+    response = input("About to release {} on branch {}, confirm? [y/N] ".format(version, branch))
     if response != "y":
         logging.error("Aborting, will revert commit, modifications and tag")
         subprocess.check_call(["git", "reset", "-q", "HEAD^"])
