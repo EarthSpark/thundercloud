@@ -23,6 +23,17 @@ tlite(function(el) {
 
 exports.LatestReadings = LatestReadings;
 
+function formatDecimalPlaces(value, places) {
+    if (value === "" || value === null || value === undefined) {
+        return "";
+    }
+    var number = Number(value);
+    if (isNaN(number)) {
+        return value;
+    }
+    return number.toFixed(places);
+}
+
 LatestReadings.prototype = {
     heartbeat_seconds: 900, // 15 min default
     refresh_interval: null,
@@ -54,21 +65,39 @@ LatestReadings.prototype = {
         {
             title: "Frequency (Hz)",
             data: "frequency",
-            type: "num"
+            type: "num",
+            render: function(data, type) {
+                if (type === "display") {
+                    return formatDecimalPlaces(data, 2);
+                }
+                return data;
+            }
         },
         {
             title: "Avg Voltage (V)",
             data: "voltage_avg",
-            type: "num"
+            type: "num",
+            render: function(data, type) {
+                if (type === "display") {
+                    return formatDecimalPlaces(data, 2);
+                }
+                return data;
+            }
         },
         {
             title: "Avg Current (A)",
             data: "current_avg",
-            type: "num"
+            type: "num",
+            render: function(data, type) {
+                if (type === "display") {
+                    return formatDecimalPlaces(data, 3);
+                }
+                return data;
+            }
         },
         {
             title: "True Power (W)",
-            data: "true_power_inst",
+            data: "true_power_avg",
             type: "num"
         },
         {
