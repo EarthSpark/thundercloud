@@ -32,6 +32,7 @@ const latest_readings = [
         "heartbeat_end": "2013-01-01T01:00:15",
         "serial": "SM15R-01-00000001",
         "state": "",
+        "true_power_avg": "",
         "true_power_inst": "",
         "uptime": "1000",
         "user_power_limit": "",
@@ -54,6 +55,7 @@ const latest_readings = [
         "heartbeat_end": "2013-01-01T01:00:15",
         "serial": "SM15R-01-00000002",
         "state": "",
+        "true_power_avg": "",
         "true_power_inst": "",
         "uptime": "1000",
         "user_power_limit": "",
@@ -76,6 +78,7 @@ const latest_readings = [
         "heartbeat_end": "",
         "serial": "SM15R-01-00000003",
         "state": "",
+        "true_power_avg": "",
         "true_power_inst": "",
         "uptime": "",
         "user_power_limit": "",
@@ -160,6 +163,21 @@ describe('LastestReadings', () => {
         describe('Tooltip tests', () => {
             backend.mockCall('getLatestReadings', readings);
             let latestReadings = new LatestReadings.LatestReadings();
+            test('Should format frequency display to two decimals', () => {
+                expect(latestReadings.columns[4].render(49.959999084472656, "display")).toBe(
+                    "49.96"
+                );
+            });
+            test('Should format voltage display to two decimals', () => {
+                expect(latestReadings.columns[5].render(240.1599884033203, "display")).toBe(
+                    "240.16"
+                );
+            });
+            test('Should format current display to three decimals', () => {
+                expect(latestReadings.columns[6].render(0.09800000488758087, "display")).toBe(
+                    "0.098"
+                );
+            });
             test('Should format totalizer meter serial tooltip property', () => {
                 expect(latestReadings._formatTooltipForField("serial",
                     {"customer_name": null, "customer_code": "123"})).toBe(

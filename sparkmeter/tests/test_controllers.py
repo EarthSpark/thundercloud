@@ -442,6 +442,46 @@ class ControllerTest(SparkMeterTestCaseBase):
         assert "tariff" not in snapshot_payload
         assert send_set_config.mock_calls == []
 
+    def test_add_reading_can_skip_legacy_scaling(self, config, send_set_config):
+        config["HEROKU"] = False
+        meter = MeterFactory(system_info__last_energy=0, credit_wallet__value=1000)
+        self.session.commit()
+
+        reading_data = {
+            "kilowatt_hours": 0,
+            "kilowatt_hours_period": 0,
+            "meter": meter.code,
+            "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
+            "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
+            "frequency": 49.98,
+            "voltage_min": 240.1,
+            "voltage_max": 240.2,
+            "voltage_avg": 240.15,
+            "current_min": 0.098,
+            "current_max": 0.100,
+            "current_avg": 0.098,
+            "true_power_inst": 22.0,
+            "true_power_avg": 22.0,
+            "apparent_power_avg": 22.0,
+            "power_factor_avg": 0.996,
+            "energy": 6.195,
+            "uptime": 100,
+            "state": "on",
+            "user_power_limit": 1200,
+        }
+
+        reading_id = add_reading(reading_data, apply_meter_scalars=False)
+
+        reading = Reading.get_by_id(reading_id)
+
+        assert reading.frequency == reading_data["frequency"]
+        assert reading.voltage_avg == reading_data["voltage_avg"]
+        assert reading.current_avg == reading_data["current_avg"]
+        assert reading.true_power_inst == reading_data["true_power_inst"]
+        assert reading.energy == reading_data["energy"]
+        assert reading.user_power_limit == reading_data["user_power_limit"]
+        assert send_set_config.mock_calls == []
+
     def test_add_duplicate_reading(self, config, send_set_config):
         config["HEROKU"] = False
         meter = MeterFactory(system_info__last_energy=12, credit_wallet__value=1000)
