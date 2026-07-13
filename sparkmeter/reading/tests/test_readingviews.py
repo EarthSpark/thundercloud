@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 import datetime
+import logging
 
 from freezegun import freeze_time
 
@@ -115,3 +116,53 @@ class ReadingViewTest(WebViewTestCaseBase):
         data = response.json()
         assert len(data["readings"]) == 2
         self.verify_response(response)
+
+    def test_latest_readings_uses_meter_driver_heartbeat(self, client, config, monkeypatch):
+        config["HEROKU"] = False
+        path = "/readings/latest.json"
+
+        monkeypatch.setattr(
+            "sparkmeter.reading.readingview._query_latest_readings",
+            lambda ground_serial: [],
+        )
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_enabled_provider",
+            lambda: {"id": "driver-1"},
+        )
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.load_provider_runtime_settings",
+            lambda provider: {
+                "field_values": {
+                    "heartbeat_period_duration": "60",
+                }
+            },
+        )
+
+        response = client.get(path)
+
+        assert response.json()["heartbeat_seconds"] == 60
+
+    def test_latest_readings_heartbeat_falls_back_on_error(self, client, config, monkeypatch, caplog):
+        # A provider-lookup failure is logged and falls back to HEARTBEAT_PERIOD (readingview lines 45-46).
+        config["HEROKU"] = False
+        config["HEARTBEAT_PERIOD"] = 15
+        path = "/readings/latest.json"
+
+        monkeypatch.setattr(
+            "sparkmeter.reading.readingview._query_latest_readings",
+            lambda ground_serial: [],
+        )
+
+        def boom():
+            raise RuntimeError("provider lookup failed")
+
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_enabled_provider",
+            boom,
+        )
+
+        caplog.set_level(logging.ERROR, logger="sparkmeter.reading.readingview")
+        response = client.get(path)
+
+        assert response.json()["heartbeat_seconds"] == 15 * 60
+        assert "failed to resolve meter-driver heartbeat for latest readings UI" in caplog.text

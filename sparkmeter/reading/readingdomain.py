@@ -45,6 +45,7 @@ class ReadingViewResult(object):
     heartbeat_end = None  # type: datetime.datetime
     reading_id = None  # type: uuid.UUID
     reading_state = None  # type: str
+    true_power_avg = None  # type: float
     true_power_inst = None  # type: float
     uptime = None  # type: float
     user_power_limit = None  # type: float
@@ -250,6 +251,7 @@ class Reading(BaseDomain):
             cls.heartbeat_end,
             cls.id.label("reading_id"),
             cls.state.label("reading_state"),  # Conflicts w/ address.state
+            cls.true_power_avg,
             cls.true_power_inst,
             cls.uptime,
             cls.user_power_limit,
