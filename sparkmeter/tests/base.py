@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """Base module for unittests."""
+
 from __future__ import print_function
 
 import pytest
@@ -13,7 +14,6 @@ from sparkmeter.web.unittestutils import ContentTester, PageTester
 
 
 class SparkMeterTestCaseBase(object):
-
     """Sets up all sparkmeter tests."""
 
     maxDiff = None
@@ -39,17 +39,14 @@ class SparkMeterTestCaseBase(object):
 
     def verify_json_content(self, content, variant=None, ignore_values=None, frame=1, ignore_regexes=None):
         """Compare the saved json against the current request's response."""
-        json_content = json_dumps(json_loads(content),
-                                  sort_keys=True,
-                                  indent=4,
-                                  separators=(',', ': '))
-        page = ContentTester(frame=frame + 1, ext='json', variant=variant)
+        json_content = json_dumps(json_loads(content), sort_keys=True, indent=4, separators=(",", ": "))
+        page = ContentTester(frame=frame + 1, ext="json", variant=variant)
         page.add_ignores(ignore_values)
         page.add_regex_ignores(ignore_regexes)
         page.verify(json_content)
 
     def verify_response(self, response, variant=None, ignore_values=None, frame=1):
-        page = PageTester(frame=frame + 1, ext='page', variant=variant)
+        page = PageTester(frame=frame + 1, ext="page", variant=variant)
         page.add_ignores(ignore_values)
         page.verify_response(response)
 
@@ -68,7 +65,6 @@ class SparkMeterTestCaseBase(object):
 
 
 class WebViewTestCaseBase(SparkMeterTestCaseBase):
-
     """Test case base for the web views."""
 
     @pytest.fixture(autouse=True)

@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Utility functions for working with datetime objects."""
+
 from __future__ import division
 
 import datetime
@@ -32,11 +33,9 @@ def datetime_interval_to_day_interval(start, end):
     :raises ValueError: if end is before start
     """
     if not isinstance(start, datetime.datetime):
-        raise TypeError("start must be a datetime.datetime object, not %s" % (
-            type(start).__name__,))
+        raise TypeError("start must be a datetime.datetime object, not %s" % (type(start).__name__,))
     if not isinstance(end, datetime.datetime):
-        raise TypeError("end must be a datetime.datetime object, not %s" % (
-            type(end).__name__,))
+        raise TypeError("end must be a datetime.datetime object, not %s" % (type(end).__name__,))
     if start == end:
         raise ValueError("start and end must be different")
     if start > end:
@@ -68,10 +67,9 @@ def reset_datetime_to_time(datetime_, time):
     :returns: new datetime object with date from the datetime_ object
       and time from the time object
     """
-    return datetime_.replace(hour=time.hour,
-                             minute=time.minute,
-                             second=time.second,
-                             microsecond=time.microsecond)
+    return datetime_.replace(
+        hour=time.hour, minute=time.minute, second=time.second, microsecond=time.microsecond
+    )
 
 
 def format_date(dt, fmt):
@@ -81,10 +79,7 @@ def format_date(dt, fmt):
     :param fmt: format, see babel for more information.
     :returns: the formatted date.
     """
-    return babel.dates.format_date(
-        dt,
-        fmt,
-        locale=get_current_user().locale)
+    return babel.dates.format_date(dt, fmt, locale=get_current_user().locale)
 
 
 def format_datetime(dt, fmt, tzinfo=None):
@@ -97,11 +92,7 @@ def format_datetime(dt, fmt, tzinfo=None):
     """
     if tzinfo is None:
         tzinfo = babel.dates.UTC
-    return babel.dates.format_datetime(
-        dt,
-        fmt,
-        tzinfo=tzinfo,
-        locale=get_current_user().locale)
+    return babel.dates.format_datetime(dt, fmt, tzinfo=tzinfo, locale=get_current_user().locale)
 
 
 def format_minutes(minutes):
@@ -111,7 +102,7 @@ def format_minutes(minutes):
     :type: int
     :returns: a converted time in MM:SS format
     """
-    return '%02d:%02d' % (old_div(minutes, 60), minutes % 60)
+    return "%02d:%02d" % (old_div(minutes, 60), minutes % 60)
 
 
 def datetime_from_timestamp_string(date_string, tzinfo=None):
@@ -165,8 +156,8 @@ def get_next_heartbeat():
     """
     # FIXME: add some sort of caching here
     dt = datetime.datetime.utcnow()
-    previous_hb = round_time(dt) - datetime.timedelta(minutes=dt.minute % config['HEARTBEAT_PERIOD'])
-    next_hb = previous_hb + datetime.timedelta(minutes=config['HEARTBEAT_PERIOD'])
+    previous_hb = round_time(dt) - datetime.timedelta(minutes=dt.minute % config["HEARTBEAT_PERIOD"])
+    next_hb = previous_hb + datetime.timedelta(minutes=config["HEARTBEAT_PERIOD"])
     return next_hb
 
 
@@ -177,7 +168,7 @@ def get_next_clear():
     This strips the current time down to the floored heartbeat period start,
     then adds the hearbeat period minus the clear time.
     """
-    next_clear = get_next_heartbeat() - datetime.timedelta(minutes=config['CLEAR_PERIOD'])
+    next_clear = get_next_heartbeat() - datetime.timedelta(minutes=config["CLEAR_PERIOD"])
     return next_clear
 
 

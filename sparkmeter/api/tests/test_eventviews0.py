@@ -9,7 +9,6 @@ from sparkmeter.tests.test_data_factory import EventFactory, MeterFactory
 
 
 class EventViewTest(APIView0TestCaseBase):
-
     path = "v0/event/{id}"
 
     def test_get(self):
@@ -30,8 +29,8 @@ class EventViewTest(APIView0TestCaseBase):
         self.session.commit()
         event = EventFactory(
             event_type=Event.TYPE_CUSTOMER_WALLET_ZERO_REQUESTED,
-            object_table='wallet',
-            object_id=meter.credit_wallet.id
+            object_table="wallet",
+            object_id=meter.credit_wallet.id,
         )
         self.session.commit()
         path = self.path.format(id=event.id)

@@ -13,7 +13,6 @@ from sparkmeter.config.configdict import config
 
 
 class EventKeyword(object):
-
     """Event Keyword.
 
     An event keyword is a variable that get replaced by a value when
@@ -31,43 +30,38 @@ class EventKeyword(object):
 
 
 class StringKeyword(EventKeyword):
-
     """A String Keyword."""
 
 
 class CurrencyKeyword(EventKeyword):
-
     """A Currency Keyword."""
 
     def format(self, value, locale):
         """Format a curreny value for display according to a locale."""
-        currency = config.get('CURRENCY', 'USD')
+        currency = config.get("CURRENCY", "USD")
         return format_currency(value, currency, format="#,##0.00", locale=locale)
 
 
 class BooleanKeyword(EventKeyword):
-
     """A Boolean Keyword."""
 
     def format(self, value, locale):
         """Format a boolean value for display according to a locale."""
         if value:
-            return _('yes')
+            return _("yes")
         else:
-            return _('no')
+            return _("no")
 
 
 class EnergyKeyword(EventKeyword):
-
     """An Energy Keyword."""
 
     def format(self, value, locale):
         """Format an energy value for display according to a locale."""
-        return format_decimal(value, '#,##0.### kWh', locale=locale)
+        return format_decimal(value, "#,##0.### kWh", locale=locale)
 
 
 class DateTimeKeyword(EventKeyword):
-
     """A DateTime Keyword."""
 
     def format(self, value, locale):

@@ -2,6 +2,7 @@
 # Copyright © 2013-2016 SparkMeter, Inc.
 # All Rights Reserved.
 """System manage commands.py."""
+
 from __future__ import print_function
 
 import json
@@ -19,16 +20,17 @@ from sparkmeter.interface import IApplication
 
 logger = logging.getLogger(__name__)
 
-system = click.Group('system', help='System management commands.')
+system = click.Group("system", help="System management commands.")
 
 
-@system.command('register')
-@click.option('--version', 'version', default=None, help='Version to register')
+@system.command("register")
+@click.option("--version", "version", default=None, help="Version to register")
 @with_appcontext
 def register(version):
     """Add an application version to the system_version table."""
     from sparkmeter.database.alchemy import sql
     from sparkmeter.system.systemdomain import SystemState, SystemVersion
+
     if version is None:
         version = current_version
     app = getUtility(IApplication)
@@ -66,29 +68,34 @@ def register(version):
     return 0
 
 
-@system.command('versions')
+@system.command("versions")
 @with_appcontext
 def versions():
     """Print the versions installed on the basestation and the date installed."""
     from sparkmeter.system.systemdomain import SystemVersion
+
     app = getUtility(IApplication)
     app.setup_databases()
 
     versions = SystemVersion.query.all()
 
     json_data = json.dumps(
-        OrderedDict([
-            (
-                v.version,
-                OrderedDict([
-                    ("status", v.status),
-                    ("installed", v.timestamp.isoformat()),
-                ])
-            )
-            for v in sorted(versions)
-        ]),
+        OrderedDict(
+            [
+                (
+                    v.version,
+                    OrderedDict(
+                        [
+                            ("status", v.status),
+                            ("installed", v.timestamp.isoformat()),
+                        ]
+                    ),
+                )
+                for v in sorted(versions)
+            ]
+        ),
         indent=4,
-        separators=(',', ': '),
+        separators=(",", ": "),
     )
 
     print(json_data)
@@ -96,29 +103,34 @@ def versions():
 
 
 @click.command()
-@click.option('--format', 'output_format', default='table',
-              type=click.Choice(['table', 'json', 'csv']),
-              help='Output format')
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["table", "json", "csv"]),
+    help="Output format",
+)
 @with_appcontext
 def status(output_format):
     """Show application status and health information."""
-    click.echo('Sparkmeter Application Status')
-    click.echo('=' * 30)
+    click.echo("Sparkmeter Application Status")
+    click.echo("=" * 30)
 
     app = getUtility(IApplication)
 
     status_info = {
-        'Mode': app.mode,
-        'Debug': app.debug,
-        'Developer Mode': app.developer_mode,
-        'Read-only Mode': app.readonly_mode,
-        'Static Folder': app.static_folder,
+        "Mode": app.mode,
+        "Debug": app.debug,
+        "Developer Mode": app.developer_mode,
+        "Read-only Mode": app.readonly_mode,
+        "Static Folder": app.static_folder,
     }
 
-    if output_format == 'json':
+    if output_format == "json":
         import json as json_mod
+
         click.echo(json_mod.dumps(status_info, indent=2))
-    elif output_format == 'csv':
+    elif output_format == "csv":
         for key, value in status_info.items():
             click.echo(f"{key},{value}")
     else:  # table format

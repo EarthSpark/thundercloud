@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """API v0 sms views."""
+
 import datetime
 import http.client
 import uuid
@@ -25,12 +26,12 @@ def _format_message(message):
     )
 
 
-@api.route('/sms/outgoing', methods=['GET'])
-@roles_accepted('api')
+@api.route("/sms/outgoing", methods=["GET"])
+@roles_accepted("api")
 def sms_list_outgoing():
     """List outgoing SMS messages."""
     params = get_params()
-    mark_delivered = check_param(params, 'mark_delivered', bool, default=True)
+    mark_delivered = check_param(params, "mark_delivered", bool, default=True)
 
     messages = []
     for message in SMSMessage.get_outgoing():
@@ -41,47 +42,43 @@ def sms_list_outgoing():
         messages.append(return_message)
 
     if not messages:
-        raise APIError("No outgoing messages in the queue",
-                       status_code=http.client.NOT_FOUND)
+        raise APIError("No outgoing messages in the queue", status_code=http.client.NOT_FOUND)
     elif mark_delivered:
         sql.session.commit()
     return success(messages=messages)
 
 
-@api.route('/sms/mark-delivered', methods=['PUT'])
-@roles_accepted('api')
+@api.route("/sms/mark-delivered", methods=["PUT"])
+@roles_accepted("api")
 def sms_mark_delivered():
     """Mark messages as delivered."""
     params = get_params()
-    param_messages = check_param(params, 'messages')
+    param_messages = check_param(params, "messages")
     message_ids = [uuid.UUID(m) for m in param_messages]
     if not message_ids:
-        raise APIError("No outgoing messages specified",
-                       status_code=http.client.BAD_REQUEST)
+        raise APIError("No outgoing messages specified", status_code=http.client.BAD_REQUEST)
     messages = []
     for message in SMSMessage.get_outgoing(message_ids=message_ids):
         message.processed = True
         sql.session.add(message)
-        messages.append({'id': message.id, 'status': "removed"})
+        messages.append({"id": message.id, "status": "removed"})
         message_ids.remove(message.id)
     for message_id in message_ids:
-        messages.append({'id': message_id, 'status': "not-found"})
+        messages.append({"id": message_id, "status": "not-found"})
     sql.session.commit()
 
     return success(messages=messages)
 
 
-@api.route('/sms/incoming', methods=['POST'])
-@roles_accepted('api')
+@api.route("/sms/incoming", methods=["POST"])
+@roles_accepted("api")
 def sms_add_incoming():
     """Add a new incoming SMS message"""
     params = get_params()
-    external_id = check_param(params, 'id', required=False)
-    phone_number = check_param(params, 'phone_number', parse_phone_number,
-                               name='phone number')
-    text = check_param(params, 'text')
-    timestamp = check_param(params, 'timestamp', parse_datetime, name='datetime',
-                            default=None)
+    external_id = check_param(params, "id", required=False)
+    phone_number = check_param(params, "phone_number", parse_phone_number, name="phone number")
+    text = check_param(params, "text")
+    timestamp = check_param(params, "timestamp", parse_datetime, name="datetime", default=None)
     if timestamp is None:
         timestamp = datetime.datetime.utcnow()
     else:
@@ -95,9 +92,10 @@ def sms_add_incoming():
         direction=SMSMessage.DIRECTION_IN,
         external_id=external_id,
         processed=True,
-        phone_number=format_phone_number(phone_number, format='E164'),
+        phone_number=format_phone_number(phone_number, format="E164"),
         text=text,
-        timestamp=timestamp)
+        timestamp=timestamp,
+    )
     sql.session.add(message)
 
     try:

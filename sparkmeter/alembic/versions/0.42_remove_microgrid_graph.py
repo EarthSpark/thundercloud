@@ -10,13 +10,13 @@ Create Date: 2016-06-16 21:45:01.783495
 
 from alembic import op
 
-revision = '0.42'
-down_revision = '0.41'
+revision = "0.42"
+down_revision = "0.41"
 
 
 def upgrade():
     """Upgrade the database schema from 0.41 to 0.42."""
-    op.drop_column('microgrid', 'graph')
+    op.drop_column("microgrid", "graph")
 
 
 def downgrade():  # pragma: nocoverage

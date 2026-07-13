@@ -57,7 +57,7 @@ def update_tariff_from_form(tariff, form, session=None):
         session.add(event)
         events.append(event)
 
-    if not config['HEROKU']:
+    if not config["HEROKU"]:
         for event in events:
             event.process()
     session.commit()
@@ -97,7 +97,7 @@ def _validate_name(form, tariff):
     """
     form.name.errors = []
     if not tariff.name:
-        form.name.errors.append(_('Please set a name for this tariff'))
+        form.name.errors.append(_("Please set a name for this tariff"))
 
     # Test for name uniqueness
     try:
@@ -121,7 +121,7 @@ def _validate_plan_duration_and_start_day(form):
     except ValueError:
         if not form.plan_duration_and_start_day.errors:  # pragma: nocover
             # Only append the generic error message if there isn't another validation error
-            form.plan_duration_and_start_day.errors.append('Not a valid choice.')
+            form.plan_duration_and_start_day.errors.append("Not a valid choice.")
 
 
 def _validate_load_limits(form, tariff):
@@ -132,14 +132,15 @@ def _validate_load_limits(form, tariff):
     """
     if tariff.load_limit_type == Tariff.LOAD_LIMIT_TYPE_FLAT:
         if not tariff.flat_load_limit:
-            form.flat_load_limit.errors = [_('Please enter a Load Limit for this tariff')]
+            form.flat_load_limit.errors = [_("Please enter a Load Limit for this tariff")]
 
         if tariff.flat_load_limit < 0:
-            form.flat_load_limit.errors = [_('Load Limits cannot be negative')]
+            form.flat_load_limit.errors = [_("Load Limits cannot be negative")]
 
         if tariff.flat_load_limit > MAX_SIGNED_INT:
-            form.flat_load_limit.errors = [_('Load Limit must be less than or equal to %(max_int)s',
-                                             max_int=MAX_SIGNED_INT)]
+            form.flat_load_limit.errors = [
+                _("Load Limit must be less than or equal to %(max_int)s", max_int=MAX_SIGNED_INT)
+            ]
         # Be paraniod and reset scheduled load limits if we're using flat
         tariff.load_limits = []
     elif tariff.load_limit_type == Tariff.LOAD_LIMIT_TYPE_SCHEDULED:
@@ -150,11 +151,11 @@ def _validate_load_limits(form, tariff):
 
         if tariff.load_limits is not None:
             for i, load_limit in enumerate(tariff.load_limits[:]):
-                if load_limit['end'] == '24:00':
-                    tariff.load_limits[i]['end'] = '00:00'
+                if load_limit["end"] == "24:00":
+                    tariff.load_limits[i]["end"] = "00:00"
                     break
     elif tariff.load_limit_type:
-        form.load_limit_type.errors = [_('Must be one of: {}'.format(', '.join(Tariff.LOAD_LIMIT_TYPES)))]
+        form.load_limit_type.errors = [_("Must be one of: {}".format(", ".join(Tariff.LOAD_LIMIT_TYPES)))]
 
 
 def _validate_plan(form):
@@ -174,10 +175,10 @@ def _validate_tariff_type(form, tariff):
     :param tariff: The tariff object corresponding to the form
     """
     if tariff.tariff_type not in Tariff.TYPES:
-        form.tariff_type.errors = [_('Must be one of: {}'.format(', '.join(Tariff.TYPES)))]
+        form.tariff_type.errors = [_("Must be one of: {}".format(", ".join(Tariff.TYPES)))]
         return
     if tariff.tariff_type == Tariff.TYPE_FLAT and not (tariff.flat_price):
-        form.flat_price.errors = [_('Please set a Flat Rate')]
+        form.flat_price.errors = [_("Please set a Flat Rate")]
 
     if tariff.tariff_type == Tariff.TYPE_BLOCKRATE:
         try:
@@ -193,7 +194,7 @@ def _validate_flat_price(form, tariff):
     :param tariff: The tariff object corresponding to the form
     """
     if tariff.flat_price < 0:
-        form.flat_price.errors = [_('Flat Rate cannot be negative')]
+        form.flat_price.errors = [_("Flat Rate cannot be negative")]
 
 
 def _validate_tous(form, tariff):
@@ -204,8 +205,8 @@ def _validate_tous(form, tariff):
     """
     if tariff.tous is not None:
         for i, tou in enumerate(tariff.tous[:]):
-            if tou['end'] == '24:00':
-                tariff.tous[i]['end'] = '00:00'
+            if tou["end"] == "24:00":
+                tariff.tous[i]["end"] = "00:00"
                 break
     if tariff.tou_enabled:
         try:

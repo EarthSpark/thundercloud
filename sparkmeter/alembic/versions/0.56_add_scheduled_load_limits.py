@@ -13,17 +13,15 @@ from alembic import op
 
 from sparkmeter.database.columns import JSONString
 
-revision = '0.56'
-down_revision = '0.55'
+revision = "0.56"
+down_revision = "0.55"
 
 
 def upgrade():
     """Upgrade the database schema from 0.55 to 0.56."""
-    op.alter_column('tariff', 'power_limit', new_column_name='flat_load_limit')
-    op.add_column('tariff', sa.Column('load_limit_type', sa.String, nullable=True,
-                                      server_default='flat'))
-    op.add_column('tariff', sa.Column('load_limits', JSONString(), nullable=True,
-                                      server_default='[]'))
+    op.alter_column("tariff", "power_limit", new_column_name="flat_load_limit")
+    op.add_column("tariff", sa.Column("load_limit_type", sa.String, nullable=True, server_default="flat"))
+    op.add_column("tariff", sa.Column("load_limits", JSONString(), nullable=True, server_default="[]"))
 
     # ### end Alembic commands ###
 

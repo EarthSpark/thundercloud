@@ -18,7 +18,7 @@ class UserTest(SparkMeterTestCaseBase):
 
     def test_unicode(self):
         user = VendorFactory()
-        assert str(user) == u'testüser-001'
+        assert str(user) == "testüser-001"
 
     def test_transaction_permission(self, api_role):
         account = SalesAccountFactory()

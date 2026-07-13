@@ -14,13 +14,13 @@ from sparkmeter.ground.grounddomain import Ground
 
 
 # FIXME: Change this to a PUT method API can be broken
-@api.route("/ground/<string:ground_serial>/set-override-meter-state", methods=['POST'])
-@roles_accepted('api')
+@api.route("/ground/<string:ground_serial>/set-override-meter-state", methods=["POST"])
+@roles_accepted("api")
 def ground_set_override_meter_state(ground_serial):
     """Change Ground override meter state."""
     # State
     params = get_params()
-    state = check_param(params, 'state', bool)
+    state = check_param(params, "state", bool)
     # Ground serial
     ground = Ground.get_by_serial(ground_serial)
     if ground is None:

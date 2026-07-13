@@ -5,7 +5,7 @@ from sparkmeter.misc.pythonutils import unset
 
 
 def test_repr():
-    assert repr(unset) == 'unset'
+    assert repr(unset) == "unset"
 
 
 def test_is():

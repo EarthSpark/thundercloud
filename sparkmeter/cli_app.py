@@ -4,7 +4,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from sparkmeter.app import SparkmeterApplication  # noqa isort:skip
 from sparkmeter.cli import register_cli_commands  # noqa isort:skip

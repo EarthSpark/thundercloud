@@ -15,7 +15,6 @@ from sparkmeter.tests.base import WebViewTestCaseBase
 
 
 class TestJsonEncoder(WebViewTestCaseBase):
-
     def assertJSON(self, value, expected):
         serialized = json_dumps(value)
         assert serialized == expected
@@ -33,16 +32,16 @@ class TestJsonEncoder(WebViewTestCaseBase):
         self.assertJSON(value, '"01:02:03"')
 
     def test_lazystring(self):
-        value = speaklater.make_lazy_string(lambda: 'foo')
+        value = speaklater.make_lazy_string(lambda: "foo")
         assert speaklater.is_lazy_string(value)
         self.assertJSON(value, '"foo"')
 
     def test_choice(self):
-        value = Choice(code=u'code', value='value')
+        value = Choice(code="code", value="value")
         self.assertJSON(value, '"code"')
 
     def test_uuid(self):
-        value = uuid.UUID('00000000-0000-0000-0000-000000000001')
+        value = uuid.UUID("00000000-0000-0000-0000-000000000001")
         self.assertJSON(value, '"00000000-0000-0000-0000-000000000001"')
 
     def test_object_json_method(self):
@@ -52,19 +51,20 @@ class TestJsonEncoder(WebViewTestCaseBase):
 
             def __json__(self):
                 return self.value
-        value = ObjectJSON('json')
+
+        value = ObjectJSON("json")
         self.assertJSON(value, '"json"')
 
     def test_string(self):
-        self.assertJSON('string', '"string"')
-        self.assertJSON(u'string', '"string"')
+        self.assertJSON("string", '"string"')
+        self.assertJSON("string", '"string"')
 
     def test_number(self):
-        self.assertJSON(1, '1')
-        self.assertJSON(1.5, '1.5')
-        self.assertJSON(Decimal(1.3333), '1.3333')
+        self.assertJSON(1, "1")
+        self.assertJSON(1.5, "1.5")
+        self.assertJSON(Decimal(1.3333), "1.3333")
 
     def test_singletons(self):
-        self.assertJSON(True, 'true')
-        self.assertJSON(False, 'false')
-        self.assertJSON(None, 'null')
+        self.assertJSON(True, "true")
+        self.assertJSON(False, "false")
+        self.assertJSON(None, "null")

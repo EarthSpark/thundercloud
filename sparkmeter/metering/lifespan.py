@@ -66,9 +66,7 @@ async def metering_lifespan(app: FastAPI) -> AsyncIterator[None]:
         name="metering-command-dispatcher",
     )
 
-    sse_task = asyncio.create_task(
-        _run_sse_consumer(app, client, client_id), name="metering-sse-consumer"
-    )
+    sse_task = asyncio.create_task(_run_sse_consumer(app, client, client_id), name="metering-sse-consumer")
 
     try:
         from sparkmeter.metering.reconcile import reconcile_all

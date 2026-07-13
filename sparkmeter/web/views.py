@@ -29,36 +29,35 @@ from sparkmeter.web.redirects import safe_redirect_target
 
 app = getUtility(IApplication)
 logger = logging.getLogger(__name__)
-web = AuthBlueprint('web', __name__)
+web = AuthBlueprint("web", __name__)
 
 
-@web.route('/favicon.ico')
+@web.route("/favicon.ico")
 def favicon():
     """Default favicon for this app."""
     r = send_from_directory(
-        os.path.join(app.static_folder, 'logo'),
-        'favicon.ico',
-        mimetype='image/vnd.microsoft.icon')
+        os.path.join(app.static_folder, "logo"), "favicon.ico", mimetype="image/vnd.microsoft.icon"
+    )
     return r
 
 
 @web.local_only
-@web.route("/reset-demo", methods=['GET', 'POST'])
-@roles_accepted('operator')
+@web.route("/reset-demo", methods=["GET", "POST"])
+@roles_accepted("operator")
 def reset_demo_data():
     """Reset the demo."""
-    if not config.get('ENABLE_DEMO_RESET', False):
+    if not config.get("ENABLE_DEMO_RESET", False):
         return abort(http.client.NOT_FOUND)
 
-    if request.method == 'POST':
-        logger.info(request.form.get('confirm'))
-        if request.form.get('confirm') == 'YES':
+    if request.method == "POST":
+        logger.info(request.form.get("confirm"))
+        if request.form.get("confirm") == "YES":
             reset_demo()
-            return make_response('System reset')
+            return make_response("System reset")
         else:
             flash('You must type "YES" into the box to reset')
 
-    return render_template('reset_demo.html')
+    return render_template("reset_demo.html")
 
 
 @web.route("/demo-login/<uuid:user_id>")
@@ -72,10 +71,9 @@ def demo_login(user_id):
         abort(http.client.NOT_FOUND)
 
     if login_user(user):
-        flash(_('Successfully logged in as %(username)s', username=user.username))
+        flash(_("Successfully logged in as %(username)s", username=user.username))
 
-    return redirect(safe_redirect_target(
-        request.args.get("next"), url_for("homepage.index")))
+    return redirect(safe_redirect_target(request.args.get("next"), url_for("homepage.index")))
 
 
 @app.context_processor
@@ -89,13 +87,13 @@ def set_config():
         # FIXME: Do more on the PostgreSQL side, but this probably scales fine for a few hundred
         # grounds
         for serial, name, override_state, override_modified in Ground.get_override_view():
-            if serial == config['SERIAL'] and not config['HEROKU']:
+            if serial == config["SERIAL"] and not config["HEROKU"]:
                 ground_name = name
             if override_state:
                 override_modifieds.append(override_modified)
-        ctx['ground_name'] = ground_name
+        ctx["ground_name"] = ground_name
         if override_modifieds:
-            ctx['override_banner'] = create_override_banner(override_modifieds)
+            ctx["override_banner"] = create_override_banner(override_modifieds)
     return ctx
 
 
@@ -103,15 +101,14 @@ def create_override_banner(override_modifieds):
     """Create the override banner."""
     current_time = datetime.datetime.utcnow().replace(tzinfo=None)
     delta = current_time - min(override_modifieds)
-    delta_friendly = format_timedelta(delta, granularity='minutes')
-    return _('System has been in override mode for %(delta_friendly)s',
-             delta_friendly=delta_friendly)
+    delta_friendly = format_timedelta(delta, granularity="minutes")
+    return _("System has been in override mode for %(delta_friendly)s", delta_friendly=delta_friendly)
 
 
-@app.route('/assets/<path:filename>')
-def custom_static(filename):    # pragma: nocoverage
+@app.route("/assets/<path:filename>")
+def custom_static(filename):  # pragma: nocoverage
     """Serve static assets, only for development."""
     if not app.debug:
         abort(http.client.NOT_FOUND)
-    assets_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'assets')
+    assets_dir = os.path.join(os.path.dirname(__file__), "..", "..", "assets")
     return send_from_directory(assets_dir, filename)

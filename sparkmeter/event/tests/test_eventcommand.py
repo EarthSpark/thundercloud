@@ -10,10 +10,7 @@ class EventCommandTest(SparkMeterTestCaseBase):
     def test_create_sms_message_in(self, cli):
         MeterFactory(customer__phone_number="12345")
         self.session.commit()
-        cli('event', 'create-sms',
-            '--text', 'text',
-            '--phone-number', '12345',
-            '--direction', 'in')
+        cli("event", "create-sms", "--text", "text", "--phone-number", "12345", "--direction", "in")
         message = SMSMessage.query.filter_by(direction=SMSMessage.DIRECTION_IN).one()
         assert message.text == "text"
         assert message.phone_number == "12345"
@@ -25,10 +22,7 @@ class EventCommandTest(SparkMeterTestCaseBase):
         assert not message.processed
 
     def test_create_sms_message_out(self, cli):
-        cli('event', 'create-sms',
-            '--text', 'text',
-            '--phone-number', '12345',
-            '--direction', 'out')
+        cli("event", "create-sms", "--text", "text", "--phone-number", "12345", "--direction", "out")
         message = SMSMessage.query.one()
         assert message.text == "text"
         assert message.phone_number == "12345"
@@ -44,6 +38,6 @@ class EventCommandTest(SparkMeterTestCaseBase):
 
         event_id = event.id
         assert not event.processed
-        cli('event', 'process')
+        cli("event", "process")
         event = Event.get_by_id(event_id)
         assert event.processed

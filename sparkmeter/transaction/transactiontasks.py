@@ -32,22 +32,25 @@ def process_transactions():
     #   IO/CPU/time overhead of each task has not been measured.
     #
     from sparkmeter.controller import process_transaction as process_transaction_controller
+
     with current_app.app_context():
-        ground = Ground.get_by_serial(config['SERIAL'])
+        ground = Ground.get_by_serial(config["SERIAL"])
         for transaction in Transaction.get_unprocessed(ground):
             try:
                 process_transaction_controller(transaction.id)
             except DatabaseLockTimeoutException:
                 logger.error("Could not process transaction %s: database lock timeout", transaction.id)
                 current_app.sentry.captureException(
-                    message='Transaction {} process lock timeout'.format(transaction.id),
-                    tags={'action': 'transaction_processing'},
+                    message="Transaction {} process lock timeout".format(transaction.id),
+                    tags={"action": "transaction_processing"},
                 )
                 raise
             except TransactionError as txerr:
                 logger.exception("Could not process transaction %s: %s", transaction.id, txerr.message)
                 # If the error is one where it's safe to proceed with the transaction queue...
-                if txerr.code in [TransactionError.ERROR_ALREADY_PROCESSED,
-                                  TransactionError.ERROR_ALREADY_REVERSED]:
+                if txerr.code in [
+                    TransactionError.ERROR_ALREADY_PROCESSED,
+                    TransactionError.ERROR_ALREADY_REVERSED,
+                ]:
                     continue
                 raise

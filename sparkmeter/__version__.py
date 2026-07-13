@@ -11,6 +11,7 @@ PEP 440 dev marker like `"2.0.1.dev3+ga1b2c3d"`). The generated file is
 This module is a thin shim so existing callers can keep using
 `sparkmeter.__version__.version` and `.git_version`.
 """
+
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 

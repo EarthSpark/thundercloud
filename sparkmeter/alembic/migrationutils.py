@@ -2,6 +2,7 @@
 # Copyright © 2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Migration utilities."""
+
 import logging
 
 import sqlalchemy.orm.exc
@@ -10,9 +11,14 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.orm.session import Session
 
 from sparkmeter.database.symmetricdsdomain import NodeGroup, NodeGroupLink
-from sparkmeter.database.sync import (SYNC_DIRECTION_BOTH, SYNC_GROUP_CLOUD, SYNC_GROUP_GROUND,
-                                      SyncChannelHelper, configure_domain_sync_channels,
-                                      force_table_reload)
+from sparkmeter.database.sync import (
+    SYNC_DIRECTION_BOTH,
+    SYNC_GROUP_CLOUD,
+    SYNC_GROUP_GROUND,
+    SyncChannelHelper,
+    configure_domain_sync_channels,
+    force_table_reload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +33,8 @@ def create_synced_table(table_name, channel_name, *cols, **kwargs):
         Alembic's `create_table`
     :returns: A reference to the table
     """
-    sync_init_callback = kwargs.pop('sync_init_callback', lambda *args: None)
-    sync_direction = kwargs.pop('sync_direction', SYNC_DIRECTION_BOTH)
+    sync_init_callback = kwargs.pop("sync_init_callback", lambda *args: None)
+    sync_direction = kwargs.pop("sync_direction", SYNC_DIRECTION_BOTH)
     table = op.create_table(table_name, *cols, **kwargs)
     if sym_ds_configured():
         session = Session(bind=op.get_bind())
@@ -36,11 +42,15 @@ def create_synced_table(table_name, channel_name, *cols, **kwargs):
         sync_channel_classes = {}
         # For the provided channel, build a fake/mock class that has everything the existing sync code needs
         sync_channel_classes[channel_name] = [
-            type("{}_DOMAIN".format(table_name.upper()), (object,), {
-                '__tablename__': table_name,
-                'sync_direction': sync_direction,
-                'sync_init': classmethod(sync_init_callback)
-            }),
+            type(
+                "{}_DOMAIN".format(table_name.upper()),
+                (object,),
+                {
+                    "__tablename__": table_name,
+                    "sync_direction": sync_direction,
+                    "sync_init": classmethod(sync_init_callback),
+                },
+            ),
         ]
         logger.info('Setting up sync for table "%s" on channel "%s"', table_name, channel_name)
         configure_domain_sync_channels(session, channel_helpers, sync_channel_classes)
@@ -72,7 +82,7 @@ def sym_ds_configured():
     """
     insp = reflection.Inspector.from_engine(op.get_bind())
     try:
-        next(table for table in insp.get_table_names() if table.startswith('sym_'))
+        next(table for table in insp.get_table_names() if table.startswith("sym_"))
     except StopIteration:  # pragma: nocoverage
         return False
 
@@ -82,12 +92,10 @@ def sym_ds_configured():
         cloud_group = session.query(NodeGroup).filter_by(node_group_id=SYNC_GROUP_CLOUD).one()
         ground_group = session.query(NodeGroup).filter_by(node_group_id=SYNC_GROUP_GROUND).one()
         session.query(NodeGroupLink).filter_by(
-            source_node_group_id=ground_group.node_group_id,
-            target_node_group_id=cloud_group.node_group_id
+            source_node_group_id=ground_group.node_group_id, target_node_group_id=cloud_group.node_group_id
         ).one()
         session.query(NodeGroupLink).filter_by(
-            source_node_group_id=cloud_group.node_group_id,
-            target_node_group_id=ground_group.node_group_id
+            source_node_group_id=cloud_group.node_group_id, target_node_group_id=ground_group.node_group_id
         ).one()
     except sqlalchemy.orm.exc.NoResultFound:  # pragma: nocoverage
         return False
@@ -102,15 +110,21 @@ def _create_channel_helpers(session):
     """
     cloud_group = session.query(NodeGroup).filter_by(node_group_id=SYNC_GROUP_CLOUD).one()
     ground_group = session.query(NodeGroup).filter_by(node_group_id=SYNC_GROUP_GROUND).one()
-    ground_to_cloud = session.query(NodeGroupLink).filter_by(
-        source_node_group_id=ground_group.node_group_id,
-        target_node_group_id=cloud_group.node_group_id
-    ).one()
-    cloud_to_ground = session.query(NodeGroupLink).filter_by(
-        source_node_group_id=cloud_group.node_group_id,
-        target_node_group_id=ground_group.node_group_id
-    ).one()
+    ground_to_cloud = (
+        session.query(NodeGroupLink)
+        .filter_by(
+            source_node_group_id=ground_group.node_group_id, target_node_group_id=cloud_group.node_group_id
+        )
+        .one()
+    )
+    cloud_to_ground = (
+        session.query(NodeGroupLink)
+        .filter_by(
+            source_node_group_id=cloud_group.node_group_id, target_node_group_id=ground_group.node_group_id
+        )
+        .one()
+    )
     return [
-        SyncChannelHelper('ground', ground_to_cloud),
-        SyncChannelHelper('cloud', cloud_to_ground),
+        SyncChannelHelper("ground", ground_to_cloud),
+        SyncChannelHelper("cloud", cloud_to_ground),
     ]

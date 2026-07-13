@@ -30,16 +30,17 @@ def get_params():
 
     :returns: A dict-like collection of parameters of the request parameters.
     """
-    if request.mimetype == 'application/x-www-form-urlencoded':
+    if request.mimetype == "application/x-www-form-urlencoded":
         params = request.form
-        if len(params) == 1 and list(params.keys())[0][0] in ('{', '['):
-            raise APIError('bad mimetype, JSON data must use the application/json Content-Type')
-    elif request.mimetype == 'application/json':
+        if len(params) == 1 and list(params.keys())[0][0] in ("{", "["):
+            raise APIError("bad mimetype, JSON data must use the application/json Content-Type")
+    elif request.mimetype == "application/json":
         params = request.get_json(silent=True) or {}
     else:
         raise APIError(
             "bad mimetype, must be application/x-www-form-urlencoded or application/json",
-            status_code=http.client.UNSUPPORTED_MEDIA_TYPE)
+            status_code=http.client.UNSUPPORTED_MEDIA_TYPE,
+        )
 
     return params
 
@@ -62,21 +63,16 @@ def _type_name(t):
         t = type(t)
 
     # handle string/unicode as strings for the sake of error messages
-    if t.__name__ in ('str', 'unicode'):
-        return 'string'
+    if t.__name__ in ("str", "unicode"):
+        return "string"
 
     # return the lower case name of the type
     return t.__name__.lower()
 
 
-def check_param(params,
-                param,
-                param_type=None,
-                name=None,
-                default=unset,
-                required=True,
-                allow_empty=False,
-                strict=False):
+def check_param(
+    params, param, param_type=None, name=None, default=unset, required=True, allow_empty=False, strict=False
+):
     """Safely retrieve a parameter from a the parameter list.
 
     :param params: The dictionary of request parameters.
@@ -97,10 +93,10 @@ def check_param(params,
     elif not required:
         return
     else:
-        raise APIError("missing parameter: %s" % (param, ))
+        raise APIError("missing parameter: %s" % (param,))
 
     if value == "" and not allow_empty:
-        raise APIError("bad parameter: %s, cannot be empty" % (param, ))
+        raise APIError("bad parameter: %s, cannot be empty" % (param,))
 
     # provide a default friendly param type name if none is provided
     if name is None:
@@ -108,29 +104,30 @@ def check_param(params,
 
     # enforce checking the exact param_type, not just if it is parsable by the param type
     if strict and not isinstance(value, param_type):
-        raise APIError("bad parameter: {}, expected {} type, got {}".format(
-            param,
-            name,
-            _type_name(value),
-        ))
+        raise APIError(
+            "bad parameter: {}, expected {} type, got {}".format(
+                param,
+                name,
+                _type_name(value),
+            )
+        )
 
     if param_type is str:
         if value is None:
             return None
         elif type(value) not in [str]:
-            raise APIError("bad type, expected string, got {}".format(
-                type(value).__name__))
+            raise APIError("bad type, expected string, got {}".format(type(value).__name__))
         else:
             return value
     elif param_type is bool:
         if type(value) is bool:
             return value
         if isinstance(value, str):
-            if value.lower() in ['true', '1']:
+            if value.lower() in ["true", "1"]:
                 return True
-            elif value.lower() in ['false', '0']:
+            elif value.lower() in ["false", "0"]:
                 return False
-        raise APIError("failed to parse boolean parameter: %s" % (value, ))
+        raise APIError("failed to parse boolean parameter: %s" % (value,))
     elif param_type is list:
         if not isinstance(value, list):
             raise APIError("bad parameter: %s, must be a list" % (param,))
@@ -156,8 +153,9 @@ def assert_one_of_params(provided_params, accepted_params):
     :returns:
     """
     if not frozenset(accepted_params).intersection(frozenset(provided_params or tuple())):
-        raise APIError('no valid parameters found, expected one or many from: %s' %
-                       (', '.join(accepted_params),))
+        raise APIError(
+            "no valid parameters found, expected one or many from: %s" % (", ".join(accepted_params),)
+        )
 
 
 def success(**kwargs):
@@ -169,7 +167,8 @@ def register_api_blueprint(app):
     import sparkmeter.api.configviews0  # noqa
     import sparkmeter.api.customerviews0  # noqa
     import sparkmeter.api.eventviews0  # noqa
-    if app.config.get('S3_HISTORY_BUCKET') and app.config.get('S3_SITE'):
+
+    if app.config.get("S3_HISTORY_BUCKET") and app.config.get("S3_SITE"):
         import sparkmeter.api.historyviews0  # noqa
     import sparkmeter.api.groundviews0  # noqa
     import sparkmeter.api.meterviews0  # noqa
@@ -179,4 +178,5 @@ def register_api_blueprint(app):
     import sparkmeter.api.tariffviews0  # noqa
     import sparkmeter.api.totalizerviews0  # noqa
     import sparkmeter.api.transactionviews0  # noqa
+
     app.register_blueprint(api)

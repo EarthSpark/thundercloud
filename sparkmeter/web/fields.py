@@ -12,7 +12,6 @@ from sparkmeter.web.widgets import ReadOnlyTextInput
 
 
 class HiddenIdField(HiddenField):
-
     """Shows an hidden id field, that must be stored as None instead of ""."""
 
     def process_formdata(self, valuelist):
@@ -21,11 +20,10 @@ class HiddenIdField(HiddenField):
             if valuelist[0] != "":
                 self.data = valuelist[0]
             else:
-                self.data = config['DEFAULT_PHONE_COUNTRY_CODE']
+                self.data = config["DEFAULT_PHONE_COUNTRY_CODE"]
 
 
 class ReadOnlyStringField(StringField):
-
     """
     Read-only String Field.
 
@@ -44,7 +42,6 @@ class ReadOnlyStringField(StringField):
 
 
 class CountryCodeField(SelectField):
-
     """
     Country code field.
 

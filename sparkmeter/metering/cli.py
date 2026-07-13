@@ -49,10 +49,12 @@ import httpx
 from flask.cli import with_appcontext
 
 from sparkmeter.metering._generated import APIClient, ClientConfig, HttpxTransport
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body import \
-    SubmitCommandV1CommandsPostRequestBodyDiscriminator
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import \
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body import (
+    SubmitCommandV1CommandsPostRequestBodyDiscriminator,
+)
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
+    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -111,8 +113,7 @@ def _options_for_dataclass(
         inner, was_optional = _unwrap_optional(raw_type)
         if dataclasses.is_dataclass(inner):
             field_has_default = (
-                f.default is not dataclasses.MISSING
-                or f.default_factory is not dataclasses.MISSING  # type: ignore[misc]
+                f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING  # type: ignore[misc]
             )
             if was_optional or field_has_default:
                 # Skip optional nested dataclasses to keep the CLI
@@ -137,16 +138,13 @@ def _option_dest(path: tuple[str, ...]) -> str:
 def _click_kwargs_for(field: dataclasses.Field, ftype: Any) -> dict[str, Any]:
     """Build click.option kwargs for a field of the given type."""
     is_optional = (
-        field.default is not dataclasses.MISSING
-        or field.default_factory is not dataclasses.MISSING  # type: ignore[misc]
+        field.default is not dataclasses.MISSING or field.default_factory is not dataclasses.MISSING  # type: ignore[misc]
     )
     # Detect a union of multiple non-None types (e.g. `float | str`).
     # Operators pass the value as a string; the dataclass accepts it.
     origin = get_origin(ftype)
     non_none_args = [a for a in get_args(ftype) if a is not _NoneType] if origin else []
-    is_real_union = (
-        origin is Union or origin is types.UnionType
-    ) and len(non_none_args) > 1
+    is_real_union = (origin is Union or origin is types.UnionType) and len(non_none_args) > 1
 
     inner, was_optional = _unwrap_optional(ftype)
     if was_optional:
@@ -269,14 +267,10 @@ _TERMINAL_EVENT_TYPES = frozenset(
     }
 )
 
-_FAILURE_EVENT_TYPES = frozenset(
-    {"command_failed", "command_rejected", "command_timed_out"}
-)
+_FAILURE_EVENT_TYPES = frozenset({"command_failed", "command_rejected", "command_timed_out"})
 
 
-async def _stream_events_raw(
-    base_url: str, client_id: str
-) -> AsyncIterator[dict]:
+async def _stream_events_raw(base_url: str, client_id: str) -> AsyncIterator[dict]:
     """Stream typed events as raw dicts.
 
     Bypasses the generated `stream_events_v1_events_get`: that method
@@ -350,9 +344,7 @@ def _command_name(command_type_value: str) -> str:
     return command_type_value.replace("_", "-")
 
 
-def _build_click_command(
-    command_class: type, command_type_enum_value: str
-) -> click.Command:
+def _build_click_command(command_class: type, command_type_enum_value: str) -> click.Command:
     params_class = _resolve_param_class(command_class)
     leaf_options = _options_for_dataclass(params_class)
     type_hints_cache: dict[type, dict[str, Any]] = {}
@@ -376,8 +368,7 @@ def _build_click_command(
                 ftype = _hints(cls).get(f.name, f.type)
                 inner, was_optional = _unwrap_optional(ftype)
                 field_has_default = (
-                    f.default is not dataclasses.MISSING
-                    or f.default_factory is not dataclasses.MISSING  # type: ignore[misc]
+                    f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING  # type: ignore[misc]
                 )
                 if dataclasses.is_dataclass(inner):
                     if was_optional or field_has_default:
@@ -418,18 +409,14 @@ def _build_click_command(
                 f for f in dataclasses.fields(command_class) if f.name == "vendor_options"
             )
             inner_cls, _ = _unwrap_optional(_hints(command_class)[vendor_options_class.name])
-            cmd_kwargs["vendor_options"] = structure_from_dict(
-                vendor_options_dict, inner_cls
-            )
+            cmd_kwargs["vendor_options"] = structure_from_dict(vendor_options_dict, inner_cls)
 
         body = command_class(**cmd_kwargs)
         ctx.exit(asyncio.run(_submit_and_tail(body, correlation_id)))
 
     callback = with_appcontext(callback)
 
-    cmd = click.command(_command_name(command_type_enum_value), help=_command_help(command_class))(
-        callback
-    )
+    cmd = click.command(_command_name(command_type_enum_value), help=_command_help(command_class))(callback)
 
     # Apply options last-to-first so they appear in declaration order.
     for path, field, ftype in reversed(leaf_options):
@@ -467,9 +454,7 @@ def _register_all() -> None:
         try:
             cmd = _build_click_command(command_class, command_type_value)
         except Exception:  # noqa: BLE001
-            logger.exception(
-                "failed to build CLI for %s; skipping", command_class.__name__
-            )
+            logger.exception("failed to build CLI for %s; skipping", command_class.__name__)
             continue
         metering.add_command(cmd)
 

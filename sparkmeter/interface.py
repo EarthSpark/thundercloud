@@ -7,10 +7,8 @@ from zope.interface import Interface
 
 
 class IApplication(Interface):
-
     """Global application singleton."""
 
 
 class ICurrentUser(Interface):
-
     """Currently logged in user."""

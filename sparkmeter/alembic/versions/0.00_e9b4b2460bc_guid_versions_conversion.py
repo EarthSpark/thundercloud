@@ -8,7 +8,7 @@ Create Date: 2015-08-27 13:33:58.442816
 
 """
 
-revision = 'e9b4b2460bc'
+revision = "e9b4b2460bc"
 down_revision = None
 
 

@@ -28,13 +28,15 @@ from sparkmeter.metering._generated.models.configure_meter_params import Configu
 from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
 from sparkmeter.metering._generated.models.meter_configuration import MeterConfiguration
 from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
-from sparkmeter.metering._generated.models.register_meter_command_vendor_options import \
-    RegisterMeterCommandVendorOptions
+from sparkmeter.metering._generated.models.register_meter_command_vendor_options import (
+    RegisterMeterCommandVendorOptions,
+)
 from sparkmeter.metering._generated.models.register_meter_params import RegisterMeterParams
 from sparkmeter.metering._generated.models.set_balance_command import SetBalanceCommand
 from sparkmeter.metering._generated.models.set_balance_params import SetBalanceParams
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import \
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
+    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
+)
 from sparkmeter.metering._generated.models.throttle_config import ThrottleConfig
 from sparkmeter.metering._generated.models.unregister_meter_command import UnregisterMeterCommand
 from sparkmeter.metering._generated.models.unregister_meter_params import UnregisterMeterParams
@@ -68,9 +70,7 @@ def enqueue_command(cmd: dict[str, Any]) -> bool:
     loop = _LOOP
     queue = _QUEUE
     if loop is None or queue is None:
-        logger.debug(
-            "metering dispatch loop not registered; dropping command op=%r", cmd.get("op")
-        )
+        logger.debug("metering dispatch loop not registered; dropping command op=%r", cmd.get("op"))
         return False
     try:
         asyncio.run_coroutine_threadsafe(queue.put(cmd), loop)
@@ -199,6 +199,4 @@ def enqueue_disable_all(node_ids: list[int]) -> None:
     The wire spec has no broadcast verb today; we fan out instead.
     """
     for node_id in node_ids:
-        enqueue_command(
-            {"op": "configure_meter", "node_id": int(node_id), "command": "disable"}
-        )
+        enqueue_command({"op": "configure_meter", "node_id": int(node_id), "command": "disable"})

@@ -2,6 +2,7 @@
 # Copyright © 2013-2016 SparkMeter, Inc.
 # All Rights Reserved.
 """Tariff domain models."""
+
 from __future__ import division
 
 import datetime
@@ -23,8 +24,11 @@ from sparkmeter.config.configdict import config
 from sparkmeter.database.columns import JSONString
 from sparkmeter.database.sync import SYNC_CHANNEL_TARIFF, SYNC_GROUP_CLOUD, syncchannel
 from sparkmeter.misc.datetimeutils import format_minutes, month_delta, reset_datetime_to_time
-from sparkmeter.misc.intervalutils import (check_interval_overlaps, check_intervals_gap,
-                                           check_intervals_overlap)
+from sparkmeter.misc.intervalutils import (
+    check_interval_overlaps,
+    check_intervals_gap,
+    check_intervals_overlap,
+)
 from sparkmeter.models import BaseDomain
 
 logger = logging.getLogger(__name__)
@@ -53,51 +57,50 @@ def parse_plan_duration_and_start_day_string(value):
     :returns: A tuple of the span, unit, and start day
     """
     if value is None:
-        raise ValueError('Cannot set the plan to None')
+        raise ValueError("Cannot set the plan to None")
     match = PLAN_DURATION_AND_START_PATTERN.match(value)
     if not match:
-        raise ValueError('Invalid plan duration string')
+        raise ValueError("Invalid plan duration string")
     try:
-        span = int(match.group('span'))
-        unit = match.group('unit')
-        start_day = int(match.group('start_day'))
+        span = int(match.group("span"))
+        unit = match.group("unit")
+        start_day = int(match.group("start_day"))
     except ValueError as verr:  # pragma: nocover
-        raise ValueError('Could not parse integer values from {}'.format(value)) from verr
+        raise ValueError("Could not parse integer values from {}".format(value)) from verr
     if span <= 0:
-        raise ValueError('Span must be greater than 0')
+        raise ValueError("Span must be greater than 0")
     if start_day <= 0:
-        raise ValueError('Start day must be greater than 0')
+        raise ValueError("Start day must be greater than 0")
     return span, unit, start_day
 
 
 @syncchannel(SYNC_CHANNEL_TARIFF)
 class Tariff(BaseDomain):
-
     """Tariff model."""
 
-    __tablename__ = 'tariff'
+    __tablename__ = "tariff"
 
     #: This tariff is using a flat rate pricing
-    TYPE_FLAT = 'flat'
+    TYPE_FLAT = "flat"
 
     #: This tariff is using blockrate pricing
-    TYPE_BLOCKRATE = 'blockrate'
+    TYPE_BLOCKRATE = "blockrate"
 
     #: The possible tariff types
     TYPES = [TYPE_FLAT, TYPE_BLOCKRATE]
 
     #: This tariff is using a flat load limit
-    LOAD_LIMIT_TYPE_FLAT = 'flat'
+    LOAD_LIMIT_TYPE_FLAT = "flat"
 
     #: This tariff is using a scheduled load limit
-    LOAD_LIMIT_TYPE_SCHEDULED = 'scheduled'
+    LOAD_LIMIT_TYPE_SCHEDULED = "scheduled"
 
     #: The possible load limit types
     LOAD_LIMIT_TYPES = [LOAD_LIMIT_TYPE_FLAT, LOAD_LIMIT_TYPE_SCHEDULED]
 
-    PLAN_DURATION_UNIT_DAY = 'd'
+    PLAN_DURATION_UNIT_DAY = "d"
 
-    PLAN_DURATION_UNIT_MONTH = 'm'
+    PLAN_DURATION_UNIT_MONTH = "m"
 
     PLAN_DURATION_UNITS = [PLAN_DURATION_UNIT_DAY, PLAN_DURATION_UNIT_MONTH]
 
@@ -110,22 +113,22 @@ class Tariff(BaseDomain):
 
     #: plan price in credits, amount to transfer to plan wallet on purchase
     #: FIXME: a more appropriate name is plan_minimum_spend
-    plan_price = Column(Float, server_default='0', default=0.0, nullable=False)
+    plan_price = Column(Float, server_default="0", default=0.0, nullable=False)
 
     #: plan fixed fee in credits, cost to purchase a plan
-    plan_fixed_fee = Column(Float, server_default='0', default=0.0, nullable=False)
+    plan_fixed_fee = Column(Float, server_default="0", default=0.0, nullable=False)
 
     #: if we should use plan calculation for this tariff
     plan_enabled = Column(Boolean, default=False)
 
     #: The time scalar spanned by the tariff, in conjunction with plan_duration_unit
-    plan_duration_span = Column(Integer, server_default='1', default=1, nullable=False)
+    plan_duration_span = Column(Integer, server_default="1", default=1, nullable=False)
 
     #: The time unit spanned by the tariff, in conjunction with plan_duration_span
     plan_duration_unit = Column(String, default=PLAN_DURATION_UNIT_MONTH, nullable=False)
 
     #: Day of the month for the plan / cycle to start
-    cycle_start_day_of_month = Column(Integer, server_default='1', default=1, nullable=False)
+    cycle_start_day_of_month = Column(Integer, server_default="1", default=1, nullable=False)
 
     #: flat price in credit/kwh, fee for the number of credits per kWh
     flat_price = Column(Float)
@@ -146,7 +149,7 @@ class Tariff(BaseDomain):
     low_balance_threshold = Column(Float, default=0.0, nullable=False)
 
     #: Load limit, flat or scheduled
-    load_limit_type = Column(String, default='flat', nullable=False)
+    load_limit_type = Column(String, default="flat", nullable=False)
 
     #: the scheduled load limits for this Tariff
     load_limits = Column(JSONString, default=[])
@@ -178,9 +181,9 @@ class Tariff(BaseDomain):
             or self.cycle_start_day_of_month is None
         ):
             return None
-        return '{}{}{}'.format(self.plan_duration_span,
-                               self.plan_duration_unit,
-                               self.cycle_start_day_of_month)
+        return "{}{}{}".format(
+            self.plan_duration_span, self.plan_duration_unit, self.cycle_start_day_of_month
+        )
 
     @plan_duration_and_start_day.setter
     def plan_duration_and_start_day(self, value):
@@ -267,24 +270,32 @@ class Tariff(BaseDomain):
         intervals = []
         for blockrate in self.get_blockrates():
             blockrate.validate()
-            intervals.append((int(blockrate.lower),
-                              int(blockrate.upper) or TariffBlockrate.MAX_VALUE))
+            intervals.append((int(blockrate.lower), int(blockrate.upper) or TariffBlockrate.MAX_VALUE))
 
         if not intervals:
-            raise ValueError(_('Please add some block rates.'))
+            raise ValueError(_("Please add some block rates."))
 
         overlap = check_intervals_overlap(intervals)
         if overlap is not None:
             raise ValueError(
-                _('Block rate %(s1)d to %(e1)d overlaps with Block rate %(s2)d to %(e2)d',
-                  s1=overlap.start1, e1=overlap.end1,
-                  s2=overlap.start2, e2=overlap.end2))
+                _(
+                    "Block rate %(s1)d to %(e1)d overlaps with Block rate %(s2)d to %(e2)d",
+                    s1=overlap.start1,
+                    e1=overlap.end1,
+                    s2=overlap.start2,
+                    e2=overlap.end2,
+                )
+            )
 
         gaps = check_intervals_gap(intervals, imin=0, imax=TariffBlockrate.MAX_VALUE)
         if gaps:
             raise ValueError(
-                _('Block rates contain at least one gap, between %(start)d and %(end)d',
-                  start=gaps[0], end=gaps[-1] + 1))
+                _(
+                    "Block rates contain at least one gap, between %(start)d and %(end)d",
+                    start=gaps[0],
+                    end=gaps[-1] + 1,
+                )
+            )
 
     def validate_tous(self):
         """Validate the TOUs period for this tariff.
@@ -308,14 +319,19 @@ class Tariff(BaseDomain):
                 intervals.append((start, end))
 
         if not intervals:
-            raise ValueError(_('Please add some TOU periods.'))
+            raise ValueError(_("Please add some TOU periods."))
 
         overlap = check_intervals_overlap(intervals)
         if overlap is not None:
             raise ValueError(
-                _('TOU period %(s1)s to %(e1)s overlaps with TOU period %(s2)s to %(e2)s',
-                  s1=format_minutes(overlap.start1), e1=format_minutes(overlap.end1),
-                  s2=format_minutes(overlap.start2), e2=format_minutes(overlap.end2)))
+                _(
+                    "TOU period %(s1)s to %(e1)s overlaps with TOU period %(s2)s to %(e2)s",
+                    s1=format_minutes(overlap.start1),
+                    e1=format_minutes(overlap.end1),
+                    s2=format_minutes(overlap.start2),
+                    e2=format_minutes(overlap.end2),
+                )
+            )
 
     def validate_load_limits(self):
         """Validate the Load limit period for this tariff.
@@ -340,14 +356,19 @@ class Tariff(BaseDomain):
                 intervals.append((start, end))
 
         if not intervals:
-            raise ValueError(_('Please add some Load limit periods.'))
+            raise ValueError(_("Please add some Load limit periods."))
 
         overlap = check_intervals_overlap(intervals)
         if overlap is not None:
             raise ValueError(
-                _('Load limit period %(s1)s to %(e1)s overlaps with load limit period %(s2)s to %(e2)s',
-                  s1=format_minutes(overlap.start1), e1=format_minutes(overlap.end1),
-                  s2=format_minutes(overlap.start2), e2=format_minutes(overlap.end2)))
+                _(
+                    "Load limit period %(s1)s to %(e1)s overlaps with load limit period %(s2)s to %(e2)s",
+                    s1=format_minutes(overlap.start1),
+                    e1=format_minutes(overlap.end1),
+                    s2=format_minutes(overlap.start2),
+                    e2=format_minutes(overlap.end2),
+                )
+            )
 
         uncovered = []
         for hour in range(24):
@@ -357,8 +378,11 @@ class Tariff(BaseDomain):
                 uncovered.append(hour)
         if uncovered:
             raise ValueError(
-                _('Load limit periods needs to cover %(hours)s',
-                  hours=', '.join('{:2d}:00'.format(h) for h in uncovered)))
+                _(
+                    "Load limit periods needs to cover %(hours)s",
+                    hours=", ".join("{:2d}:00".format(h) for h in uncovered),
+                )
+            )
 
     def get_average_block_rate(self, lower, upper):
         """Calculate the average block rate for an interval.
@@ -374,11 +398,9 @@ class Tariff(BaseDomain):
         :raises ValueError: if lower is before upper
         """
         if not isinstance(lower, (float, int)):
-            raise TypeError("lower must be a number, not %r" % (
-                type(upper).__name__, ))
+            raise TypeError("lower must be a number, not %r" % (type(upper).__name__,))
         if not isinstance(upper, (float, int)):
-            raise TypeError("upper must be a number, not %r" % (
-                type(upper).__name__, ))
+            raise TypeError("upper must be a number, not %r" % (type(upper).__name__,))
         if upper < 0 and lower < 0:
             raise ValueError("upper and lower must be positive, not [{},{}]".format(lower, upper))
         if lower > upper:
@@ -416,61 +438,60 @@ class Tariff(BaseDomain):
         """
         query = cls.query.filter(func.lower(cls.name) == func.lower(name))
         # To make sure the order is not undefined for testing purposes.
-        query = query.order_by('name')
+        query = query.order_by("name")
         if query.count() > 1:
             if fail_on_multiple:
                 raise MultipleResultsFound("Multiple tariffs with name {} found".format(name))
-            logger.warning(
-                "More than one tariff exists with the name %s. Using the first one." % (name, ))
+            logger.warning("More than one tariff exists with the name %s. Using the first one." % (name,))
         elif query.count() == 0:
             raise NoResultFound("no tariff with name {} found.".format(name))
         return query.first()
 
     def display_rate(self):
         """Return a displayable formatted rate depending on the tariff_type."""
-        if self.tariff_type == 'flat':
+        if self.tariff_type == "flat":
             return str(self.flat_price)
-        elif self.tariff_type == 'blockrate':
+        elif self.tariff_type == "blockrate":
             rates = [float(bl.value) for bl in self.get_blockrates()]
-            return _('%(min)s to %(max)s', min=min(rates), max=max(rates))
+            return _("%(min)s to %(max)s", min=min(rates), max=max(rates))
 
     def display_tou(self):
         """Return a displayable formatted tou percent range."""
         if not self.tou_enabled:
-            return ''
+            return ""
 
         mods = [float(tou.value) for tou in self.get_tous()]
         # add 100 to the list so if only one modifier is set it
         # doesn't look like the normal is never used
         mods.append(100)
 
-        return _('%(min)d%% to %(max)d%%', min=min(mods), max=max(mods))
+        return _("%(min)d%% to %(max)d%%", min=min(mods), max=max(mods))
 
     def display_load_limit(self):
         """Return a displayable formatted load limit."""
-        if self.load_limit_type == 'flat':
+        if self.load_limit_type == "flat":
             return str(self.flat_load_limit)
 
         mods = [float(p.value) for p in self.get_load_limits()]
-        return _('%(min)d to %(max)d', min=min(mods), max=max(mods))
+        return _("%(min)d to %(max)d", min=min(mods), max=max(mods))
 
     def display_plan(self):
         """Return a displayable formatted plan."""
         if not self.plan_enabled:
-            return _('Off')
-        time_unit = 'day' if self.plan_is_daily else 'month'
+            return _("Off")
+        time_unit = "day" if self.plan_is_daily else "month"
         plan_cost = self.plan_price + self.plan_fixed_fee
-        return '{} {} for {} {}'.format(self.plan_duration_span, time_unit, plan_cost, config['CURRENCY'])
+        return "{} {} for {} {}".format(self.plan_duration_span, time_unit, plan_cost, config["CURRENCY"])
 
     # FIXME: Move this over to Meter.get_by_tariff
     def get_meters(self):
         """Get all meters using this tariff."""
         from sparkmeter.meter.meterdomain import Meter, MeterBilling
-        return (
-            Meter.query
-            .filter(Meter.meter_type == Meter.TYPE_CUSTOMER,
-                    MeterBilling.meter_id == Meter.id,
-                    MeterBilling.tariff_id == self.id)
+
+        return Meter.query.filter(
+            Meter.meter_type == Meter.TYPE_CUSTOMER,
+            MeterBilling.meter_id == Meter.id,
+            MeterBilling.tariff_id == self.id,
         )
 
     # FIXME: This does not belong here, move to call-site, eg:
@@ -525,7 +546,8 @@ class Tariff(BaseDomain):
 
 
 PLAN_DURATION_AND_START_PATTERN = re.compile(
-    r'^(?P<span>\d+)(?P<unit>[{}])(?P<start_day>\d+)$'.format(''.join(Tariff.PLAN_DURATION_UNITS)))
+    r"^(?P<span>\d+)(?P<unit>[{}])(?P<start_day>\d+)$".format("".join(Tariff.PLAN_DURATION_UNITS))
+)
 
 
 def _parse_dict_value(d, key, value_type):
@@ -543,7 +565,6 @@ def _parse_dict_value(d, key, value_type):
 
 
 class TariffBlockrate(object):
-
     """Tariff blockrate model."""
 
     # FIXME: Get rid of this maximum value
@@ -554,23 +575,21 @@ class TariffBlockrate(object):
     def __init__(self, lower, upper, value):
         #: type: (int, int, float) -> None
         if not isinstance(lower, int):
-            raise TypeError(
-                "lower must be an int, not {!r}.".format(lower))
+            raise TypeError("lower must be an int, not {!r}.".format(lower))
         self.lower = lower
 
         if not isinstance(upper, int):
-            raise TypeError(
-                "upper must be an int, not {!r}.".format(upper))
+            raise TypeError("upper must be an int, not {!r}.".format(upper))
         self.upper = upper
 
         if type(value) not in [float, int]:
-            raise TypeError(
-                "value must be a number, not {!r}.".format(value))
+            raise TypeError("value must be a number, not {!r}.".format(value))
         self.value = value
 
     def __repr__(self):
-        return '<{} lower={} upper={} value={}>'.format(
-            type(self).__name__, self.lower, self.upper, self.value)
+        return "<{} lower={} upper={} value={}>".format(
+            type(self).__name__, self.lower, self.upper, self.value
+        )
 
     def __eq__(self, other):
         if self.lower != other.lower:
@@ -596,14 +615,11 @@ class TariffBlockrate(object):
         :returns: a generator of newly created TariffBlockrate instances.
         """
         for d in blockrates:
-            lower = _parse_dict_value(d, 'lower', int)
-            upper = _parse_dict_value(d, 'upper', int)
-            value = _parse_dict_value(d, 'value', float)
+            lower = _parse_dict_value(d, "lower", int)
+            upper = _parse_dict_value(d, "upper", int)
+            value = _parse_dict_value(d, "value", float)
             if lower is None or upper is None or value is None:
-                logger.warning("Tariff {} has a blockrate tou: {}".format(
-                    tariff_name,
-                    d
-                ))
+                logger.warning("Tariff {} has a blockrate tou: {}".format(tariff_name, d))
                 continue
             yield cls(lower=lower, upper=upper, value=value)
 
@@ -635,12 +651,12 @@ class TariffBlockrate(object):
         # Validate lower
         lower = self.lower
         if lower < 0:
-            raise ValueError(_('The lower value of a block rate must be a positive number.'))
+            raise ValueError(_("The lower value of a block rate must be a positive number."))
 
         # Validate upper
         upper = self.upper
         if upper < 0:
-            raise ValueError(_('The upper value of a block rate must be a positive number.'))
+            raise ValueError(_("The upper value of a block rate must be a positive number."))
 
         if upper == 0:
             upper = TariffBlockrate.MAX_VALUE
@@ -648,18 +664,26 @@ class TariffBlockrate(object):
         # Validate lower/upper
         if lower == upper:
             raise ValueError(
-                _("Block rate lower (%(lower)d) must be different from upper (%(upper)d)",
-                  lower=lower, upper=upper))
+                _(
+                    "Block rate lower (%(lower)d) must be different from upper (%(upper)d)",
+                    lower=lower,
+                    upper=upper,
+                )
+            )
 
         if lower > upper:
             raise ValueError(
-                _("Block rate upper (%(upper)d) must be higher than lower (%(lower)d)",
-                  lower=lower, upper=upper))
+                _(
+                    "Block rate upper (%(upper)d) must be higher than lower (%(lower)d)",
+                    lower=lower,
+                    upper=upper,
+                )
+            )
 
         # Validate value
         value = self.value
         if value < 0:
-            raise ValueError(_('The block rate value must be a positive number.'))
+            raise ValueError(_("The block rate value must be a positive number."))
 
 
 class _TariffPeriod(object):
@@ -668,7 +692,7 @@ class _TariffPeriod(object):
     Used by TOU and LoadLimit which are conceptually similar.
     """
 
-    class_name = ''
+    class_name = ""
 
     def __init__(self, start, end, value):
         # type: (str, str, Union[float, int]) -> None
@@ -685,8 +709,7 @@ class _TariffPeriod(object):
         self.value = value
 
     def __repr__(self):
-        return '<{} start={} end={} value={}>'.format(
-            type(self).__name__, self.start, self.end, self.value)
+        return "<{} start={} end={} value={}>".format(type(self).__name__, self.start, self.end, self.value)
 
     def __eq__(self, other):
         if self.start != other.start:
@@ -712,14 +735,11 @@ class _TariffPeriod(object):
         :returns: a generator of newly created period instances.
         """
         for d in tous:
-            start = _parse_dict_value(d, 'start', str)
-            end = _parse_dict_value(d, 'end', str)
-            value = _parse_dict_value(d, 'value', float)
+            start = _parse_dict_value(d, "start", str)
+            end = _parse_dict_value(d, "end", str)
+            value = _parse_dict_value(d, "value", float)
             if start is None or end is None or value is None:
-                logger.warning("Tariff {} has a bad tou: {}".format(
-                    tariff_name,
-                    d
-                ))
+                logger.warning("Tariff {} has a bad tou: {}".format(tariff_name, d))
                 continue
             yield cls(start=start, end=end, value=value)
 
@@ -737,21 +757,25 @@ class _TariffPeriod(object):
         :raises ValueError: if heartbeat_end is before heartbeat_start
         """
         if not isinstance(heartbeat_start, datetime.datetime):
-            raise TypeError("heartbeat_start must be a datetime.datetime, not a '%s'" % (
-                type(heartbeat_start).__name__, ))
+            raise TypeError(
+                "heartbeat_start must be a datetime.datetime, not a '%s'" % (type(heartbeat_start).__name__,)
+            )
         if not isinstance(heartbeat_end, datetime.datetime):
-            raise TypeError("heartbeat_end must be a datetime.datetime, not a '%s'" % (
-                type(heartbeat_end).__name__, ))
+            raise TypeError(
+                "heartbeat_end must be a datetime.datetime, not a '%s'" % (type(heartbeat_end).__name__,)
+            )
         if heartbeat_start == heartbeat_end:
-            raise ValueError("heartbeat_start (%s) and heartbeat_end (%s) must be different" % (
-                heartbeat_start, heartbeat_end))
+            raise ValueError(
+                "heartbeat_start (%s) and heartbeat_end (%s) must be different"
+                % (heartbeat_start, heartbeat_end)
+            )
         if heartbeat_start.tzinfo != tzlocal():
             raise ValueError("heartbeat_start must be in tzlocal() timezone")
         if heartbeat_end.tzinfo != tzlocal():
             raise ValueError("heartbeat_end must be in tzlocal() timezone")
 
-        start = datetime.time(*list(map(int, self.start.split(':'))))
-        end = datetime.time(*list(map(int, self.end.split(':'))))
+        start = datetime.time(*list(map(int, self.start.split(":"))))
+        end = datetime.time(*list(map(int, self.end.split(":"))))
 
         # Reset the start/end for this period relative to the start date, use
         # the start date as a reference for both so that they end up on the
@@ -762,8 +786,7 @@ class _TariffPeriod(object):
         # Simple case, heartbeat end is after heart beat start, do a simple
         # range check of hr_start/hr_end in [tou_start..tou_end)
         if start < end:
-            return (tou_end > heartbeat_start >= tou_start
-                    and tou_end >= heartbeat_end > tou_start)
+            return tou_end > heartbeat_start >= tou_start and tou_end >= heartbeat_end > tou_start
 
         # Heartbeat starting after heartbeat end means that we have a period
         # that crosses a midnight boundary. Remember that period start/end are
@@ -795,16 +818,13 @@ class _TariffPeriod(object):
         #   20..06, eg a midnight boundary crossing (c)
 
         # a) between midnight and the beginning of the period
-        if ((tou_end > heartbeat_start >= midnight_before
-             and tou_end >= heartbeat_end > midnight_before)):
+        if tou_end > heartbeat_start >= midnight_before and tou_end >= heartbeat_end > midnight_before:
             return True
         # b) between TOU start and the midnight the next day
-        elif (midnight_after > heartbeat_start >= tou_start
-              and midnight_after >= heartbeat_end > tou_start):
+        elif midnight_after > heartbeat_start >= tou_start and midnight_after >= heartbeat_end > tou_start:
             return True
         # c) heartbeat start before midnight, heartbeat end after midnight
-        elif (midnight_after > heartbeat_start >= tou_start
-              and tou_end >= heartbeat_end > midnight_before):
+        elif midnight_after > heartbeat_start >= tou_start and tou_end >= heartbeat_end > midnight_before:
             return True
         else:
             return False
@@ -822,32 +842,47 @@ class _TariffPeriod(object):
         try:
             start = self.start_to_min_after_midnight()
         except ValueError:
-            raise ValueError(_('The start value of a {} must be a valid time, not {}.'.format(
-                self.class_name,
-                self.start,
-            )))
+            raise ValueError(
+                _(
+                    "The start value of a {} must be a valid time, not {}.".format(
+                        self.class_name,
+                        self.start,
+                    )
+                )
+            )
 
         try:
             end = self.end_to_min_after_midnight()
         except ValueError:
-            raise ValueError(_('The end value of a {} must be a valid time, not {}.'.format(
-                self.class_name,
-                self.end,
-            )))
+            raise ValueError(
+                _(
+                    "The end value of a {} must be a valid time, not {}.".format(
+                        self.class_name,
+                        self.end,
+                    )
+                )
+            )
 
         if start == end:
-            raise ValueError(_("{} start ({}) must be different from end ({})".format(
-                               self.class_name,
-                               format_minutes(start),
-                               format_minutes(end))))
-        if not self.start.endswith(':00'):
+            raise ValueError(
+                _(
+                    "{} start ({}) must be different from end ({})".format(
+                        self.class_name, format_minutes(start), format_minutes(end)
+                    )
+                )
+            )
+        if not self.start.endswith(":00"):
             raise ValueError('The {} "{}" must start on the hour'.format(self.class_name, self.start))
-        if not self.end.endswith(':00'):
+        if not self.end.endswith(":00"):
             raise ValueError('The {} "{}" must end on the hour'.format(self.class_name, self.end))
         if self.value < 0:
-            raise ValueError(_('The {} modifier must be a positive number.'.format(
-                self.class_name,
-            )))
+            raise ValueError(
+                _(
+                    "The {} modifier must be a positive number.".format(
+                        self.class_name,
+                    )
+                )
+            )
 
     def start_to_min_after_midnight(self):
         """Convert the start time of this period to minutes after midnight.
@@ -855,7 +890,7 @@ class _TariffPeriod(object):
         :returns: minutes after midnight
         :rtype: int
         """
-        start = parse('1900-01-01 ' + str(self.start))
+        start = parse("1900-01-01 " + str(self.start))
 
         # Python time() objects, which we store in SQL, shouldn't need to be converted to
         # datetime, however, you cannot A) do deltas with times() B) parse() always return
@@ -869,10 +904,10 @@ class _TariffPeriod(object):
         :returns: minutes after midnight
         :rtype: int
         """
-        if self.end in ['00:00', '24:00']:
-            endstr = '1900-01-02 00:00'
+        if self.end in ["00:00", "24:00"]:
+            endstr = "1900-01-02 00:00"
         else:
-            endstr = '1900-01-01 ' + str(self.end)
+            endstr = "1900-01-01 " + str(self.end)
 
         end = parse(endstr)
 
@@ -892,8 +927,8 @@ class _TariffPeriod(object):
 
 
 class TariffTOU(_TariffPeriod):
-    class_name = 'TOU period'
+    class_name = "TOU period"
 
 
 class TariffLoadLimit(_TariffPeriod):
-    class_name = 'Load limit period'
+    class_name = "Load limit period"

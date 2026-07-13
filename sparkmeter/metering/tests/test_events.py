@@ -63,9 +63,7 @@ class TestDispatchDictEvent:
             captured.append(event)
 
         with caplog.at_level(logging.WARNING):
-            await events.dispatch_dict_event(
-                {"event_type": "wat", "event_id": 1}, [capture]
-            )
+            await events.dispatch_dict_event({"event_type": "wat", "event_id": 1}, [capture])
 
         assert captured == []
         assert any("unknown event_type" in rec.message for rec in caplog.records)
@@ -198,11 +196,7 @@ class TestReadingConsumer:
         monkeypatch.setattr(events, "_flush_readings", fake_flush)
         consumer = events.build_reading_consumer(app=None)
 
-        await consumer(
-            LogEvent(
-                event_id=1, event_type="log", level=LogLevel.INFO, message="hi"
-            )
-        )
+        await consumer(LogEvent(event_id=1, event_type="log", level=LogLevel.INFO, message="hi"))
         assert flushed == []
 
 
@@ -216,11 +210,7 @@ class TestLogConsumer:
     async def test_log_event_forwards_to_logger(self, caplog):
         consumer = events.build_log_consumer(app=None)
         with caplog.at_level(logging.WARNING, logger="sparkmeter.metering.provider"):
-            await consumer(
-                LogEvent(
-                    event_id=1, event_type="log", level=LogLevel.WARN, message="hello"
-                )
-            )
+            await consumer(LogEvent(event_id=1, event_type="log", level=LogLevel.WARN, message="hello"))
         assert any(rec.message == "hello" for rec in caplog.records)
 
     @pytest.mark.asyncio
@@ -252,9 +242,7 @@ class TestLogConsumer:
                 )
             )
         # No record from the metering.provider logger.
-        provider_records = [
-            r for r in caplog.records if r.name == "sparkmeter.metering.provider"
-        ]
+        provider_records = [r for r in caplog.records if r.name == "sparkmeter.metering.provider"]
         assert provider_records == []
 
 
@@ -295,9 +283,7 @@ class TestWatchdog:
         with caplog.at_level(logging.WARNING):
             for _ in range(3):
                 await watchdog(_heartbeat(total=20, attempted=20, responded=0))
-        assert sum(
-            1 for r in caplog.records if "dropout heartbeats" in r.message
-        ) == 1
+        assert sum(1 for r in caplog.records if "dropout heartbeats" in r.message) == 1
 
     @pytest.mark.asyncio
     async def test_resets_on_recovery(self, monkeypatch, caplog):

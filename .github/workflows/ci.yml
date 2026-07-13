@@ -23,8 +23,8 @@ jobs:
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv python install 3.13
       - run: uv sync --group dev
-      - run: uv run flake8 sparkmeter --select E,W,F --ignore W503 --max-line-length=110
-      - run: uv run isort --check-only --line-width 100 -p sparkmeter sparkmeter
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
       - run: uv run pydocstyle --ignore=D211,D403 sparkmeter
         continue-on-error: true
 

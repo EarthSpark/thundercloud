@@ -25,8 +25,7 @@ from sparkmeter.ground.grounddomain import Ground
 from sparkmeter.meter.meterdomain import Meter
 from sparkmeter.misc.jsonutils import jsonify
 from sparkmeter.salesaccount.salesaccountdomain import SalesAccount
-from sparkmeter.transaction.transactiondomain import (Transaction, TransactionSource,
-                                                      TransactionView, Wallet)
+from sparkmeter.transaction.transactiondomain import Transaction, TransactionSource, TransactionView, Wallet
 from sparkmeter.transaction.transactionform import TransactionForm, TransactionTransferForm
 from sparkmeter.user.userutils import get_current_user
 from sparkmeter.web.blueprint import AuthBlueprint
@@ -34,12 +33,11 @@ from sparkmeter.web.redirects import safe_redirect_target
 
 logger = logging.getLogger(__name__)
 
-transaction = AuthBlueprint('transaction', __name__)
-_TransactionDefaults = namedtuple('TransactionDefaults', 'markup')
+transaction = AuthBlueprint("transaction", __name__)
+_TransactionDefaults = namedtuple("TransactionDefaults", "markup")
 
 
-@transaction.route("/meter/<string:meter_serial>/transaction",
-                   methods=['GET', 'POST'])
+@transaction.route("/meter/<string:meter_serial>/transaction", methods=["GET", "POST"])
 def add(meter_serial):
     """Add transactions page."""
     meter = Meter.get_by_serial(meter_serial)
@@ -47,22 +45,18 @@ def add(meter_serial):
         abort(http.client.NOT_FOUND)
 
     user = get_current_user()
-    accounts = SalesAccount.get_accounts_by_user_ground(
-        user,
-        meter.ground,
-        active_only=True
-    )
+    accounts = SalesAccount.get_accounts_by_user_ground(user, meter.ground, active_only=True)
     if accounts.count() == 0:
         abort(http.client.FORBIDDEN)
     form = TransactionForm(request.form)
     form.account.query = accounts
 
-    form.acct_type.choices = [(u'credit', _('Credit'))]
+    form.acct_type.choices = [("credit", _("Credit"))]
     # only show the debt option if they have debt
     if meter.debt_wallet.value > 0:
-        form.acct_type.choices.append((u'debt', _('Debt')))
+        form.acct_type.choices.append(("debt", _("Debt")))
 
-    if request.method == 'POST' and form.validate():
+    if request.method == "POST" and form.validate():
         amount = form.amount.data
         wallet_type = form.acct_type.data
         source = TransactionSource.get_by_id(form.source.data.id)
@@ -75,7 +69,8 @@ def add(meter_serial):
                 to_object = meter
                 if not account.active:
                     raise Exception(
-                        "Cannot process transaction - the account '{}' is disabled.".format(account.name))
+                        "Cannot process transaction - the account '{}' is disabled.".format(account.name)
+                    )
             else:
                 # debt goes from a meter to a sales account
                 from_object = meter
@@ -95,23 +90,23 @@ def add(meter_serial):
             form.amount.errors.append(str(e))
         else:
             sql.session.commit()
-            flash(_('Transaction Added'), 'success')
+            flash(_("Transaction Added"), "success")
             return redirect(
                 url_for(
-                    'meter.view',
+                    "meter.view",
                     meter_serial=meter.serial,
                 )
             )
     return form.render(meter=meter)
 
 
-@transaction.route("/sales-account/transfer", methods=['GET', 'POST'])
+@transaction.route("/sales-account/transfer", methods=["GET", "POST"])
 def transfer():
     """Transaction transfer page."""
-    from_account = SalesAccount.get_by_id(request.args.get('from_account_id'))
+    from_account = SalesAccount.get_by_id(request.args.get("from_account_id"))
     if from_account is None:
         abort(http.client.NOT_FOUND)
-    to_account = SalesAccount.get_by_id(request.args.get('to_account_id'))
+    to_account = SalesAccount.get_by_id(request.args.get("to_account_id"))
     if to_account is None or to_account.system:
         abort(http.client.NOT_FOUND)
 
@@ -125,7 +120,7 @@ def transfer():
     obj = _TransactionDefaults(markup=to_account.markup)
     form = TransactionTransferForm(request.form, obj=obj)
 
-    if request.method == 'POST' and form.validate():
+    if request.method == "POST" and form.validate():
         amount = form.amount.data
         markup = form.markup.data
         wallet_type = form.acct_type.data
@@ -152,16 +147,14 @@ def transfer():
             form.amount.errors.append(str(e))
         else:
             sql.session.commit()
-            flash(_('Transaction %(transaction)s Added',
-                    transaction=transaction.id), 'success')
-            return redirect(
-                url_for('sales_account.view', sales_account_id=to_account.id))
+            flash(_("Transaction %(transaction)s Added", transaction=transaction.id), "success")
+            return redirect(url_for("sales_account.view", sales_account_id=to_account.id))
 
     return form.render(from_account=from_account, to_account=to_account)
 
 
 @transaction.route("/transaction/<uuid:transaction_id>/reverse")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def reverse(transaction_id):
     """Reverses an transaction."""
     transaction = Transaction.get_by_id(transaction_id)
@@ -174,104 +167,105 @@ def reverse(transaction_id):
     except TransactionError as e:
         error = _("Error processing transaction: {0.message}".format(e))
         if e.code == TransactionError.ERROR_NOT_PROCESSED:
-            error = _('Unable to reverse transaction %(id)s. '
-                      'Not yet processed.',
-                      id=transaction.id)
+            error = _("Unable to reverse transaction %(id)s. Not yet processed.", id=transaction.id)
         elif e.code == TransactionError.ERROR_ALREADY_REVERSED:
-            error = _('Unable to reverse transaction %(id)s. '
-                      'Already reversed in another transaction.',
-                      id=transaction.id)
-        flash(error, 'danger')
-        return redirect(safe_redirect_target(
-            request.referrer, url_for('transaction.transactions'), request.host))
+            error = _(
+                "Unable to reverse transaction %(id)s. Already reversed in another transaction.",
+                id=transaction.id,
+            )
+        flash(error, "danger")
+        return redirect(
+            safe_redirect_target(request.referrer, url_for("transaction.transactions"), request.host)
+        )
 
     sql.session.add(rt)
     sql.session.commit()
-    flash(_('Transaction %(transaction_id)s reversed',
-            transaction_id=transaction_id), 'success')
-    return redirect(safe_redirect_target(
-        request.referrer, url_for('transaction.transactions'), request.host))
+    flash(_("Transaction %(transaction_id)s reversed", transaction_id=transaction_id), "success")
+    return redirect(safe_redirect_target(request.referrer, url_for("transaction.transactions"), request.host))
 
 
 @transaction.route("/transaction/transactions")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def transactions():
     """Transactions table."""
     return render_template(
-        'transaction-list.html',
+        "transaction-list.html",
         ground=Ground.get_current(),
     )
 
 
 DATATABLE_COLUMN_MAP = {
-    '3': 'from_data',
-    '4': 'to_data',
-    'username': 'user_username',
+    "3": "from_data",
+    "4": "to_data",
+    "username": "user_username",
 }
 
 
 def parse_datatables_args():
     """Parse the relevant datatables parameters."""
     params = {
-        'draw': int(request.args.get('draw', '1')),
-        'start': int(request.args.get('start', '0')),
-        'length': int(request.args.get('length', '100')),
-        'order': {
-            'column_idx': int(request.args.get('order[0][column]', '-1')),
-            'column_name': None,
-            'dir': request.args.get('order[0][dir]', 'desc'),
+        "draw": int(request.args.get("draw", "1")),
+        "start": int(request.args.get("start", "0")),
+        "length": int(request.args.get("length", "100")),
+        "order": {
+            "column_idx": int(request.args.get("order[0][column]", "-1")),
+            "column_name": None,
+            "dir": request.args.get("order[0][dir]", "desc"),
         },
-        'search': {
-            'value': request.args.get('search[value]', ''),
-            'regex': request.args.get('search[regex]', 'false') == 'true',
+        "search": {
+            "value": request.args.get("search[value]", ""),
+            "regex": request.args.get("search[regex]", "false") == "true",
         },
     }
-    column_name = request.args.get('columns[{}][data]'.format(params['order']['column_idx']), 'created')
-    params['order']['column_name'] = DATATABLE_COLUMN_MAP.get(column_name, column_name)
+    column_name = request.args.get("columns[{}][data]".format(params["order"]["column_idx"]), "created")
+    params["order"]["column_name"] = DATATABLE_COLUMN_MAP.get(column_name, column_name)
     return params
 
 
 @transaction.route("/transaction/transactions.json")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def transaction_data():
     """Transaction data REST API."""
     ground = Ground.get_current()
     user = get_current_user()
     filter_args = parse_datatables_args()
-    transaction_views = TransactionView.get_transaction_view(ground=ground,
-                                                             user=user,
-                                                             order=filter_args['order']['column_name'],
-                                                             ascending=filter_args['order']['dir'] == 'asc',
-                                                             offset=filter_args['start'],
-                                                             limit=filter_args['length'],
-                                                             query_string=filter_args['search']['value'])
-    return jsonify(**format_transaction_views(transaction_views, filter_args['draw']))
+    transaction_views = TransactionView.get_transaction_view(
+        ground=ground,
+        user=user,
+        order=filter_args["order"]["column_name"],
+        ascending=filter_args["order"]["dir"] == "asc",
+        offset=filter_args["start"],
+        limit=filter_args["length"],
+        query_string=filter_args["search"]["value"],
+    )
+    return jsonify(**format_transaction_views(transaction_views, filter_args["draw"]))
 
 
 def iter_csv(data):
     """A generator that converts a transaction object to CSV."""
-    mapping = OrderedDict([
-        ('ID', 'id'),
-        ('Amount', 'amount'),
-        ('Type', 'acct_type'),
-        ('From', ''),
-        ('To', ''),
-        ('User', 'user_username'),
-        ('Reference', 'reference_id'),
-        ('Created', 'created'),
-        ('Ground', 'ground_name'),
-        ('Source', 'source_name'),
-        ('State', 'state'),
-        ('Origin', 'origin'),
-        ('External', 'external_id'),
-        ('Memo', 'memo'),
-        ('Error', 'error'),
-        ('Meter Serial', ''),
-        ('Sales Account', ''),
-    ])
+    mapping = OrderedDict(
+        [
+            ("ID", "id"),
+            ("Amount", "amount"),
+            ("Type", "acct_type"),
+            ("From", ""),
+            ("To", ""),
+            ("User", "user_username"),
+            ("Reference", "reference_id"),
+            ("Created", "created"),
+            ("Ground", "ground_name"),
+            ("Source", "source_name"),
+            ("State", "state"),
+            ("Origin", "origin"),
+            ("External", "external_id"),
+            ("Memo", "memo"),
+            ("Error", "error"),
+            ("Meter Serial", ""),
+            ("Sales Account", ""),
+        ]
+    )
     line = StringIO()
-    writer = csv.DictWriter(line, fieldnames=mapping.keys(), extrasaction='ignore',
-                            lineterminator='\n')
+    writer = csv.DictWriter(line, fieldnames=mapping.keys(), extrasaction="ignore", lineterminator="\n")
     writer.writeheader()
     line.seek(0)
     yield line.read()
@@ -280,11 +274,11 @@ def iter_csv(data):
         line.truncate(0)
         line.seek(0)
         tx = {
-            'From': record.from_data.get('meter_serial') or record.from_data.get('sales_account_name'),
-            'To': record.to_data.get('customer_name') or record.to_data.get('sales_account_name'),
-            'Meter Serial': record.from_data.get('meter_serial') or record.to_data.get('meter_serial', ''),
-            'Sales Account': record.from_data.get('sales_account_name')
-            or record.to_data.get('sales_account_name', ''),
+            "From": record.from_data.get("meter_serial") or record.from_data.get("sales_account_name"),
+            "To": record.to_data.get("customer_name") or record.to_data.get("sales_account_name"),
+            "Meter Serial": record.from_data.get("meter_serial") or record.to_data.get("meter_serial", ""),
+            "Sales Account": record.from_data.get("sales_account_name")
+            or record.to_data.get("sales_account_name", ""),
         }
         for key, fieldname in mapping.items():
             if fieldname:
@@ -295,21 +289,23 @@ def iter_csv(data):
 
 
 @transaction.route("/transaction/transactions.csv")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def transaction_export():
     """Transaction data REST API."""
     ground = Ground.get_current()
     user = get_current_user()
     filter_args = parse_datatables_args()
-    transaction_views = TransactionView.get_transaction_view(ground=ground,
-                                                             user=user,
-                                                             order=filter_args['order']['column_name'],
-                                                             ascending=filter_args['order']['dir'] == 'asc',
-                                                             offset=None,
-                                                             limit=None,
-                                                             query_string=filter_args['search']['value'])
-    response = Response(iter_csv(transaction_views), mimetype='text/csv')
-    response.headers['Content-Disposition'] = 'attachment; filename=transactions.csv'
+    transaction_views = TransactionView.get_transaction_view(
+        ground=ground,
+        user=user,
+        order=filter_args["order"]["column_name"],
+        ascending=filter_args["order"]["dir"] == "asc",
+        offset=None,
+        limit=None,
+        query_string=filter_args["search"]["value"],
+    )
+    response = Response(iter_csv(transaction_views), mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=transactions.csv"
     return response
 
 
@@ -325,24 +321,26 @@ def format_transaction_views(transaction_views, draw):
     total = 0
     formatted = []
     for tv, total in transaction_views.all():
-        formatted.append(dict(
-            acct_type=tv.acct_type,
-            amount=tv.amount,
-            created=tv.created,
-            error=tv.error,
-            external_id=tv.external_id,
-            from_data=tv.from_data,
-            has_reversal=tv.has_reversal,
-            id=tv.id,
-            memo=tv.memo,
-            ground_name=tv.ground_name,
-            ground_serial=tv.ground_serial,
-            monetary=tv.source_monetary,
-            origin=tv.origin,
-            reference_id=tv.reference_id,
-            source_name=tv.source_name,
-            state=tv.state,
-            to_data=tv.to_data,
-            username=tv.user_username,
-        ))
-    return {'total': total, 'draw': draw, 'transactions': formatted}
+        formatted.append(
+            dict(
+                acct_type=tv.acct_type,
+                amount=tv.amount,
+                created=tv.created,
+                error=tv.error,
+                external_id=tv.external_id,
+                from_data=tv.from_data,
+                has_reversal=tv.has_reversal,
+                id=tv.id,
+                memo=tv.memo,
+                ground_name=tv.ground_name,
+                ground_serial=tv.ground_serial,
+                monetary=tv.source_monetary,
+                origin=tv.origin,
+                reference_id=tv.reference_id,
+                source_name=tv.source_name,
+                state=tv.state,
+                to_data=tv.to_data,
+                username=tv.user_username,
+            )
+        )
+    return {"total": total, "draw": draw, "transactions": formatted}

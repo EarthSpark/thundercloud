@@ -26,10 +26,10 @@ def uwsgi_worker_lock(locknum):
     :return: ``True`` if it's the first worker executing the code, ``False`` otherwise
     """
     if uwsgi.is_locked(locknum):
-        logger.info('UWSGI Lock #{} found, waiting for it to be released'.format(locknum))
+        logger.info("UWSGI Lock #{} found, waiting for it to be released".format(locknum))
         while uwsgi.is_locked(locknum):
             time.sleep(1)
-        logger.info('UWSGI Lock #{} released, starting up normally'.format(locknum))
+        logger.info("UWSGI Lock #{} released, starting up normally".format(locknum))
         yield False
     else:
         uwsgi.lock(locknum)

@@ -5,7 +5,7 @@
 
 import logging
 
-logger = logging.getLogger('sparkmeter.sentry')
+logger = logging.getLogger("sparkmeter.sentry")
 
 # Sentinel signalling "use sentry_sdk", set by app._setup_sentry. Kept as a
 # module-level flag rather than imported eagerly so test environments without
@@ -14,7 +14,6 @@ _SENTRY_SDK = object()
 
 
 class SentryProxy(object):
-
     """A proxy for sentry (to allow for no-op cases).
 
     Public API: `captureException(message=..., tags={...})` and
@@ -38,14 +37,14 @@ class SentryProxy(object):
         if self._client is _SENTRY_SDK:
             self._capture_exception_sdk(*args, **kwargs)
         else:
-            logger.exception('sentry.captureException: %s, %s', str(args), str(kwargs))
+            logger.exception("sentry.captureException: %s, %s", str(args), str(kwargs))
 
     def captureMessage(self, *args, **kwargs):
         """Capture a message."""
         if self._client is _SENTRY_SDK:
             self._capture_message_sdk(*args, **kwargs)
         else:
-            logger.info('sentry.captureMessage: %s, %s', str(args), str(kwargs))
+            logger.info("sentry.captureMessage: %s, %s", str(args), str(kwargs))
 
     def _capture_exception_sdk(self, *args, **kwargs):
         """Forward to ``sentry_sdk.capture_exception``.
@@ -55,13 +54,14 @@ class SentryProxy(object):
         appears alongside the exception in the issue view.
         """
         import sentry_sdk
-        message = kwargs.pop('message', None)
-        tags = kwargs.pop('tags', None) or {}
+
+        message = kwargs.pop("message", None)
+        tags = kwargs.pop("tags", None) or {}
         with sentry_sdk.push_scope() as scope:
             for k, v in tags.items():
                 scope.set_tag(k, v)
             if message is not None:
-                scope.set_extra('message', message)
+                scope.set_extra("message", message)
             sentry_sdk.capture_exception()
 
     def _capture_message_sdk(self, *args, **kwargs):
@@ -71,11 +71,12 @@ class SentryProxy(object):
         ``message=`` kwarg. ``tags=`` are applied to the active scope.
         """
         import sentry_sdk
-        message = kwargs.pop('message', None)
+
+        message = kwargs.pop("message", None)
         if message is None and args:
             message = args[0]
-        tags = kwargs.pop('tags', None) or {}
+        tags = kwargs.pop("tags", None) or {}
         with sentry_sdk.push_scope() as scope:
             for k, v in tags.items():
                 scope.set_tag(k, v)
-            sentry_sdk.capture_message(message or '')
+            sentry_sdk.capture_message(message or "")

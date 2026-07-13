@@ -2,14 +2,14 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Forms module for the meter web interface."""
+
 from builtins import range
 
 from flask.helpers import url_for
 from flask_babel import lazy_gettext as _
 from markupsafe import Markup
 from werkzeug.utils import redirect
-from wtforms.fields import (BooleanField, SelectField, SelectMultipleField, StringField,
-                            SubmitField, TelField)
+from wtforms.fields import BooleanField, SelectField, SelectMultipleField, StringField, SubmitField, TelField
 from wtforms.validators import ValidationError
 from wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 
@@ -18,8 +18,11 @@ from sparkmeter.exceptions import MeterError
 from sparkmeter.ground.grounddomain import Ground
 from sparkmeter.meter.meterdomain import Meter, MeterTag, MeterView
 from sparkmeter.misc.htmlutils import build_link
-from sparkmeter.misc.phoneutils import (country_code_to_display_name, parse_country_national,
-                                        parse_phone_number)
+from sparkmeter.misc.phoneutils import (
+    country_code_to_display_name,
+    parse_country_national,
+    parse_phone_number,
+)
 from sparkmeter.tariff.tariffdomain import Tariff
 from sparkmeter.user.userutils import get_current_user
 from sparkmeter.web.fields import CountryCodeField, ReadOnlyStringField
@@ -28,7 +31,6 @@ from sparkmeter.web.widgets import TagsSelect
 
 
 class MeterTagsField(QuerySelectMultipleField):
-
     """
     Tags field.
 
@@ -40,8 +42,8 @@ class MeterTagsField(QuerySelectMultipleField):
 
     def __init__(self, *args, **kwargs):
         """Create a new tags field."""
-        kwargs['query_factory'] = lambda: MeterTag.query.order_by(MeterTag.name)
-        kwargs['get_label'] = 'name'
+        kwargs["query_factory"] = lambda: MeterTag.query.order_by(MeterTag.name)
+        kwargs["get_label"] = "name"
         self.form_tags = []
         self.data = []
         super(MeterTagsField, self).__init__(*args, **kwargs)
@@ -74,64 +76,64 @@ class BaseMeterForm(BaseForm):
 
     #: add or edit, override in subclass
     mode = None
-    template_filename = 'meter-form.html'
+    template_filename = "meter-form.html"
 
     tariff = QuerySelectField(
-        _('Tariff'),
-        query_factory=lambda: Tariff.query.filter().order_by('name'),
-        get_label='name',
+        _("Tariff"),
+        query_factory=lambda: Tariff.query.filter().order_by("name"),
+        get_label="name",
         allow_blank=False,
     )
-    customer_name = StringField(_('Name'), default="new customer")
-    customer_code = StringField(_('Code'))
-    customer_country_code = CountryCodeField(
-        _("Country code"),
-        default=config['DEFAULT_PHONE_COUNTRY_CODE'])
-    customer_national_number = TelField(_('Phone Number'), default="")
+    customer_name = StringField(_("Name"), default="new customer")
+    customer_code = StringField(_("Code"))
+    customer_country_code = CountryCodeField(_("Country code"), default=config["DEFAULT_PHONE_COUNTRY_CODE"])
+    customer_national_number = TelField(_("Phone Number"), default="")
     active = BooleanField(_("Active"), default=True)
     tags = MeterTagsField(
         _("Tags"),
-        description=(_("List of tags for this meter, could mean anything, "
-                       "for instance a geographical location")))
+        description=(
+            _("List of tags for this meter, could mean anything, for instance a geographical location")
+        ),
+    )
     state = SelectField(
-        _(u'State'),
+        _("State"),
         choices=[
-            (0, _(u"Off")),
-            (1, _(u"On")),
-            (2, _(u"Auto")),
+            (0, _("Off")),
+            (1, _("On")),
+            (2, _("Auto")),
         ],
         coerce=int,
     )
     subnet = SelectField(
-        _(u'Subnet'),
+        _("Subnet"),
         default=255,
         choices=[(i, i) for i in range(1, 256)],
         coerce=int,
     )
-    address_street1 = StringField(_('Street1'))
-    address_street2 = StringField(_('Street2'))
-    address_city = StringField(_('City'))
-    address_state = StringField(_('State'))
-    address_postalcode = StringField(_('Postal code'))
-    address_country = StringField(_('Country'))
-    address_coords = StringField(_('Coordinates'))
+    address_street1 = StringField(_("Street1"))
+    address_street2 = StringField(_("Street2"))
+    address_city = StringField(_("City"))
+    address_state = StringField(_("State"))
+    address_postalcode = StringField(_("Postal code"))
+    address_country = StringField(_("Country"))
+    address_coords = StringField(_("Coordinates"))
 
-    save_button = SubmitField(_(u'Save'))
+    save_button = SubmitField(_("Save"))
 
     def __init__(self, formdata, obj=None, meter_type=None):
         """Create a new meter form."""
         super(BaseMeterForm, self).__init__(formdata=formdata, obj=obj)
         self.meter_type = meter_type
-        self.customer = getattr(obj, 'customer', None)
+        self.customer = getattr(obj, "customer", None)
         self.view = obj
 
         if meter_type == Meter.TYPE_TOTALIZER:
-            del self['customer_name']
-            del self['customer_code']
-            del self['customer_country_code']
-            del self['customer_national_number']
-            del self['state']
-            del self['tariff']
+            del self["customer_name"]
+            del self["customer_code"]
+            del self["customer_country_code"]
+            del self["customer_national_number"]
+            del self["state"]
+            del self["tariff"]
 
     def validate_customer_national_number(self, field):
         """Validate the national number part of the form."""
@@ -140,31 +142,34 @@ class BaseMeterForm(BaseForm):
         try:
             parse_phone_number(field.data, self.customer_country_code.data)
         except ValueError:
-            country = country_code_to_display_name(get_current_user().locale,
-                                                   self.customer_country_code.data)
+            country = country_code_to_display_name(get_current_user().locale, self.customer_country_code.data)
             raise ValidationError(
-                _("%(number)s is not a valid national phone number for %(country)s",
-                  number=field.data,
-                  country=country))
+                _(
+                    "%(number)s is not a valid national phone number for %(country)s",
+                    number=field.data,
+                    country=country,
+                )
+            )
 
     def save(self, view):
         """Save content of meter form to database."""
         if self.meter_type == Meter.TYPE_CUSTOMER and self.customer_national_number.data:
-            new_number = parse_country_national(self.customer_country_code.data,
-                                                self.customer_national_number.data)
+            new_number = parse_country_national(
+                self.customer_country_code.data, self.customer_national_number.data
+            )
             if view.customer and view.customer_phone_number != new_number:
                 view.customer_phone_number_verified = False
         super(BaseMeterForm, self).save(view)
 
     def redirect(self, view):
         """Redirect after form submission."""
-        return redirect(url_for('meter.view', meter_serial=view.serial))
+        return redirect(url_for("meter.view", meter_serial=view.serial))
 
 
 class MeterAddForm(BaseMeterForm):
     """Meter Add Form."""
 
-    mode = 'add'
+    mode = "add"
 
     serial = StringField(_("Serial"), filters=[lambda s: s and s.upper()])
 
@@ -175,19 +180,19 @@ class MeterAddForm(BaseMeterForm):
             MeterView.validate_serial(serial=field.data, ground=ground)
         except MeterError as e:
             if e.code == MeterError.INVALID_SERIAL:
-                raise ValidationError(
-                    _('Invalid meter serial, must look like "SMXXX-XX-XXXXXXXX".'))
+                raise ValidationError(_('Invalid meter serial, must look like "SMXXX-XX-XXXXXXXX".'))
             elif e.code == MeterError.DUPLICATE_SERIAL:
-                raise ValidationError(
-                    _('Meter serial %(serial)s already exists.', serial=field.data))
+                raise ValidationError(_("Meter serial %(serial)s already exists.", serial=field.data))
             elif e.code == MeterError.UNKNOWN_MODEL:
                 raise ValidationError(
-                    _('The serial is not associated with a known model. Verify '
-                      'the serial, in the form "SMXXX-XX-XXXXXXXX", is '
-                      'accurate.'))
+                    _(
+                        "The serial is not associated with a known model. Verify "
+                        'the serial, in the form "SMXXX-XX-XXXXXXXX", is '
+                        "accurate."
+                    )
+                )
             else:
-                raise ValidationError(
-                    _('Application error: %(message)s', message=e.message))
+                raise ValidationError(_("Application error: %(message)s", message=e.message))
 
     def notification_message(self, view):
         """Build a message to be displayed when a meter is added."""
@@ -195,58 +200,56 @@ class MeterAddForm(BaseMeterForm):
         # a) Meter [SM15R-01-0000007B] created. (CURRENT BEHAVIOR)
         # b) [Meter SM15R-01-0000007B] created.
         # c) [Meter SM15R-01-0000007B created.]
-        link = build_link(url_for('meter.view', meter_serial=self.serial.data),
-                          self.serial.data)
-        return Markup(_('Meter %(link)s created.', link=link))
+        link = build_link(url_for("meter.view", meter_serial=self.serial.data), self.serial.data)
+        return Markup(_("Meter %(link)s created.", link=link))
 
 
 class MeterEditForm(BaseMeterForm):
     """Meter Edit Form."""
 
-    mode = 'edit'
+    mode = "edit"
 
     #: Meter read-only serial
-    serial = ReadOnlyStringField(_('serial'))
+    serial = ReadOnlyStringField(_("serial"))
 
     def notification_message(self, view):
         """Build a message to be displayed when a meter is updated."""
-        link = build_link(url_for('meter.view', meter_serial=self.serial.data),
-                          self.serial.data)
-        return Markup(_('Meter %(link)s updated.', link=link))
+        link = build_link(url_for("meter.view", meter_serial=self.serial.data), self.serial.data)
+        return Markup(_("Meter %(link)s updated.", link=link))
 
 
 class ChartForm(BaseForm):
     """Chart Form."""
 
-    template_filename = 'meter-chart.html'
+    template_filename = "meter-chart.html"
 
-    start = StringField(_(u'Start Date'))
-    end = StringField(_(u'End Date'))
+    start = StringField(_("Start Date"))
+    end = StringField(_("End Date"))
 
     group_by = SelectField(
-        _(u'Group By'),
+        _("Group By"),
         default="none",
         choices=[
-            ('none', _(u'none')),
-            ('H', _(u'hours')),
-            ('D', _(u'days')),
-            ('W', _(u'weeks')),
-            ('M', _(u'months')),
-        ]
+            ("none", _("none")),
+            ("H", _("hours")),
+            ("D", _("days")),
+            ("W", _("weeks")),
+            ("M", _("months")),
+        ],
     )
     group_by_function = SelectField(
-        _(u'Group By Function'),
+        _("Group By Function"),
         default="sum",
         choices=[
-            ('sum', _(u'Sum')),
-            ('min', _(u'Minimum')),
-            ('avg', _(u'Average')),
-            ('max', _(u'Maximum')),
-        ]
+            ("sum", _("Sum")),
+            ("min", _("Minimum")),
+            ("avg", _("Average")),
+            ("max", _("Maximum")),
+        ],
     )
 
     fields = SelectMultipleField(
-        _(u'Fields'),
+        _("Fields"),
         default=["true_power_avg"],
         choices=[],
     )

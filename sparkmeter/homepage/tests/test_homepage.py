@@ -29,7 +29,7 @@ class HomepageViewTest(WebViewTestCaseBase):
     def test_cloud_portal_link_absent_ground(self, client, config):
         self.user.portal_id = uuid.uuid4()
         self.session.commit()
-        config['HEROKU'] = False
+        config["HEROKU"] = False
 
         response = client.get(self.path)
         assert 'data-name="koios"' not in response.text

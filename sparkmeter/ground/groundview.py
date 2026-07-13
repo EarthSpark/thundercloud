@@ -21,7 +21,7 @@ from sparkmeter.user.userutils import get_current_user
 from sparkmeter.web.blueprint import AuthBlueprint
 from sparkmeter.web.permission import verify_permission
 
-ground = AuthBlueprint('ground', __name__)
+ground = AuthBlueprint("ground", __name__)
 
 
 # Redirect for for backwards compatibility added in 1.4
@@ -33,30 +33,29 @@ def microgrid_redirect(path=""):
 
     This is only for backwards compatability with grids that had the old urls.
     """
-    return redirect("/ground/%s" % (path, ), http.client.MOVED_PERMANENTLY)
+    return redirect("/ground/%s" % (path,), http.client.MOVED_PERMANENTLY)
 
 
 @ground.route("/ground/")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def index():
     """Listing of the grounds."""
-    if config['HEROKU']:
+    if config["HEROKU"]:
         grounds = get_current_user().grounds
     else:
         grounds = [Ground.get_current()]
-    return render_template('ground-index.html',
-                           grounds=grounds)
+    return render_template("ground-index.html", grounds=grounds)
 
 
-@ground.route("/ground/<ground_serial>/edit", methods=['GET', 'POST'])
-@verify_permission('ground', 'edit', status=http.client.FORBIDDEN)
+@ground.route("/ground/<ground_serial>/edit", methods=["GET", "POST"])
+@verify_permission("ground", "edit", status=http.client.FORBIDDEN)
 def edit(ground_serial):
     """Edit the ground."""
     ground = Ground.get_by_serial(ground_serial)
     if ground is None:
         abort(http.client.NOT_FOUND)
     form = GroundForm(request.form, obj=ground)
-    if request.method == 'POST' and form.validate():
+    if request.method == "POST" and form.validate():
         form.populate_obj(ground)
         form.save(ground)
         return form.notify_and_redirect(ground)
@@ -66,10 +65,10 @@ def edit(ground_serial):
 
 @ground.route("/ground/override")
 @ground.route("/ground/<ground_serial>/override")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def override(ground_serial=None):
     """The manual override page."""
-    if config['HEROKU']:
+    if config["HEROKU"]:
         abort(http.client.NOT_FOUND)
     if ground_serial is None:
         ground = Ground.get_current()
@@ -77,11 +76,11 @@ def override(ground_serial=None):
         ground = Ground.get_by_serial(ground_serial)
     if ground is None:
         abort(http.client.NOT_FOUND)
-    return render_template('ground-override.html', ground=ground)
+    return render_template("ground-override.html", ground=ground)
 
 
 @ground.route("/ground/<ground_serial>/manual-override")
-@verify_permission('ground', 'view', status=http.client.FORBIDDEN)
+@verify_permission("ground", "view", status=http.client.FORBIDDEN)
 def manual_override(ground_serial):
     """Turn off override status."""
     ground = Ground.get_by_serial(ground_serial)
@@ -89,5 +88,5 @@ def manual_override(ground_serial):
         abort(http.client.NOT_FOUND)
     ground.private.set_override_meter_state(False)
     sql.session.commit()
-    flash(_('Override disabled, meters can now consume energy again'))
-    return redirect(url_for('homepage.index'))
+    flash(_("Override disabled, meters can now consume energy again"))
+    return redirect(url_for("homepage.index"))

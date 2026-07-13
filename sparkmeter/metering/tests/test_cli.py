@@ -17,8 +17,7 @@ import pytest
 
 from sparkmeter.metering import cli as metering_cli
 from sparkmeter.metering._generated.models.configure_meter_command import ConfigureMeterCommand
-from sparkmeter.metering._generated.models.configure_provider_command import \
-    ConfigureProviderCommand
+from sparkmeter.metering._generated.models.configure_provider_command import ConfigureProviderCommand
 from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
 from sparkmeter.metering._generated.models.ping_meter_command import PingMeterCommand
 from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
@@ -39,8 +38,9 @@ def captured(mocker):
 
 
 def _expected_command_names() -> set[str]:
-    from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body import \
-        SubmitCommandV1CommandsPostRequestBodyDiscriminator
+    from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body import (
+        SubmitCommandV1CommandsPostRequestBodyDiscriminator,
+    )
 
     discriminator = SubmitCommandV1CommandsPostRequestBodyDiscriminator()
     return {ct.replace("_", "-") for ct in discriminator.get_mapping()}

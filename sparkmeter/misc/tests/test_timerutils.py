@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Unittests for timer utilities."""
+
 import logging
 from unittest import mock
 
@@ -13,18 +14,18 @@ from sparkmeter.misc.timerutils import timer
 
 @pytest.fixture()
 def logger():
-    with LogCapture('timer', level=logging.DEBUG) as logger:
+    with LogCapture("timer", level=logging.DEBUG) as logger:
         yield logger
 
 
 def test_timer(logger, mocker):
     func = mocker.Mock()
-    time = mocker.patch('sparkmeter.misc.timerutils.time')
+    time = mocker.patch("sparkmeter.misc.timerutils.time")
     time.time.side_effect = [
         3.010,
         3.567,
     ]
-    with timer('message'):
+    with timer("message"):
         func()
 
     assert time.mock_calls == [
@@ -35,6 +36,4 @@ def test_timer(logger, mocker):
         mock.call(),
     ]
 
-    logger.check(
-        ('timer', 'DEBUG', 'message: took 557.00ms')
-    )
+    logger.check(("timer", "DEBUG", "message: took 557.00ms"))

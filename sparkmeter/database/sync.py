@@ -10,34 +10,42 @@ from builtins import object, str
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql.expression import func, text
 
-from sparkmeter.database.symmetricdsdomain import (Channel, Conflict, Node, NodeGroup,
-                                                   NodeGroupLink, NodeIdentity, Router, Trigger,
-                                                   TriggerRouter)
+from sparkmeter.database.symmetricdsdomain import (
+    Channel,
+    Conflict,
+    Node,
+    NodeGroup,
+    NodeGroupLink,
+    NodeIdentity,
+    Router,
+    Trigger,
+    TriggerRouter,
+)
 from sparkmeter.database.tables import get_table_by_name
 from sparkmeter.database.types import UUIDType
 
 logger = logging.getLogger(__name__)
 
-SYNC_CHANNEL_ADDRESS = 'address'
-SYNC_CHANNEL_CONFIG = 'config'
-SYNC_CHANNEL_DASHBOARD = 'dashboard'
-SYNC_CHANNEL_EVENT = 'event'
-SYNC_CHANNEL_METER = 'meter'
-SYNC_CHANNEL_GROUND = 'ground'
-SYNC_CHANNEL_READING = 'reading'
-SYNC_CHANNEL_SALES_ACCOUNT = 'sales-account'
-SYNC_CHANNEL_SNAPSHOT = 'snapshot'
-SYNC_CHANNEL_SYSTEM = 'system'
-SYNC_CHANNEL_TARIFF = 'tariff'
-SYNC_CHANNEL_TRANSACTION = 'transaction'
-SYNC_CHANNEL_USER = 'user'
-SYNC_CHANNEL_WALLET = 'wallet'
+SYNC_CHANNEL_ADDRESS = "address"
+SYNC_CHANNEL_CONFIG = "config"
+SYNC_CHANNEL_DASHBOARD = "dashboard"
+SYNC_CHANNEL_EVENT = "event"
+SYNC_CHANNEL_METER = "meter"
+SYNC_CHANNEL_GROUND = "ground"
+SYNC_CHANNEL_READING = "reading"
+SYNC_CHANNEL_SALES_ACCOUNT = "sales-account"
+SYNC_CHANNEL_SNAPSHOT = "snapshot"
+SYNC_CHANNEL_SYSTEM = "system"
+SYNC_CHANNEL_TARIFF = "tariff"
+SYNC_CHANNEL_TRANSACTION = "transaction"
+SYNC_CHANNEL_USER = "user"
+SYNC_CHANNEL_WALLET = "wallet"
 
 SYNC_DIRECTION_BOTH = 0
 SYNC_DIRECTION_GROUND_TO_CLOUD = 1
 
-SYNC_GROUP_GROUND = 'ground-group'
-SYNC_GROUP_CLOUD = 'cloud-group'
+SYNC_GROUP_GROUND = "ground-group"
+SYNC_GROUP_CLOUD = "cloud-group"
 
 # channel -> sync options
 _sync_channel_classes = collections.OrderedDict()
@@ -72,6 +80,7 @@ def syncchannel(channel):
 
     :param channel: the channel the class belongs to.
     """
+
     def wrapper(cls):
         _sync_channel_classes.setdefault(channel, []).append(cls)
         return cls
@@ -80,7 +89,6 @@ def syncchannel(channel):
 
 
 class SyncGroup(object):
-
     """
     SyncGroup: a Symmetricds domain class helper.
 
@@ -113,12 +121,11 @@ class SyncGroup(object):
 
         :returns: a sym router instance
         """
-        router_id = '%s-%s-%s' % (self.source, self.table_name, 'router')
-        created, router = Router.get_one_or_create(session=self.channel.session,
-                                                   router_id=router_id)
+        router_id = "%s-%s-%s" % (self.source, self.table_name, "router")
+        created, router = Router.get_one_or_create(session=self.channel.session, router_id=router_id)
         if created:
             router.router_type = Router.TYPE_DEFAULT
-            router.router_expression = ''
+            router.router_expression = ""
             router.create_time = func.current_timestamp()
         router.source_node_group_id = self.node_link.source_node_group_id
         router.target_node_group_id = self.node_link.target_node_group_id
@@ -130,13 +137,12 @@ class SyncGroup(object):
 
         :returns: a sym trigger instance
         """
-        trigger_id = '%s-%s-%s' % (self.source, self.table_name, 'trigger')
+        trigger_id = "%s-%s-%s" % (self.source, self.table_name, "trigger")
         if self.node_link.source_node_group_id == SYNC_GROUP_CLOUD:
             sync_on_incoming_batch = 1
         else:
             sync_on_incoming_batch = 0
-        created, trigger = Trigger.get_one_or_create(session=self.channel.session,
-                                                     trigger_id=trigger_id)
+        created, trigger = Trigger.get_one_or_create(session=self.channel.session, trigger_id=trigger_id)
         if created:
             trigger.create_time = func.current_timestamp()
 
@@ -147,8 +153,11 @@ class SyncGroup(object):
         return trigger
 
     def _configure_trigger_router(self):
-        trigger_router = self.channel.session.query(TriggerRouter).filter_by(trigger=self.trigger,
-                                                                             router=self.router).scalar()
+        trigger_router = (
+            self.channel.session.query(TriggerRouter)
+            .filter_by(trigger=self.trigger, router=self.router)
+            .scalar()
+        )
         if trigger_router is None:
             trigger_router = self.trigger.map_router(self.router)
         trigger_router.initial_load_order = _sync_channel_order[self.channel.description]
@@ -178,9 +187,9 @@ class SyncGroup(object):
 
     def format_trigger_attr(self, attr):
         """Format a column attribute for usage within a trigger."""
-        value = '$(curTriggerValue)."%s"' % (attr.expr.name, )
+        value = '$(curTriggerValue)."%s"' % (attr.expr.name,)
         if isinstance(attr.property.columns[0].type, UUIDType):
-            value = 'cast(%s as uuid)' % (value, )
+            value = "cast(%s as uuid)" % (value,)
         return text(value)
 
     def set_column_router(self, expression):
@@ -220,9 +229,9 @@ class SyncGroup(object):
         :param args: arguments passed in to query.filter()
 
         """
-        ground_t = get_table_by_name('ground')
+        ground_t = get_table_by_name("ground")
         query = Query(ground_t.c.serial)
-        distinct = kwargs.pop('distinct', None)
+        distinct = kwargs.pop("distinct", None)
         if distinct is not None:
             query = query.distinct()
         for arg in args:
@@ -234,8 +243,7 @@ class SyncGroup(object):
 
         :param attrs: list of column attributes for this class.
         """
-        self.trigger.sync_key_names = ','.join(
-            [attr.expr.name for attr in attrs])
+        self.trigger.sync_key_names = ",".join([attr.expr.name for attr in attrs])
 
     def set_conflict_winner(self, conflict_winner):
         """Create a new conflict configuration.
@@ -247,12 +255,11 @@ class SyncGroup(object):
             resolve_type = Conflict.RESOLVE_TYPE_FALLBACK
         else:
             resolve_type = Conflict.RESOLVE_TYPE_IGNORE
-        conflict_id = '%s-%s-%s' % (self.source, self.table_name, 'conflict')
-        created, conflict = Conflict.get_one_or_create(session=self.channel.session,
-                                                       conflict_id=conflict_id)
+        conflict_id = "%s-%s-%s" % (self.source, self.table_name, "conflict")
+        created, conflict = Conflict.get_one_or_create(session=self.channel.session, conflict_id=conflict_id)
         conflict.source_node_group_id = self.node_link.source_node_group_id
         conflict.target_node_group_id = self.node_link.target_node_group_id
-        conflict.target_table_name = self.table_name,
+        conflict.target_table_name = (self.table_name,)
         conflict.detect_type = Conflict.DETECT_TYPE_USE_CHANGED_DATA
         conflict.resolve_type = resolve_type
         conflict.ping_back = Conflict.PING_BACK_REMAINING_ROWS
@@ -262,7 +269,6 @@ class SyncGroup(object):
 
 
 class SyncChannelHelper(object):
-
     """
     SymmetricDS channel configuration helper.
 
@@ -284,8 +290,7 @@ class SyncChannelHelper(object):
         if class_direction == SYNC_DIRECTION_BOTH:
             return True
 
-        return (class_direction == SYNC_DIRECTION_GROUND_TO_CLOUD
-                and source_node == SYNC_GROUP_GROUND)
+        return class_direction == SYNC_DIRECTION_GROUND_TO_CLOUD and source_node == SYNC_GROUP_GROUND
 
     def configure_channel(self, session, channel_name):
         """Create a new channel configuration for this sync group.
@@ -294,10 +299,8 @@ class SyncChannelHelper(object):
         :param channel_name: name of the channel to create
         :returns: a sym channel instance
         """
-        channel_id = '%s-%s-%s' % (self.source, channel_name, 'channel')
-        channel = Channel.get_one_or_create(
-            session,
-            channel_id=channel_id).object
+        channel_id = "%s-%s-%s" % (self.source, channel_name, "channel")
+        channel = Channel.get_one_or_create(session, channel_id=channel_id).object
         channel.processing_order = _sync_channel_order[channel_name]
         channel.max_batch_size = 1000
         channel.max_batch_to_send = 10
@@ -313,12 +316,13 @@ class SyncChannelHelper(object):
         :param channel: channel
         :param domain_class: domain class for this channel
         """
-        if self._should_sync(domain_class.sync_direction,
-                             self.node_link.source_node_group_id):
-            group = SyncGroup(channel=channel,
-                              table_name=domain_class.__tablename__,
-                              source=self.source,
-                              node_link=self.node_link)
+        if self._should_sync(domain_class.sync_direction, self.node_link.source_node_group_id):
+            group = SyncGroup(
+                channel=channel,
+                table_name=domain_class.__tablename__,
+                source=self.source,
+                node_link=self.node_link,
+            )
             group.initialize_domain_class(domain_class)
 
 
@@ -332,22 +336,20 @@ def create_default_policy(session, external_id):
     :param external_id: the external id of this node.
     """
     # Root/Master node of the SymmetricDS sync group
-    master_node_id = 'cloud'
+    master_node_id = "cloud"
 
     # Multigrid syncing will initially be composed of two node groups,
     # one for ground and one for cloud. That way we can have multiple grounds
     # connecting to a single cloud using the same synchronization mechanism, eg
     # readings is one way, meters is only for one ground
     cloud_group = NodeGroup.get_one_or_create(
-        session,
-        node_group_id=SYNC_GROUP_CLOUD,
-        description='A ThunderCloud node').object
+        session, node_group_id=SYNC_GROUP_CLOUD, description="A ThunderCloud node"
+    ).object
     session.add(cloud_group)
 
     ground_group = NodeGroup.get_one_or_create(
-        session,
-        node_group_id=SYNC_GROUP_GROUND,
-        description='A Groundbolt node').object
+        session, node_group_id=SYNC_GROUP_GROUND, description="A Groundbolt node"
+    ).object
     session.add(ground_group)
 
     # Configure the cloud node instance, which is the first node and master node for the
@@ -359,26 +361,25 @@ def create_default_policy(session, external_id):
         node_group=cloud_group,
         external_id=external_id,
         sync_enabled=1,
-        created_at_node_id=master_node_id).object
+        created_at_node_id=master_node_id,
+    ).object
     session.add(cloud_node)
 
     session.flush()
 
-    cloud_identity = NodeIdentity.get_one_or_create(
-        session,
-        node_id=master_node_id).object
+    cloud_identity = NodeIdentity.get_one_or_create(session, node_id=master_node_id).object
     session.add(cloud_identity)
 
     ground_to_cloud = NodeGroupLink.query.filter_by(
-        source_node_group_id=ground_group.node_group_id,
-        target_node_group_id=cloud_group.node_group_id).scalar()
+        source_node_group_id=ground_group.node_group_id, target_node_group_id=cloud_group.node_group_id
+    ).scalar()
     if ground_to_cloud is None:
         ground_to_cloud = ground_group.link(cloud_group, NodeGroupLink.ACTION_PUSH)
         session.add(ground_to_cloud)
 
     cloud_to_ground = NodeGroupLink.query.filter_by(
-        source_node_group_id=cloud_group.node_group_id,
-        target_node_group_id=ground_group.node_group_id).scalar()
+        source_node_group_id=cloud_group.node_group_id, target_node_group_id=ground_group.node_group_id
+    ).scalar()
     if cloud_to_ground is None:
         cloud_to_ground = cloud_group.link(ground_group, NodeGroupLink.ACTION_WAIT_ON_PULL)
         session.add(cloud_to_ground)
@@ -386,8 +387,8 @@ def create_default_policy(session, external_id):
     session.flush()
 
     channel_helpers = [
-        SyncChannelHelper('ground', ground_to_cloud),
-        SyncChannelHelper('cloud', cloud_to_ground),
+        SyncChannelHelper("ground", ground_to_cloud),
+        SyncChannelHelper("cloud", cloud_to_ground),
     ]
 
     configure_domain_sync_channels(session, channel_helpers, _sync_channel_classes)
@@ -421,7 +422,9 @@ def force_table_reload(table, dest_node_id, channel, session):
     :param session: The SQL session to use.
     """
     logger.info('Forcing table "%s" to reload to node "%s" over channel "%s"', table, dest_node_id, channel)
-    session.execute(text("""
+    session.execute(
+        text(
+            """
         INSERT INTO sym_data (
             table_name,
             event_type,
@@ -439,4 +442,6 @@ def force_table_reload(table, dest_node_id, channel, session):
           '{channel}',
           current_timestamp,
           '{dest_node_id}'
-        FROM sym_trigger_hist""".format(table=table, channel=channel, dest_node_id=dest_node_id)))
+        FROM sym_trigger_hist""".format(table=table, channel=channel, dest_node_id=dest_node_id)
+        )
+    )

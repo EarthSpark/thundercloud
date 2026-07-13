@@ -22,22 +22,19 @@ from sparkmeter.user.userdomain import SalesAccountsUsers, User
 class DemoExamplesTest(SparkMeterTestCaseBase):
     def test_examples(self, config):
         d = DemoExamples(self.session)
-        d.create_ground(name='name', serial='serial', secret_key='secret-key')
-        config.update(DEMO_METERS=[
-            dict(serial="SM15R-01-00000000",
-                 name='customer name',
-                 amount=10)])
+        d.create_ground(name="name", serial="serial", secret_key="secret-key")
+        config.update(DEMO_METERS=[dict(serial="SM15R-01-00000000", name="customer name", amount=10)])
         d.create_all()
 
         assert Address.query.count() == 3
         assert Meter.query.count() == 1
         m = Meter.query.one()
-        assert m.customer.name == 'customer name'
+        assert m.customer.name == "customer name"
         assert Ground.query.count() == 2
         ms = Ground.get_all()
-        assert ms[1].name == 'name'
-        assert ms[1].serial == 'serial'
-        assert ms[1].private.secret_key == 'secret-key'
+        assert ms[1].name == "name"
+        assert ms[1].serial == "serial"
+        assert ms[1].private.secret_key == "secret-key"
         assert SalesAccount.query.count() == 4
         assert SalesAccountsUsers.query.count() == 6
         assert Tariff.query.count() == 4
@@ -64,15 +61,14 @@ class DemoExamplesTest(SparkMeterTestCaseBase):
     def test_create_meter_with_address(self, config):
         d = DemoExamples(self.session)
         d.ground = self.ground
-        config.update(DEMO_METERS=[
-            dict(serial="SM15R-01-00000000",
-                 address=["street1",
-                          "street2",
-                          "city",
-                          "state",
-                          "country",
-                          "postalcode",
-                          "coords"])])
+        config.update(
+            DEMO_METERS=[
+                dict(
+                    serial="SM15R-01-00000000",
+                    address=["street1", "street2", "city", "state", "country", "postalcode", "coords"],
+                )
+            ]
+        )
         d.create_all()
         ms = Meter.query.order_by(Meter.serial)
         assert ms[0].serial == "SM15R-01-00000000"
@@ -90,7 +86,7 @@ class DemoExamplesTest(SparkMeterTestCaseBase):
         config.update(DEMO_METERS=[{}])
         with pytest.raises(TypeError) as ctx:
             d.create_all()
-        assert str(ctx.value) == 'Must provide a serial or code'
+        assert str(ctx.value) == "Must provide a serial or code"
 
     def test_examples_invalid_meter_serial(self, config):
         d = DemoExamples(self.session)
@@ -98,24 +94,23 @@ class DemoExamplesTest(SparkMeterTestCaseBase):
         config.update(DEMO_METERS=[dict(serial="invalid-serial")])
         with pytest.raises(MeterError) as ctx:
             d.create_all()
-        assert str(ctx.value) == 'serial invalid-serial is not a valid meter serial'
+        assert str(ctx.value) == "serial invalid-serial is not a valid meter serial"
 
     def test_examples_duplicated_meters(self, config):
         d = DemoExamples(self.session)
         d.ground = self.ground
-        config.update(DEMO_METERS=[dict(serial="SM15R-01-00000000"),
-                                   dict(serial="SM15R-01-00000000")])
+        config.update(DEMO_METERS=[dict(serial="SM15R-01-00000000"), dict(serial="SM15R-01-00000000")])
         with pytest.raises(MeterError) as ctx:
             d.create_all()
-        assert ctx.value.message == 'meter with serial SM15R-01-00000000 already exists'
+        assert ctx.value.message == "meter with serial SM15R-01-00000000 already exists"
 
     def test_examples_with_password(self, config, mocker):
-        hash_password = mocker.patch('sparkmeter.database.demodata.hash_password')
-        hash_password.return_value = 'encrypted'
+        hash_password = mocker.patch("sparkmeter.database.demodata.hash_password")
+        hash_password.return_value = "encrypted"
         d = DemoExamples(self.session)
         d.ground = self.ground
-        config.update(DEMO_PASSWORD='foobar', DEMO_METERS=[])
+        config.update(DEMO_PASSWORD="foobar", DEMO_METERS=[])
         d.create_all()
-        u = User.get_by_name('api')
-        assert u.password == 'encrypted'
-        assert hash_password.mock_calls == [mock.call('foobar')] * 4
+        u = User.get_by_name("api")
+        assert u.password == "encrypted"
+        assert hash_password.mock_calls == [mock.call("foobar")] * 4

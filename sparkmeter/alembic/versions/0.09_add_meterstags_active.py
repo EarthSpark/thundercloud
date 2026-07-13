@@ -11,16 +11,15 @@ Create Date: 2015-12-14 14:36:03.576126
 import sqlalchemy as sa
 from alembic import op
 
-revision = '0.09'
-down_revision = '0.08'
+revision = "0.09"
+down_revision = "0.08"
 
 
 def upgrade():
     """Upgrade the database schema from 0.08 to 0.09."""
-    op.add_column('meters_tags', sa.Column('active', sa.Boolean(), nullable=False,
-                                           server_default=sa.true()))
+    op.add_column("meters_tags", sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.true()))
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.09 to 0.08."""
-    op.drop_column('meters_tags', 'active')
+    op.drop_column("meters_tags", "active")

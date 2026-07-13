@@ -2,6 +2,7 @@
 # Copyright © 2013-2015 SparkMeter, Inc.
 # All Rights Reserved.
 """Forms module for the ground web interface."""
+
 import collections.abc
 import logging
 from builtins import map, str
@@ -24,7 +25,6 @@ BooleanField.false_values = BooleanField.false_values + (False,)  # needed for J
 
 # MultiDict and from_json code adapted from wtforms-json: https://github.com/kvesteri/wtforms-json/
 class MultiDict(dict):  # pragma: nocoverage
-
     """A WTForms dict object."""
 
     def getlist(self, key):
@@ -40,37 +40,22 @@ class MultiDict(dict):  # pragma: nocoverage
 
 
 class BaseForm(FlaskForm):
-
     """Base form, used by all other forms in the application."""
 
     #: URL redirect to after saving the form
-    redirect_url = 'index'
+    redirect_url = "index"
 
     #: Filename to use as template to render this form
     template_filename = None
 
     @classmethod
     def from_json(
-            cls,
-            formdata=None,
-            obj=None,
-            prefix='',
-            data=None,
-            meta=None,
-            skip_unknown_keys=True,
-            **kwargs
+        cls, formdata=None, obj=None, prefix="", data=None, meta=None, skip_unknown_keys=True, **kwargs
     ):  # pragma: nocoverage
         """Build the form object from a JSON dict."""
         if formdata:
             formdata = MultiDict(flatten_json(cls, formdata, skip_unknown_keys=skip_unknown_keys))
-        return cls(
-            formdata=formdata,
-            obj=obj,
-            prefix=prefix,
-            data=data,
-            meta=meta,
-            **kwargs
-        )
+        return cls(formdata=formdata, obj=obj, prefix=prefix, data=data, meta=meta, **kwargs)
 
     def save(self, obj):
         """Save content of the form to a database.
@@ -84,7 +69,7 @@ class BaseForm(FlaskForm):
         sql.session.add(obj)
         sql.session.commit()
 
-    def notify_message(self, obj, style='success'):
+    def notify_message(self, obj, style="success"):
         """Notify the user with a message."""
         message = self.notification_message(obj)
         if message:
@@ -122,16 +107,13 @@ class BaseForm(FlaskForm):
             error_dict = {}
             for name, errors in list(self.errors.items()):
                 error_dict[name] = list(map(str, errors))
-            response.headers['X-Form-Errors'] = json_dumps(error_dict)
-            logger.warning("{} errors: {} {}".format(
-                type(self).__name__,
-                error_dict,
-                self.data))
+            response.headers["X-Form-Errors"] = json_dumps(error_dict)
+            logger.warning("{} errors: {} {}".format(type(self).__name__, error_dict, self.data))
 
         return response
 
 
-def flatten_json(form, json, parent_key='', separator='-', skip_unknown_keys=True):  # pragma: nocoverage
+def flatten_json(form, json, parent_key="", separator="-", skip_unknown_keys=True):  # pragma: nocoverage
     """Flatten given JSON dict to cope with WTForms dict structure.
 
     :form form: WTForms Form object
@@ -146,7 +128,7 @@ def flatten_json(form, json, parent_key='', separator='-', skip_unknown_keys=Tru
         {'a-b': 'c'}
     """
     if not isinstance(json, collections.abc.Mapping):
-        raise InvalidData('This function only accepts dict-like data structures.')
+        raise InvalidData("This function only accepts dict-like data structures.")
 
     items = []
     for key, value in json.items():
@@ -164,18 +146,18 @@ def flatten_json(form, json, parent_key='', separator='-', skip_unknown_keys=Tru
             if skip_unknown_keys:
                 continue
             else:
-                raise InvalidData(u"Key '{}' is not valid field class.".format(key))
+                raise InvalidData("Key '{}' is not valid field class.".format(key))
 
-        new_key = '{}{}{}'.format(parent_key, separator, key) if parent_key else key
+        new_key = "{}{}{}".format(parent_key, separator, key) if parent_key else key
         if isinstance(value, collections.abc.MutableMapping):
             if issubclass(field_class, FormField):
-                nested_form_class = unbound_field.bind(Form(), '').form_class
+                nested_form_class = unbound_field.bind(Form(), "").form_class
                 items.extend(flatten_json(nested_form_class, value, new_key).items())
             else:
                 items.append((new_key, value))
         elif isinstance(value, list):
             if issubclass(field_class, FieldList):
-                nested_unbound_field = unbound_field.bind(Form(), '').unbound_field
+                nested_unbound_field = unbound_field.bind(Form(), "").unbound_field
                 items.extend(flatten_json_list(nested_unbound_field, value, new_key, separator))
             else:
                 items.append((new_key, value))
@@ -184,13 +166,13 @@ def flatten_json(form, json, parent_key='', separator='-', skip_unknown_keys=Tru
     return dict(items)
 
 
-def flatten_json_list(field, json, parent_key='', separator='-'):  # pragma: nocoverage
+def flatten_json_list(field, json, parent_key="", separator="-"):  # pragma: nocoverage
     """Flatten given JSON list to a structure that WTForms expects."""
     items = []
     for i, item in enumerate(json):
-        new_key = '{}{}{}'.format(parent_key, separator, str(i))
-        if isinstance(item, dict) and issubclass(getattr(field, 'field_class'), FormField):
-            nested_class = field.field_class(*field.args, **field.kwargs).bind(Form(), '').form_class
+        new_key = "{}{}{}".format(parent_key, separator, str(i))
+        if isinstance(item, dict) and issubclass(getattr(field, "field_class"), FormField):
+            nested_class = field.field_class(*field.args, **field.kwargs).bind(Form(), "").form_class
             items.extend(flatten_json(nested_class, item, new_key).items())
         else:
             items.append((new_key, item))

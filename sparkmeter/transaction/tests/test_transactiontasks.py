@@ -14,14 +14,13 @@ from sparkmeter.transaction.transactiontasks import process_transactions
 
 
 class TaskTest(SparkMeterTestCaseBase):
-
     def test_process_transactions(self, config, send_set_config, scoped_session):
         account = SalesAccountFactory(credit_wallet__value=1000)
         transaction = TransactionFactory(from_wallet=account.credit_wallet)
         self.session.commit()
 
-        config['HEROKU'] = False
-        with mock.patch('sparkmeter.controller.session_scope', scoped_session):
+        config["HEROKU"] = False
+        with mock.patch("sparkmeter.controller.session_scope", scoped_session):
             process_transactions()
         assert send_set_config.mock_calls == [
             mock.call(
@@ -29,33 +28,34 @@ class TaskTest(SparkMeterTestCaseBase):
                 current_limit=10000.0,
                 load_limit=50.0,
                 mac=1,
-                command='enable',
+                command="enable",
                 balance=100.0,
                 low_balance=False,
-                firmware_version=u'abc1234'),
+                firmware_version="abc1234",
+            ),
         ]
 
         self.session.add(transaction)
         assert transaction.state == Transaction.STATE_PROCESSED
 
-    def test_process_transactions_deadlock(self, config, send_set_config, scoped_session,
-                                           sentry_logger):
+    def test_process_transactions_deadlock(self, config, send_set_config, scoped_session, sentry_logger):
         account = SalesAccountFactory(credit_wallet__value=1000)
         transaction = TransactionFactory(from_wallet=account.credit_wallet)
         self.session.commit()
         tx_id = transaction.id
 
-        config['HEROKU'] = False
-        with mock.patch('sparkmeter.controller.session_scope', scoped_session):
-            with mock.patch('sparkmeter.controller.process_transaction',
-                            side_effect=DatabaseLockTimeoutException):
+        config["HEROKU"] = False
+        with mock.patch("sparkmeter.controller.session_scope", scoped_session):
+            with mock.patch(
+                "sparkmeter.controller.process_transaction", side_effect=DatabaseLockTimeoutException
+            ):
                 with pytest.raises(DatabaseLockTimeoutException):
                     process_transactions()
 
         transaction = self.session.query(Transaction).get(tx_id)
         assert len(sentry_logger.records) == 1
-        assert ('Transaction {} process lock timeout'.format(tx_id) in sentry_logger.records[0].getMessage())
-        assert '\'action\': \'transaction_processing\'' in sentry_logger.records[0].getMessage()
+        assert "Transaction {} process lock timeout".format(tx_id) in sentry_logger.records[0].getMessage()
+        assert "'action': 'transaction_processing'" in sentry_logger.records[0].getMessage()
         assert send_set_config.mock_calls == []
         assert transaction.state == Transaction.STATE_PENDING
 
@@ -68,11 +68,12 @@ class TaskTest(SparkMeterTestCaseBase):
         self.session.commit()
         tx_id = transactions[0].id
 
-        config['HEROKU'] = False
-        with mock.patch('sparkmeter.controller.session_scope', scoped_session):
-            with mock.patch('sparkmeter.controller.process_transaction',
-                            side_effect=TransactionError(TransactionError.ERROR_NOT_ENOUGH_FUNDS, '')
-                            ) as process_tx_mock:
+        config["HEROKU"] = False
+        with mock.patch("sparkmeter.controller.session_scope", scoped_session):
+            with mock.patch(
+                "sparkmeter.controller.process_transaction",
+                side_effect=TransactionError(TransactionError.ERROR_NOT_ENOUGH_FUNDS, ""),
+            ) as process_tx_mock:
                 with pytest.raises(TransactionError):
                     process_transactions()
 
@@ -90,14 +91,16 @@ class TaskTest(SparkMeterTestCaseBase):
         self.session.commit()
         ids = [mock.call(tx.id) for tx in transactions]
 
-        config['HEROKU'] = False
-        with mock.patch('sparkmeter.controller.session_scope', scoped_session):
-            with mock.patch('sparkmeter.controller.process_transaction',
-                            side_effect=[
-                                TransactionError(TransactionError.ERROR_ALREADY_PROCESSED, ''),
-                                TransactionError(TransactionError.ERROR_ALREADY_REVERSED, ''),
-                                TransactionError(TransactionError.ERROR_NOT_ENOUGH_FUNDS, ''),
-                            ]) as process_tx_mock:
+        config["HEROKU"] = False
+        with mock.patch("sparkmeter.controller.session_scope", scoped_session):
+            with mock.patch(
+                "sparkmeter.controller.process_transaction",
+                side_effect=[
+                    TransactionError(TransactionError.ERROR_ALREADY_PROCESSED, ""),
+                    TransactionError(TransactionError.ERROR_ALREADY_REVERSED, ""),
+                    TransactionError(TransactionError.ERROR_NOT_ENOUGH_FUNDS, ""),
+                ],
+            ) as process_tx_mock:
                 with pytest.raises(TransactionError):
                     process_transactions()
 
