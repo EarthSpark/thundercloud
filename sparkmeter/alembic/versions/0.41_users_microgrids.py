@@ -16,51 +16,51 @@ from sqlalchemy.dialects import postgresql
 
 from sparkmeter.misc.uuidutils import as_uuid
 
-revision = '0.41'
-down_revision = '0.40'
+revision = "0.41"
+down_revision = "0.40"
 logger = logging.getLogger()
 
 
 def upgrade():
     """Upgrade the database schema from 0.40 to 0.41."""
     op.create_table(
-        'users_microgrids',
-        sa.Column('id', postgresql.UUID(), nullable=False),
-        sa.Column('microgrid_id', postgresql.UUID(), nullable=False),
-        sa.Column('user_id', postgresql.UUID(), nullable=False),
-        sa.ForeignKeyConstraint(['microgrid_id'], ['public.microgrid.id'], ),
-        sa.ForeignKeyConstraint(['user_id'], ['public.user.id'], ),
-        sa.PrimaryKeyConstraint('id'),
-        schema='public'
+        "users_microgrids",
+        sa.Column("id", postgresql.UUID(), nullable=False),
+        sa.Column("microgrid_id", postgresql.UUID(), nullable=False),
+        sa.Column("user_id", postgresql.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["microgrid_id"],
+            ["public.microgrid.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["public.user.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+        schema="public",
     )
     op.add_column(
-        'user',
-        sa.Column(
-            'microgrid_all_access',
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.false()
-        )
+        "user", sa.Column("microgrid_all_access", sa.Boolean(), nullable=False, server_default=sa.false())
     )
     conn = op.get_bind()
-    for role in ['operator', 'api']:
+    for role in ["operator", "api"]:
         res = conn.execute('UPDATE "user" SET microgrid_all_access = true;')
-        logger.info('Updated microgrid_all_access for %d %s users' % (
-            res.rowcount, role))
+        logger.info("Updated microgrid_all_access for %d %s users" % (res.rowcount, role))
 
-    microgrid_id = conn.execute('SELECT id FROM microgrid;').fetchone()[0]
+    microgrid_id = conn.execute("SELECT id FROM microgrid;").fetchone()[0]
 
     # For each user that has a wallet
-    for result in conn.execute(
-            'SELECT "user".id AS id, "user".username AS username FROM "user"'):
+    for result in conn.execute('SELECT "user".id AS id, "user".username AS username FROM "user"'):
         conn.execute(
-            sa.sql.text("INSERT INTO users_microgrids (id, user_id, microgrid_id)"
-                        " VALUES (:id, :user_id, :microgrid_id)"),
+            sa.sql.text(
+                "INSERT INTO users_microgrids (id, user_id, microgrid_id)"
+                " VALUES (:id, :user_id, :microgrid_id)"
+            ),
             id=as_uuid(result.id, microgrid_id),
             user_id=result.id,
-            microgrid_id=microgrid_id)
-        logger.info('Added %d microgrids_user mappings for user %s' % (
-            res.rowcount, result.username))
+            microgrid_id=microgrid_id,
+        )
+        logger.info("Added %d microgrids_user mappings for user %s" % (res.rowcount, result.username))
 
 
 def downgrade():  # pragma: nocoverage

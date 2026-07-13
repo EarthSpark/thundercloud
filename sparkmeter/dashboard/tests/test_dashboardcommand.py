@@ -10,33 +10,33 @@ from testfixtures import LogCapture
 
 from sparkmeter.dashboard.dashboarddomain import DashboardDailyTariffSummary
 from sparkmeter.tests.base import SparkMeterTestCaseBase
-from sparkmeter.tests.test_data_factory import (EventFactory, ReadingFactory, TariffFactory,
-                                                TransactionFactory)
+from sparkmeter.tests.test_data_factory import EventFactory, ReadingFactory, TariffFactory, TransactionFactory
 
 
 @pytest.fixture()
 def logger():
-    with LogCapture('sparkmeter.dashboard.dashboardcommand') as logger:
+    with LogCapture("sparkmeter.dashboard.dashboardcommand") as logger:
         yield logger
 
 
 class TariffSummaryTest(SparkMeterTestCaseBase):
-
     def test_summary_empty(self, cli, logger):
         TariffFactory()
         self.session.commit()
-        cli('dashboard', 'tariff-summary', '2013-01-01')
+        cli("dashboard", "tariff-summary", "2013-01-01")
         assert DashboardDailyTariffSummary.get_all() == []
         logger.check(
-            ('sparkmeter.dashboard.dashboardcommand', 'INFO', 'Day 2013-01-01'),
-            ('sparkmeter.dashboard.dashboardcommand',
-             'INFO',
-             'tariff           #T       $T      kwh # customers query time'),
+            ("sparkmeter.dashboard.dashboardcommand", "INFO", "Day 2013-01-01"),
+            (
+                "sparkmeter.dashboard.dashboardcommand",
+                "INFO",
+                "tariff           #T       $T      kwh # customers query time",
+            ),
         )
 
     def test_summary(self, cli, mocker, logger):
-        mocker.patch('sparkmeter.dashboard.dashboarddomain.tzlocal', tzutc)
-        create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        mocker.patch("sparkmeter.dashboard.dashboarddomain.tzlocal", tzutc)
+        create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         create.return_value = EventFactory()
 
         t1 = TransactionFactory()
@@ -57,7 +57,7 @@ class TariffSummaryTest(SparkMeterTestCaseBase):
         ReadingFactory(meter=t1.to_wallet.meter.code, kilowatt_hours=20)
         self.session.commit()
 
-        cli('dashboard', 'tariff-summary', '2013-01-01')
+        cli("dashboard", "tariff-summary", "2013-01-01")
 
         summary = DashboardDailyTariffSummary.query.one()
         assert summary.ground.id == self.ground.id
@@ -68,11 +68,15 @@ class TariffSummaryTest(SparkMeterTestCaseBase):
         assert summary.customer_count == 1
 
         logger.check(
-            ('sparkmeter.dashboard.dashboardcommand', 'INFO', 'Day 2013-01-01'),
-            ('sparkmeter.dashboard.dashboardcommand',
-             'INFO',
-             'tariff           #T       $T      kwh # customers query time'),
-            ('sparkmeter.dashboard.dashboardcommand',
-             'INFO',
-             u'tar\xefff01          3      100    30.00      1'),
+            ("sparkmeter.dashboard.dashboardcommand", "INFO", "Day 2013-01-01"),
+            (
+                "sparkmeter.dashboard.dashboardcommand",
+                "INFO",
+                "tariff           #T       $T      kwh # customers query time",
+            ),
+            (
+                "sparkmeter.dashboard.dashboardcommand",
+                "INFO",
+                "tar\xefff01          3      100    30.00      1",
+            ),
         )

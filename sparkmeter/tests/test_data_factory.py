@@ -10,17 +10,24 @@ from builtins import object
 from dateutil.relativedelta import relativedelta
 from factory.alchemy import SQLAlchemyModelFactory
 from factory.base import Factory
-from factory.declarations import (Iterator, LazyAttribute, SelfAttribute, Sequence, SubFactory,
-                                  logger)
+from factory.declarations import Iterator, LazyAttribute, SelfAttribute, Sequence, SubFactory, logger
 
 from sparkmeter.config.configdict import config
 from sparkmeter.dashboard.dashboarddomain import DashboardDailyTariffSummary
 from sparkmeter.database.types import Choice
-from sparkmeter.event.eventdomain import (Event, SMSConfigAlert, SMSConfigCommand, SMSConfigMessage,
-                                          SMSMessage)
+from sparkmeter.event.eventdomain import Event, SMSConfigAlert, SMSConfigCommand, SMSConfigMessage, SMSMessage
 from sparkmeter.ground.grounddomain import Ground, GroundPrivate
-from sparkmeter.meter.meterdomain import (Address, Customer, Meter, MeterBilling, MeterConfig,
-                                          MeterModels, MeterScalars, MeterSystemInfo, SparkmacNode)
+from sparkmeter.meter.meterdomain import (
+    Address,
+    Customer,
+    Meter,
+    MeterBilling,
+    MeterConfig,
+    MeterModels,
+    MeterScalars,
+    MeterSystemInfo,
+    SparkmacNode,
+)
 from sparkmeter.reading.readingdomain import Reading
 from sparkmeter.salesaccount.salesaccountdomain import SalesAccount
 from sparkmeter.system.systemdomain import SystemState
@@ -29,7 +36,7 @@ from sparkmeter.transaction.transactiondomain import Transaction, TransactionSou
 from sparkmeter.user.userdomain import User
 
 
-def make_id_sequence(category, cat2='0'):
+def make_id_sequence(category, cat2="0"):
     """Create an id sequence from a template."""
     template = "{:0>8}-{:0>4}-{:0>4}-{:0>4}-{{:0>12}}".format(category, cat2, 0, 0)
     return Sequence(lambda n: uuid.UUID(template.format(n)))
@@ -55,7 +62,6 @@ def _reset_iterators(factory_cls):
 
 
 class DefaultSubFactory(SubFactory):
-
     """SubFactory that will first check if a default value exists for this model."""
 
     def evaluate(self, instance, step, extra):
@@ -64,14 +70,11 @@ class DefaultSubFactory(SubFactory):
         if factory._default_model is None:
             factory._default_model = super(DefaultSubFactory, self).evaluate(instance, step, extra)
         else:
-            logger.debug(
-                "SubFactory: Reusing default for %s: %s", factory.__name__, factory._default_model
-            )
+            logger.debug("SubFactory: Reusing default for %s: %s", factory.__name__, factory._default_model)
         return factory._default_model
 
 
 class BaseFactory(Factory):
-
     @classmethod
     def setup(cls, session):
         """
@@ -86,7 +89,6 @@ class BaseFactory(Factory):
 
 
 class DomainFactory(SQLAlchemyModelFactory):
-
     """Abstract Base Factory."""
 
     _default_model = None
@@ -116,24 +118,23 @@ class DomainFactory(SQLAlchemyModelFactory):
 
 
 class AddressFactory(DomainFactory):
-
     """Address Factory."""
 
     class Meta(object):
         model = Address
 
-    id = make_id_sequence('b')
-    street1 = u"strëet"
-    street2 = u"street2"
-    city = u"city"
-    state = u"state"
-    postalcode = u"12345"
-    country = u"usa"
-    coords = u"42.5646975,-71.2708356"
+    id = make_id_sequence("b")
+    street1 = "strëet"
+    street2 = "street2"
+    city = "city"
+    state = "state"
+    postalcode = "12345"
+    country = "usa"
+    coords = "42.5646975,-71.2708356"
 
     @classmethod
     def _generate(cls, create, attrs):
-        create_ground = 'ground_id' not in attrs
+        create_ground = "ground_id" not in attrs
         address = super(AddressFactory, cls)._generate(create, attrs)
         if create_ground:
             address.ground_id = GroundFactory(address=address).id
@@ -141,13 +142,12 @@ class AddressFactory(DomainFactory):
 
 
 class WalletFactory(DomainFactory):
-
     """Wallet Factory."""
 
     class Meta(object):
         model = Wallet
 
-    id = make_id_sequence('a')
+    id = make_id_sequence("a")
     meter_id = None
     wallet_type = Wallet.TYPE_CREDIT
     value = 0
@@ -155,7 +155,6 @@ class WalletFactory(DomainFactory):
 
 
 class GroundPrivateFactory(DomainFactory):
-
     """Ground Private Factory."""
 
     class Meta(object):
@@ -166,30 +165,26 @@ class GroundPrivateFactory(DomainFactory):
 
 
 class GroundFactory(DomainFactory):
-
     """Ground Factory."""
 
     class Meta(object):
         model = Ground
 
-    id = make_id_sequence('2')
-    name = make_sequence(u'test micrøgrid {0}')
-    serial = make_sequence(u'groundserial{0}')
-    address = SubFactory(
-        AddressFactory,
-        ground_id=SelfAttribute('..id'))
-    private = SubFactory(GroundPrivateFactory, ground_id=SelfAttribute('..id'))
+    id = make_id_sequence("2")
+    name = make_sequence("test micrøgrid {0}")
+    serial = make_sequence("groundserial{0}")
+    address = SubFactory(AddressFactory, ground_id=SelfAttribute("..id"))
+    private = SubFactory(GroundPrivateFactory, ground_id=SelfAttribute("..id"))
 
 
 class SalesAccountFactory(DomainFactory):
-
     """Sales Account Factory."""
 
     class Meta(object):
         model = SalesAccount
 
-    id = make_id_sequence('a')
-    name = make_sequence(u'sales åccöünt {0}')
+    id = make_id_sequence("a")
+    name = make_sequence("sales åccöünt {0}")
     markup = 0.05
     active = True
     system = False
@@ -199,16 +194,16 @@ class SalesAccountFactory(DomainFactory):
         wallet_type=Wallet.TYPE_CREDIT,
         value=0,
         negative_permitted=False,
-        sales_account_id=SelfAttribute('..id'),
-        grid=SelfAttribute('..ground'),
+        sales_account_id=SelfAttribute("..id"),
+        grid=SelfAttribute("..ground"),
     )
     debt_wallet = SubFactory(
         WalletFactory,
         wallet_type=Wallet.TYPE_DEBT,
         value=0,
         negative_permitted=False,
-        sales_account_id=SelfAttribute('..id'),
-        grid=SelfAttribute('..ground'),
+        sales_account_id=SelfAttribute("..id"),
+        grid=SelfAttribute("..ground"),
     )
     global_account = False
 
@@ -217,7 +212,7 @@ class GlobalSalesAccountFactory(DomainFactory):
     class Meta(object):
         model = SalesAccount
 
-    id = make_id_sequence('a', '1')
+    id = make_id_sequence("a", "1")
     ground = None
     credit_wallet = None
     debt_wallet = None
@@ -227,7 +222,7 @@ class GlobalSalesAccountFactory(DomainFactory):
         wallet_type=Wallet.TYPE_CREDIT,
         value=0,
         negative_permitted=True,
-        sales_account_id=SelfAttribute('..id'),
+        sales_account_id=SelfAttribute("..id"),
         grid=None,
     )
     debt_wallet = SubFactory(
@@ -235,35 +230,33 @@ class GlobalSalesAccountFactory(DomainFactory):
         wallet_type=Wallet.TYPE_DEBT,
         value=0,
         negative_permitted=True,
-        sales_account_id=SelfAttribute('..id'),
+        sales_account_id=SelfAttribute("..id"),
         grid=None,
     )
 
 
 class CustomerFactory(DomainFactory):
-
     """Customer Factory."""
 
     class Meta(object):
         model = Customer
 
-    id = make_id_sequence('c')
-    name = u"strëet"
-    code = make_sequence('customer code {:d}')
-    phone_number = make_sequence('+18008{:06d}')
+    id = make_id_sequence("c")
+    name = "strëet"
+    code = make_sequence("customer code {:d}")
+    phone_number = make_sequence("+18008{:06d}")
     phone_number_verified = True
     meter_id = None
 
 
 class TariffFactory(DomainFactory):
-
     """Tariff Factory."""
 
     class Meta(object):
         model = Tariff
 
-    id = make_id_sequence('4')
-    name = make_sequence(u'tarïff{:0>2}')
+    id = make_id_sequence("4")
+    name = make_sequence("tarïff{:0>2}")
     flat_load_limit = 100
     load_limit_type = Tariff.LOAD_LIMIT_TYPE_FLAT
     flat_price = 10.0
@@ -273,7 +266,7 @@ class TariffFactory(DomainFactory):
     tou_enabled = False
     plan_enabled = False
     plan_duration_span = 1
-    plan_duration_unit = 'm'
+    plan_duration_unit = "m"
     cycle_start_day_of_month = 1
     blockrates = []
     tous = []
@@ -284,13 +277,12 @@ class TariffFactory(DomainFactory):
 
 
 class DashboardSummaryFactory(DomainFactory):
-
-    """ DashboardSummary Factory."""
+    """DashboardSummary Factory."""
 
     class Meta(object):
         model = DashboardDailyTariffSummary
 
-    id = make_id_sequence('6')
+    id = make_id_sequence("6")
     tariff = DefaultSubFactory(TariffFactory)
     ground = DefaultSubFactory(GroundFactory)
     date = datetime.datetime(2013, 1, 1, 1, 1, 1)
@@ -301,16 +293,15 @@ class DashboardSummaryFactory(DomainFactory):
 
 
 class SparkmacNodeFactory(DomainFactory):
-
     """SparkmacNode Factory."""
 
     class Meta(object):
         model = SparkmacNode
 
-    id = make_id_sequence('d')
-    static_routes = '[]'
+    id = make_id_sequence("d")
+    static_routes = "[]"
     forwarding = "off"
-    routing_enabled = ['custom', 'static', 'dynamic']
+    routing_enabled = ["custom", "static", "dynamic"]
     flooding_subnets = 0x0
     flooding_macs = []
     ttl = 5
@@ -318,32 +309,30 @@ class SparkmacNodeFactory(DomainFactory):
 
 
 class MeterSystemInfoFactory(DomainFactory):
-
     """MeterSystemInfo Factory."""
 
     class Meta(object):
         model = MeterSystemInfo
 
-    id = make_id_sequence('e')
+    id = make_id_sequence("e")
     last_config_datetime = datetime.datetime(2013, 1, 1, 1, 1, 1)
     last_energy = 0.0
     last_energy_datetime = datetime.datetime(2013, 1, 1, 1, 1, 1)
     current_state = 1
-    firmware = 'abc1234'
-    bootloader = 'def456'
+    firmware = "abc1234"
+    bootloader = "def456"
     reading_id = None
     meter_id = None
     current_user_power_limit = None
 
 
 class MeterBillingFactory(DomainFactory):
-
     """MeterBilling Factory."""
 
     class Meta(object):
         model = MeterBilling
 
-    id = make_id_sequence('0', '5')
+    id = make_id_sequence("0", "5")
     last_plan_payment_date = None
     last_plan_expiration_date = None
     last_cycle_start = None
@@ -356,27 +345,25 @@ class MeterBillingFactory(DomainFactory):
 
 
 class MeterConfigFactory(DomainFactory):
-
     """MeterConfig Factory."""
 
     class Meta(object):
         model = MeterConfig
 
-    id = make_id_sequence('f')
+    id = make_id_sequence("f")
     hidden = False
     state = 2
     meter_id = None
 
 
 class MeterScalarsFactory(DomainFactory):
-
     """Meter Scalars"""
 
     class Meta(object):
         model = MeterScalars
 
-    id = make_id_sequence('1')
-    name = 'normal'
+    id = make_id_sequence("1")
+    name = "normal"
     frequency_scalar = 0.01
     voltage_scalar = 0.01
     current_scalar = 0.002
@@ -386,15 +373,14 @@ class MeterScalarsFactory(DomainFactory):
 
 
 class MeterModelsFactory(DomainFactory):
-
     """MeterModels Factory."""
 
     class Meta(object):
         model = MeterModels
 
-    id = make_id_sequence('1')
+    id = make_id_sequence("1")
     enabled = True
-    name = 'SMXR'
+    name = "SMXR"
     inrush_limit = 0.0
     continuous_limit = 0.0
     phase_count = 1
@@ -402,50 +388,49 @@ class MeterModelsFactory(DomainFactory):
 
 
 class MeterFactory(DomainFactory):
-
     """Meter Factory."""
 
     class Meta(object):
         model = Meter
 
-    id = make_id_sequence('1')
-    code = make_sequence('{0}')
-    serial = make_sequence('SM15R-01-{:0>8X}')
+    id = make_id_sequence("1")
+    code = make_sequence("{0}")
+    serial = make_sequence("SM15R-01-{:0>8X}")
     meter_type = Meter.TYPE_CUSTOMER
     ground = DefaultSubFactory(GroundFactory)
     address = SubFactory(AddressFactory, ground_id=SelfAttribute("..ground.id"))
-    customer = SubFactory(CustomerFactory, meter_id=SelfAttribute('..id'))
-    sparkmac = SubFactory(SparkmacNodeFactory, meter_id=SelfAttribute('..id'))
-    config = SubFactory(MeterConfigFactory, meter_id=SelfAttribute('..id'))
-    system_info = SubFactory(MeterSystemInfoFactory, meter_id=SelfAttribute('..id'))
-    billing = SubFactory(MeterBillingFactory, meter_id=SelfAttribute('..id'))
+    customer = SubFactory(CustomerFactory, meter_id=SelfAttribute("..id"))
+    sparkmac = SubFactory(SparkmacNodeFactory, meter_id=SelfAttribute("..id"))
+    config = SubFactory(MeterConfigFactory, meter_id=SelfAttribute("..id"))
+    system_info = SubFactory(MeterSystemInfoFactory, meter_id=SelfAttribute("..id"))
+    billing = SubFactory(MeterBillingFactory, meter_id=SelfAttribute("..id"))
     credit_wallet = SubFactory(
         WalletFactory,
         wallet_type=Wallet.TYPE_CREDIT,
         value=0,
         negative_permitted=False,
-        meter_id=SelfAttribute('..id'),
-        grid=SelfAttribute('..ground'),
+        meter_id=SelfAttribute("..id"),
+        grid=SelfAttribute("..ground"),
     )
     debt_wallet = SubFactory(
         WalletFactory,
         wallet_type=Wallet.TYPE_DEBT,
         value=0,
         negative_permitted=False,
-        meter_id=SelfAttribute('..id'),
-        grid=SelfAttribute('..ground'),
+        meter_id=SelfAttribute("..id"),
+        grid=SelfAttribute("..ground"),
     )
     plan_wallet = SubFactory(
         WalletFactory,
         wallet_type=Wallet.TYPE_PLAN,
         value=0,
         negative_permitted=False,
-        meter_id=SelfAttribute('..id'),
-        grid=SelfAttribute('..ground'),
+        meter_id=SelfAttribute("..id"),
+        grid=SelfAttribute("..ground"),
     )
     model = DefaultSubFactory(
         MeterModelsFactory,
-        name='SM25R',
+        name="SM25R",
         inrush_limit=20.0,
         continuous_limit=20.0,
         phase_count=1,
@@ -453,17 +438,16 @@ class MeterFactory(DomainFactory):
 
 
 class TotalizerMeterFactory(MeterFactory):
-
     """Totalizer Meter Factory."""
 
-    id = make_id_sequence('0', '6')
-    code = make_sequence('{0}')
-    serial = make_sequence('SM15R-01-1{:0>7X}')
+    id = make_id_sequence("0", "6")
+    code = make_sequence("{0}")
+    serial = make_sequence("SM15R-01-1{:0>7X}")
     meter_type = Meter.TYPE_TOTALIZER
     address = SubFactory(AddressFactory, ground_id=SelfAttribute("..ground.id"))
     ground = DefaultSubFactory(GroundFactory)
     customer = None
-    sparkmac = SubFactory(SparkmacNodeFactory, meter_id=SelfAttribute('..id'))
+    sparkmac = SubFactory(SparkmacNodeFactory, meter_id=SelfAttribute("..id"))
     config = SubFactory(MeterConfigFactory)
     system_info = SubFactory(MeterSystemInfoFactory)
     billing = None
@@ -474,21 +458,20 @@ class TotalizerMeterFactory(MeterFactory):
 
 
 class UserFactory(DomainFactory):
-
     """User Factory."""
 
     class Meta(object):
         model = User
 
-    id = make_id_sequence('9')
-    fs_uniquifier = LazyAttribute(lambda obj: str(obj.id).replace('-', ''))
-    email = LazyAttribute(lambda obj: '%s@earthsparkinternational.org' % obj.username)
-    password = 'pass'
+    id = make_id_sequence("9")
+    fs_uniquifier = LazyAttribute(lambda obj: str(obj.id).replace("-", ""))
+    email = LazyAttribute(lambda obj: "%s@earthsparkinternational.org" % obj.username)
+    password = "pass"
     active = True
     accounts = []  # list[SalesAccount]
     roles = []
-    username = make_sequence(u'testüser-{:0>3}')
-    locale = 'en_US'
+    username = make_sequence("testüser-{:0>3}")
+    locale = "en_US"
     api_sales_account = None
     account_all_access = False
     ground_all_access = False
@@ -496,36 +479,35 @@ class UserFactory(DomainFactory):
 
 
 class OperatorFactory(UserFactory):
-
     """Operator User Factory."""
 
 
 class VendorFactory(UserFactory):
-
     """Vendor User Factory."""
 
 
 class ReadingFactory(DomainFactory):
-
     """Reading Factory."""
 
     class Meta(object):
         model = Reading
-        exclude = ('_meter',)
+        exclude = ("_meter",)
 
-    id = make_id_sequence('3')
+    id = make_id_sequence("3")
     kilowatt_hours = 1.1
     kilowatt_hours_period = 300
     cost = 1.0
     acct_credit = 2.0
     acct_debt = 0
-    meter = SelfAttribute('_meter.code')
+    meter = SelfAttribute("_meter.code")
     # NOTE: if defining a custom 'meter' value, set _meter=None to disable it from creating another meter.
     _meter = DefaultSubFactory(MeterFactory)
     heartbeat_start = Sequence(
-        lambda n: datetime.datetime(2013, 1, 1, 0, 0, 0) + relativedelta(minutes=15 * n))
+        lambda n: datetime.datetime(2013, 1, 1, 0, 0, 0) + relativedelta(minutes=15 * n)
+    )
     heartbeat_end = Sequence(
-        lambda n: datetime.datetime(2013, 1, 1, 0, 15, 0) + relativedelta(minutes=15 * n))
+        lambda n: datetime.datetime(2013, 1, 1, 0, 15, 0) + relativedelta(minutes=15 * n)
+    )
     frequency = 60.0
     voltage_min = 120.0
     voltage_max = 120.0
@@ -544,31 +526,29 @@ class ReadingFactory(DomainFactory):
 
 
 class TransactionSourceFactory(DomainFactory):
-
     """TransactionSource Factory."""
 
     class Meta(object):
         model = TransactionSource
 
-    id = make_id_sequence('8')
-    name = make_sequence(u'transaction sòurce name {:0>2}')
+    id = make_id_sequence("8")
+    name = make_sequence("transaction sòurce name {:0>2}")
     monetary = True
     transaction_metadata = None
 
 
 class TransactionFactory(DomainFactory):
-
     """Transaction Factory."""
 
     class Meta(object):
         model = Transaction
-        exclude = ('_to_wallet_meter', '_from_wallet_account')
+        exclude = ("_to_wallet_meter", "_from_wallet_account")
 
-    id = make_id_sequence('7')
+    id = make_id_sequence("7")
     created = datetime.datetime(2013, 1, 1, 1, 1, 1)
     amount = 100.0
     state = Transaction.STATE_PENDING
-    acct_type = Choice(code=u'credit', value=u'Credit')
+    acct_type = Choice(code="credit", value="Credit")
     ground = DefaultSubFactory(GroundFactory)  # type: Ground
     user = DefaultSubFactory(OperatorFactory)  # type: User
     source = DefaultSubFactory(TransactionSourceFactory)
@@ -576,60 +556,56 @@ class TransactionFactory(DomainFactory):
     origin = Transaction.ORIGIN_USER
 
     _to_wallet_meter = DefaultSubFactory(MeterFactory)
-    to_wallet = SelfAttribute('_to_wallet_meter.credit_wallet')  # type: Wallet
+    to_wallet = SelfAttribute("_to_wallet_meter.credit_wallet")  # type: Wallet
 
     _from_wallet_account = DefaultSubFactory(SalesAccountFactory)
-    from_wallet = SelfAttribute('_from_wallet_account.credit_wallet')  # type: Wallet
+    from_wallet = SelfAttribute("_from_wallet_account.credit_wallet")  # type: Wallet
 
 
 class SMSConfigAlertFactory(BaseFactory):
-
     """SMSConfigAlert Factory."""
 
     class Meta(object):
         model = SMSConfigAlert
 
-    id = make_id_sequence('0', '1')
+    id = make_id_sequence("0", "1")
     event_type = Iterator(sorted(Event.events), cycle=True)
-    template = make_sequence(u'alert témplate {0}')
+    template = make_sequence("alert témplate {0}")
 
 
 class SMSConfigCommandFactory(BaseFactory):
-
     """SMSConfigCommand Factory."""
 
     class Meta(object):
         model = SMSConfigCommand
 
-    id = make_id_sequence('0', '2')
-    code = make_sequence('CODE{0}')
-    template = make_sequence(u'command témplate {0}')
+    id = make_id_sequence("0", "2")
+    code = make_sequence("CODE{0}")
+    template = make_sequence("command témplate {0}")
 
 
 class SMSConfigMessageFactory(BaseFactory):
-
     """SMSConfigMessage Factory."""
 
     class Meta(object):
         model = SMSConfigMessage
 
-    id = make_id_sequence('0', '3')
-    message_type = make_sequence(u'invalid-méssage-type-{0}')
-    template = make_sequence(u'message témplate {0}')
+    id = make_id_sequence("0", "3")
+    message_type = make_sequence("invalid-méssage-type-{0}")
+    template = make_sequence("message témplate {0}")
 
 
 class SMSMessageFactory(DomainFactory):
-
     """SMSMessage Factory."""
 
     class Meta(object):
         model = SMSMessage
 
-    id = make_id_sequence('0', '4')
+    id = make_id_sequence("0", "4")
     direction = Iterator([SMSMessage.DIRECTION_IN, SMSMessage.DIRECTION_OUT], cycle=True)
-    text = make_sequence(u'sms méśśáge text {:0>2}')
+    text = make_sequence("sms méśśáge text {:0>2}")
     timestamp = datetime.datetime(2013, 1, 1, 1, 1, 1)
-    phone_number = make_sequence('+123456789')
+    phone_number = make_sequence("+123456789")
     processed = False
     event = None
     origin = SMSMessage.ORIGIN_COMMAND
@@ -642,28 +618,26 @@ class EventFactory(DomainFactory):
     class Meta(object):
         model = Event
 
-    id = make_id_sequence('0', '5')
+    id = make_id_sequence("0", "5")
     ground = DefaultSubFactory(GroundFactory)
     timestamp = datetime.datetime(2013, 1, 1, 1, 1, 1)
     event_type = Event.TYPE_METER_CREATED
     object_id = None
-    object_table = 'meter'
+    object_table = "meter"
     processed = False
     created_by = DefaultSubFactory(OperatorFactory)  # type: User
     processed_timestamp = None
 
 
 class SystemStateFactory(DomainFactory):
-
     """SystemState Factory."""
 
     class Meta(object):
         model = SystemState
 
-    id = make_id_sequence('1', '0')
-    timestamp = Sequence(
-        lambda n: datetime.datetime(2018, 1, 1, 0, 0, 0) + relativedelta(minutes=15 * n))
-    action = LazyAttribute(lambda obj: 'Changing state to %s' % obj.state)
+    id = make_id_sequence("1", "0")
+    timestamp = Sequence(lambda n: datetime.datetime(2018, 1, 1, 0, 0, 0) + relativedelta(minutes=15 * n))
+    action = LazyAttribute(lambda obj: "Changing state to %s" % obj.state)
     system = config.GROUND
     state = SystemState.STATE_RUN
-    version = '1.2.3'
+    version = "1.2.3"

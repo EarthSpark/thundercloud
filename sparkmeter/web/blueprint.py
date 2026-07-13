@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Blueprint for sparkmeter views."""
+
 import http.client
 
 from flask.blueprints import Blueprint
@@ -16,7 +17,6 @@ from sparkmeter.user.userutils import set_current_user
 
 
 class APIBlueprint(Blueprint):
-
     """API specific blueprint with token authentication."""
 
     def __init__(self, import_name, version):
@@ -25,15 +25,15 @@ class APIBlueprint(Blueprint):
         :param import_name, set this to __name__
         :param version: version of the api
         """
-        name = 'apiv%d' % (version, )
-        url_prefix = '/api/v%d' % (version, )
+        name = "apiv%d" % (version,)
+        url_prefix = "/api/v%d" % (version,)
         super(APIBlueprint, self).__init__(name, import_name, url_prefix=url_prefix)
         self.before_request(self._before_request)
         self.after_request(self._after_request)
 
     def _before_request(self):
         # Validate the auth token and set current_user
-        security = current_app.extensions['security']
+        security = current_app.extensions["security"]
         user = security.login_manager.request_callback(request)
         if user is None or not user.is_authenticated:
             raise APIError("unauthorized", status_code=http.client.UNAUTHORIZED)
@@ -53,18 +53,17 @@ class APIBlueprint(Blueprint):
         #  - no-store: do not store the request
         #  - no-cache: revalidate every time
         #  - must-revalidate: must revalidate on subsequent requests
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
 
         # For HTTP/1.0 clients
-        response.headers['Pragma'] = 'no-cache'
+        response.headers["Pragma"] = "no-cache"
 
         # For HTTP 1.0 proxies
-        response.headers['Expires'] = '0'
+        response.headers["Expires"] = "0"
         return response
 
 
 class AuthBlueprint(Blueprint):
-
     """Blueprint that does user authentication."""
 
     def __init__(self, name, import_name):
@@ -82,13 +81,13 @@ class AuthBlueprint(Blueprint):
     def lookup_user(self):  # pragma nocover
         """Enforce user authentication."""
         # disable authentication when testing
-        if config.get('LOGIN_DISABLED', False):
+        if config.get("LOGIN_DISABLED", False):
             return
 
-        insecure_views = ['web.favicon']
+        insecure_views = ["web.favicon"]
 
-        if config.get('ENABLE_DEMO_LOGIN', False):
-            insecure_views.append('web.demo_login')
+        if config.get("ENABLE_DEMO_LOGIN", False):
+            insecure_views.append("web.demo_login")
 
         if request.endpoint not in insecure_views:
             if not current_user.is_authenticated:

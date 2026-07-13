@@ -17,5 +17,5 @@ def as_uuid(*args):
     # microgrid_addresses in patch 0.27
     # For newly created singletons, just use a string, see sms_config in patch 0.32
     # If the table has a foreign key, use that, see meter_billing in patch 0.22
-    md5 = hashlib.md5('-'.join(str(arg) for arg in args).encode())
+    md5 = hashlib.md5("-".join(str(arg) for arg in args).encode())
     return uuid.UUID(md5.hexdigest())

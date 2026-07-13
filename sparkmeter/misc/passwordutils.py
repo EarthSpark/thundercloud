@@ -14,7 +14,7 @@ def generate_password(length):
     :params length: length of the password
     :returns: the generated password
     """
-    chars = string.ascii_letters + string.digits + '!@#$%^&*()'
+    chars = string.ascii_letters + string.digits + "!@#$%^&*()"
 
     r = random.SystemRandom()
-    return ''.join([r.choice(chars) for i in range(length)])
+    return "".join([r.choice(chars) for i in range(length)])

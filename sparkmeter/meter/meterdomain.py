@@ -2,6 +2,7 @@
 # Copyright © 2013-2017 SparkMeter, Inc.
 # All Rights Reserved.
 """Meter domain."""
+
 from __future__ import division
 
 import datetime
@@ -24,8 +25,7 @@ from sparkmeter.config.configdict import config
 from sparkmeter.config.configparameter import parameters
 from sparkmeter.database.alchemy import sql
 from sparkmeter.database.columns import JSONString
-from sparkmeter.database.sync import (SYNC_CHANNEL_ADDRESS, SYNC_CHANNEL_METER, SYNC_GROUP_GROUND,
-                                      syncchannel)
+from sparkmeter.database.sync import SYNC_CHANNEL_ADDRESS, SYNC_CHANNEL_METER, SYNC_GROUP_GROUND, syncchannel
 from sparkmeter.database.tables import get_table_by_name
 from sparkmeter.database.types import UUIDType
 from sparkmeter.event.eventdomain import Event, SMSConfigMessage, SMSMessage
@@ -45,62 +45,59 @@ logger = logging.getLogger(__name__)
 
 @syncchannel(SYNC_CHANNEL_METER)
 class SparkmacNode(BaseDomain):
-
     """Sparkmac Network Forwarding."""
 
-    __tablename__ = 'sparkmac_node'
+    __tablename__ = "sparkmac_node"
 
     #: Id of the meter
-    meter_id = Column(UUIDType(binary=False),
-                      ForeignKey('meter.id'),
-                      nullable=False)
+    meter_id = Column(UUIDType(binary=False), ForeignKey("meter.id"), nullable=False)
 
     static_routes = Column(JSONString)
 
     flooding_macs = Column(JSONString)
 
     #: Forwarding is disabled
-    FORWARDING_OFF = 'off'
+    FORWARDING_OFF = "off"
 
     #: Forwarding via routing
-    FORWARDING_ROUTING = 'routing'
+    FORWARDING_ROUTING = "routing"
 
     #: Forwarding via flooding
-    FORWARDING_FLOODING = 'flooding'
+    FORWARDING_FLOODING = "flooding"
 
     # FIXME: constraint to ['off', 'routing', 'flooding'] values
-    forwarding = Column(String, info={'label': _('Sparkmac Forwarding')}, default=FORWARDING_FLOODING)
+    forwarding = Column(String, info={"label": _("Sparkmac Forwarding")}, default=FORWARDING_FLOODING)
 
     #: Routing using a custom function
-    ROUTING_CUSTOM = 'custom'
+    ROUTING_CUSTOM = "custom"
 
     #: Routing using static routes
-    ROUTING_STATIC = 'static'
+    ROUTING_STATIC = "static"
 
     #: Routing using a dynamic algorithm
-    ROUTING_DYNAMIC = 'dynamic'
+    ROUTING_DYNAMIC = "dynamic"
 
     # FIXME: constraint to ['custom', 'static', 'dynamic'] values
-    routing_enabled = Column(JSONString,
-                             default=[ROUTING_CUSTOM, ROUTING_STATIC, ROUTING_DYNAMIC],
-                             info={'label': _('Sparkmac Routing Enabled')})
+    routing_enabled = Column(
+        JSONString,
+        default=[ROUTING_CUSTOM, ROUTING_STATIC, ROUTING_DYNAMIC],
+        info={"label": _("Sparkmac Routing Enabled")},
+    )
 
-    flooding_subnets = Column(Integer, default=255,
-                              info={'label': _('Sparkmac Flooding Subnets')})
+    flooding_subnets = Column(Integer, default=255, info={"label": _("Sparkmac Flooding Subnets")})
 
     # FIXME: constraint choices=range(1, 16),
-    ttl = Column(Integer, default='5',
-                 info={'label': _('Sparkmac TTL')})
+    ttl = Column(Integer, default="5", info={"label": _("Sparkmac TTL")})
 
     #: A reference to the meter
-    meter = relationship('Meter', foreign_keys=[meter_id])
+    meter = relationship("Meter", foreign_keys=[meter_id])
 
     @classmethod
     def sync_init(cls, group):
         """Initialize sync configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.meter_id) == Meter.id,
@@ -111,37 +108,34 @@ class SparkmacNode(BaseDomain):
 # FIXME: This should be moved out to its own module or a base/core module.
 @syncchannel(SYNC_CHANNEL_METER)
 class Customer(BaseDomain):
-
     """Customer table."""
 
-    __tablename__ = 'customer'
+    __tablename__ = "customer"
 
     #: The meter this customer belongs to
-    meter_id = Column(UUIDType(binary=False),
-                      ForeignKey('meter.id'),
-                      nullable=False)
+    meter_id = Column(UUIDType(binary=False), ForeignKey("meter.id"), nullable=False)
 
     #: Full name of the customer
-    name = Column(String, default="new customer", info={'label': _('Name')})
+    name = Column(String, default="new customer", info={"label": _("Name")})
 
     #: Code identifying the customer
-    code = Column(String, info={'label': _('Code')})
+    code = Column(String, info={"label": _("Code")})
 
     #: Phone number for this customer
-    phone_number = Column(String, info={'label': _('Phone Number')})
+    phone_number = Column(String, info={"label": _("Phone Number")})
 
     #: If the phone number for this customer has been verified with a CHECK SMS message
     phone_number_verified = Column(Boolean, default=False)
 
     #: A reference to the meter
-    meter = relationship('Meter', foreign_keys=[meter_id])
+    meter = relationship("Meter", foreign_keys=[meter_id])
 
     @classmethod
     def sync_init(cls, group):
         """Initialize sync configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.meter_id) == Meter.id,
@@ -154,7 +148,7 @@ class Customer(BaseDomain):
             number = phonenumbers.parse(self.phone_number)
             return str(number.country_code)
 
-        return getattr(self, '_country_code', None)
+        return getattr(self, "_country_code", None)
 
     @country_code.setter
     def country_code(self, value):
@@ -167,7 +161,7 @@ class Customer(BaseDomain):
 
     @property
     def national_number(self):
-        national_number = getattr(self, '_national_number', None)
+        national_number = getattr(self, "_national_number", None)
         if national_number is not None:
             return str(national_number)
 
@@ -177,7 +171,7 @@ class Customer(BaseDomain):
 
     @national_number.setter
     def national_number(self, value):
-        if hasattr(self, '_country_code') and value:
+        if hasattr(self, "_country_code") and value:
             phone_number = parse_country_national(self._country_code, value)
         else:
             phone_number = None
@@ -198,8 +192,7 @@ class Customer(BaseDomain):
         :returns: True if the verified phone number has been queued.
         """
         return (
-            SMSMessage.query
-            .filter(SMSMessage.config_message_type == SMSConfigMessage.TYPE_VERIFY_NUMBER)
+            SMSMessage.query.filter(SMSMessage.config_message_type == SMSConfigMessage.TYPE_VERIFY_NUMBER)
             .filter_by(phone_number=self.phone_number)
             .count()
         ) > 0
@@ -207,36 +200,33 @@ class Customer(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_ADDRESS)
 class Address(BaseDomain):
-
     """Address table."""
 
-    __tablename__ = 'address'
+    __tablename__ = "address"
 
     #: ID of ground this address belongs to, used by syncing
-    ground_id = Column(UUIDType(binary=False),
-                       ForeignKey('ground.id'),
-                       nullable=False)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False)
 
     #: Street name, eg. 123 Main Street
-    street1 = Column(String, info={'label': _('Street1')})
+    street1 = Column(String, info={"label": _("Street1")})
 
     #: Additional street name
-    street2 = Column(String, info={'label': _('Street2')})
+    street2 = Column(String, info={"label": _("Street2")})
 
     #: City, eg. New Dehli
-    city = Column(String, info={'label': _('City')})
+    city = Column(String, info={"label": _("City")})
 
     #: State, if applicable, eg. California
-    state = Column(String, info={'label': _('State')})
+    state = Column(String, info={"label": _("State")})
 
     #: Postal/Zip code, eg. 12345
-    postalcode = Column(String, info={'label': _('Postal code')})
+    postalcode = Column(String, info={"label": _("Postal code")})
 
     #: Country, eg. Haiti
-    country = Column(String, info={'label': _('Country')})
+    country = Column(String, info={"label": _("Country")})
 
     #: latitude and longitude coordinates, separated by a comma; for example -12.345,67.890
-    coords = Column(String, info={'label': _('Coordinates')})
+    coords = Column(String, info={"label": _("Coordinates")})
 
     #: Ground this address belongs to, used by syncing.
     ground = relationship("Ground")
@@ -246,7 +236,7 @@ class Address(BaseDomain):
         """Initialize sync cloud configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.ground_id) == ground_t.c.id,
@@ -255,24 +245,19 @@ class Address(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_METER)
 class MeterBilling(BaseDomain):
-
     """
     Billing related state for this meter.
 
     Only created for customer meters.
     """
 
-    __tablename__ = 'meter_billing'
+    __tablename__ = "meter_billing"
 
     #: The meter this customer belongs to
-    meter_id = Column(UUIDType(binary=False),
-                      ForeignKey('meter.id'),
-                      nullable=False)
+    meter_id = Column(UUIDType(binary=False), ForeignKey("meter.id"), nullable=False)
 
     #: The tariff used to bill the meter.
-    tariff_id = Column(UUIDType(binary=False),
-                       ForeignKey('tariff.id'),
-                       nullable=False)
+    tariff_id = Column(UUIDType(binary=False), ForeignKey("tariff.id"), nullable=False)
 
     #: last time the plan payment was paid.
     last_plan_payment_date = Column(DateTime, default=None)
@@ -297,13 +282,13 @@ class MeterBilling(BaseDomain):
     last_daily_energy_limit_reset_value = Column(Float, default=None)
 
     #: A reference to the meter
-    meter = relationship('Meter', foreign_keys=[meter_id])
+    meter = relationship("Meter", foreign_keys=[meter_id])
 
     #: A reference to the tariff
-    tariff = relationship('Tariff')
+    tariff = relationship("Tariff")
 
     ignore_changed_fields = [
-        'total_cycle_energy',
+        "total_cycle_energy",
     ]
 
     @classmethod
@@ -311,7 +296,7 @@ class MeterBilling(BaseDomain):
         """Initialize sync configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.meter_id) == Meter.id,
@@ -321,29 +306,26 @@ class MeterBilling(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_METER)
 class MeterSystemInfo(BaseDomain):
-
     """
     System controlled info about the Meter.
 
     This information is writable by the system only and can only be written to from the gateway.
     """
 
-    __tablename__ = 'meter_system_info'
+    __tablename__ = "meter_system_info"
 
     #: Id of the meter
-    meter_id = Column(UUIDType(binary=False),
-                      ForeignKey('meter.id'),
-                      nullable=False)
+    meter_id = Column(UUIDType(binary=False), ForeignKey("meter.id"), nullable=False)
 
     #: The energy value from the last reading processed in the billing controller.
     #: This value is copied from the latest processed reading for this meter.
-    last_energy = Column(Float, default=0.0, info={'label': _('Last Energy')})
+    last_energy = Column(Float, default=0.0, info={"label": _("Last Energy")})
 
     #: The datetime of the energy value from the last reading processed in the billing controller.
     #: This value is copied from the latest processed reading for this meter.
-    last_energy_datetime = Column(DateTime,
-                                  default=datetime.datetime.utcnow,
-                                  info={'label': _('Last Energy Datetime')})
+    last_energy_datetime = Column(
+        DateTime, default=datetime.datetime.utcnow, info={"label": _("Last Energy Datetime")}
+    )
 
     # FIXME: Investigate if this should be proper foreign key once we can sync references right
     #: last reading for this meter
@@ -367,19 +349,21 @@ class MeterSystemInfo(BaseDomain):
     last_config_datetime = Column(DateTime)
 
     #: The latest reading received from this meter.
-    reading = relationship('Reading',
-                           uselist=False,
-                           load_on_pending=True,
-                           viewonly=True,
-                           primaryjoin="foreign(Reading.id) == MeterSystemInfo.reading_id")
+    reading = relationship(
+        "Reading",
+        uselist=False,
+        load_on_pending=True,
+        viewonly=True,
+        primaryjoin="foreign(Reading.id) == MeterSystemInfo.reading_id",
+    )
 
     #: A reference to the meter
-    meter = relationship('Meter', foreign_keys=[meter_id])
+    meter = relationship("Meter", foreign_keys=[meter_id])
 
     ignore_changed_fields = [
-        'last_energy',
-        'last_energy_datetime',
-        'total_cycle_energy',
+        "last_energy",
+        "last_energy_datetime",
+        "total_cycle_energy",
     ]
 
     @classmethod
@@ -387,7 +371,7 @@ class MeterSystemInfo(BaseDomain):
         """Initialize sync configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.meter_id) == Meter.id,
@@ -404,11 +388,7 @@ class MeterSystemInfo(BaseDomain):
         self.last_energy_datetime = reading.heartbeat_end
         self.reading_id = reading.id
 
-    def update_from_set_config(self,
-                               command,
-                               application_version,
-                               bootloader_version,
-                               power_limit):
+    def update_from_set_config(self, command, application_version, bootloader_version, power_limit):
         """Update ourselves based on a set config reply.
         :param command: set-config command set
         :param application_version: application version reply
@@ -431,27 +411,24 @@ class MeterSystemInfo(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_METER)
 class MeterConfig(BaseDomain):
-
     """
     Configuration for the Meter.
 
     This is the information that the user has control over to manage a meter.
     """
 
-    __tablename__ = 'meter_config'
+    __tablename__ = "meter_config"
 
     #: Id of the meter
-    meter_id = Column(UUIDType(binary=False),
-                      ForeignKey('meter.id'),
-                      nullable=False)
+    meter_id = Column(UUIDType(binary=False), ForeignKey("meter.id"), nullable=False)
 
     #: FIXME: Rename to active and swap true/false
     #: If the meter should be hidden from the normal fields, this is usually done to disable an unused meter.
-    hidden = Column(Boolean, default=False, nullable=False, info={'label': _('Hidden')})
+    hidden = Column(Boolean, default=False, nullable=False, info={"label": _("Hidden")})
 
     # FIXME: constraint subnet >= 1 and subnet <= 255
     #: The meter subnet, this chooses what subnet the physical meter will have.
-    subnet = Column(Integer, default=255, nullable=False, info={'label': _('Meter Subnet')})
+    subnet = Column(Integer, default=255, nullable=False, info={"label": _("Meter Subnet")})
 
     #: State of the meter is Off (default)
     STATE_OFF = 0
@@ -466,18 +443,19 @@ class MeterConfig(BaseDomain):
     #: .. note :: This value may not match the :attr:`~sparkmeter.models.Meter.current_state`
     #: if the meter has not yet received a command to set the correct value or the meter
     #: has not yet reported the changed state.
-    state = Column(Integer, default=STATE_OFF, nullable=False,
-                   info={'label': _('State')})  # 0=off, 1=on, 2=auto
+    state = Column(
+        Integer, default=STATE_OFF, nullable=False, info={"label": _("State")}
+    )  # 0=off, 1=on, 2=auto
 
     #: A reference to the meter
-    meter = relationship('Meter', foreign_keys=[meter_id])
+    meter = relationship("Meter", foreign_keys=[meter_id])
 
     @classmethod
     def sync_init(cls, group):
         """Initialize sync configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.meter_id) == Meter.id,
@@ -492,7 +470,6 @@ class MeterConfig(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_METER)
 class MeterTag(BaseDomain):
-
     """
     Meter tag.
 
@@ -501,18 +478,16 @@ class MeterTag(BaseDomain):
     The tag is just a free-form string.
     """
 
-    __tablename__ = 'meter_tag'
-    __table_args__ = (
-        UniqueConstraint('name', name='meter_tag_name'),
-    )
+    __tablename__ = "meter_tag"
+    __table_args__ = (UniqueConstraint("name", name="meter_tag_name"),)
 
     #: Name of the tag
-    name = Column(String, info={'label': _('Name')})
+    name = Column(String, info={"label": _("Name")})
 
     @classmethod
     def get_default_id(cls, context):
         """Get the default id for a MeterTag object."""
-        return as_uuid(context.current_parameters['name'])
+        return as_uuid(context.current_parameters["name"])
 
     @classmethod
     def add(cls, name, meter):
@@ -546,16 +521,15 @@ class MeterTag(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_METER)
 class MetersTags(BaseDomain):
-
     """Meter Tag mapping table."""
 
-    __tablename__ = 'meters_tags'
+    __tablename__ = "meters_tags"
 
     #: Id of the tag
-    tag_id = Column(UUIDType(binary=False), ForeignKey('meter_tag.id'), nullable=False)
+    tag_id = Column(UUIDType(binary=False), ForeignKey("meter_tag.id"), nullable=False)
 
     #: Id of the meter
-    meter_id = Column(UUIDType(binary=False), ForeignKey('meter.id'), nullable=False)
+    meter_id = Column(UUIDType(binary=False), ForeignKey("meter.id"), nullable=False)
 
     #: If this tag is active, this is True when created and set to False when removed
     #: in the user interface
@@ -573,7 +547,7 @@ class MetersTags(BaseDomain):
         group.set_key_columns(cls.tag_id, cls.meter_id)
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.meter_id) == Meter.id,
@@ -583,8 +557,7 @@ class MetersTags(BaseDomain):
     @classmethod
     def get_default_id(cls, context):
         """Get the default id for a MetersTags object."""
-        return as_uuid(context.current_parameters['tag_id'],
-                       context.current_parameters['meter_id'])
+        return as_uuid(context.current_parameters["tag_id"], context.current_parameters["meter_id"])
 
 
 @syncchannel(SYNC_CHANNEL_METER)
@@ -595,7 +568,7 @@ class MeterScalars(BaseDomain):
     This represents the multipliers required for transforming values sent to meters.
     """
 
-    __tablename__ = 'meter_scalars'
+    __tablename__ = "meter_scalars"
 
     # Name of the scalar
     name = Column(String, unique=True)
@@ -626,11 +599,7 @@ class MeterScalars(BaseDomain):
         :rtype: MeterScalars | None
         :returns the meter scalars or None if they cannot be found
         """
-        return (
-            cls.query
-            .filter(func.lower(cls.name) == func.lower(name))
-            .scalar()
-        )
+        return cls.query.filter(func.lower(cls.name) == func.lower(name)).scalar()
 
 
 @syncchannel(SYNC_CHANNEL_METER)
@@ -641,7 +610,7 @@ class MeterModels(BaseDomain):
     This represents a meter product line (e.g. SM5R, SM60RP, etc.)
     """
 
-    __tablename__ = 'meter_models'
+    __tablename__ = "meter_models"
 
     name = Column(String, unique=True, nullable=False)
 
@@ -651,9 +620,9 @@ class MeterModels(BaseDomain):
 
     phase_count = Column(Integer, nullable=False)
 
-    scalars_id = Column(UUIDType(binary=False), ForeignKey('meter_scalars.id'), nullable=False)
+    scalars_id = Column(UUIDType(binary=False), ForeignKey("meter_scalars.id"), nullable=False)
 
-    scalars = relationship('MeterScalars', lazy='joined')
+    scalars = relationship("MeterScalars", lazy="joined")
 
     enabled = Column(Boolean, default=True, nullable=False)
 
@@ -665,8 +634,7 @@ class MeterModels(BaseDomain):
         :rtype: MeterModels | None
         :returns: the meter model or None if it cannot be found
         """
-        query = cls.query.filter(
-            func.lower(cls.name) == func.lower(name))
+        query = cls.query.filter(func.lower(cls.name) == func.lower(name))
         if not include_disabled:
             query = query.filter(cls.enabled == true())
         return query.scalar()
@@ -681,9 +649,10 @@ class MeterModels(BaseDomain):
         """
         match = Meter.SERIAL_RE.match(serial)
         if not match:
-            raise MeterError(MeterError.INVALID_SERIAL,
-                             "serial {} is not a valid meter serial".format(serial))
-        return cls.get_by_name(match.group('product_code'), include_disabled=include_disabled)
+            raise MeterError(
+                MeterError.INVALID_SERIAL, "serial {} is not a valid meter serial".format(serial)
+            )
+        return cls.get_by_name(match.group("product_code"), include_disabled=include_disabled)
 
     @classmethod
     def get_lowest_inrush_current(cls):
@@ -708,22 +677,17 @@ class MeterModels(BaseDomain):
                 cls.continuous_limit,
                 cls.inrush_limit,
                 cls.phase_count,
-                func.count(Meter.__table__.c.id).label('count'),
-            ).select_from(cls.__table__.outerjoin(Meter, cls.id == Meter.model_id))
-            .group_by(cls.__table__.c.id)
-            .having(
-                or_(
-                    func.count(Meter.__table__.c.id) > 0,
-                    cls.enabled == true()
-                )
+                func.count(Meter.__table__.c.id).label("count"),
             )
+            .select_from(cls.__table__.outerjoin(Meter, cls.id == Meter.model_id))
+            .group_by(cls.__table__.c.id)
+            .having(or_(func.count(Meter.__table__.c.id) > 0, cls.enabled == true()))
             .order_by(cls.name)
         )
 
 
 @syncchannel(SYNC_CHANNEL_METER)
 class Meter(BaseDomain):
-
     """
     The Meter object.
 
@@ -740,11 +704,11 @@ class Meter(BaseDomain):
 
     """
 
-    __tablename__ = 'meter'
+    __tablename__ = "meter"
     __table_args__ = (
-        UniqueConstraint('code', 'ground_id', name='meter_code_ground_unique'),
-        UniqueConstraint('serial', name='meter_serial_unique'),
-        CheckConstraint(r"serial ~* '^[\dA-Z]+-\d{2}-[\dA-F]{8}$'", name='meter_serial_format'),
+        UniqueConstraint("code", "ground_id", name="meter_code_ground_unique"),
+        UniqueConstraint("serial", name="meter_serial_unique"),
+        CheckConstraint(r"serial ~* '^[\dA-Z]+-\d{2}-[\dA-F]{8}$'", name="meter_serial_format"),
     )
 
     #: This code is used to identify the meter on the sparkmac network.
@@ -764,108 +728,98 @@ class Meter(BaseDomain):
     SERIAL_RE = SERIAL_RE
 
     #: A customer meter
-    TYPE_CUSTOMER = 'customer'
+    TYPE_CUSTOMER = "customer"
 
     #: A totalizer meter
-    TYPE_TOTALIZER = 'totalizer'
+    TYPE_TOTALIZER = "totalizer"
 
     #: The meter type, either customer meter or totalizer meter
     meter_type = Column(String, default=TYPE_CUSTOMER, nullable=False)
 
     #: meter address, where the meter is actually located
-    address_id = Column(UUIDType(binary=False),
-                        ForeignKey('address.id'),
-                        nullable=False)
+    address_id = Column(UUIDType(binary=False), ForeignKey("address.id"), nullable=False)
 
     #: The ground this meter belongs to
-    ground_id = Column(UUIDType(binary=False),
-                       ForeignKey('ground.id'),
-                       nullable=False)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False)
 
-    model_id = Column(UUIDType(binary=False), ForeignKey('meter_models.id'))
+    model_id = Column(UUIDType(binary=False), ForeignKey("meter_models.id"))
 
     # Relationships
-    address = relationship("Address")   # type: Address
+    address = relationship("Address")  # type: Address
 
     ground = relationship("Ground")  # type: Ground
 
     model = relationship(
-        "MeterModels",
-        primaryjoin="and_(Meter.model_id == MeterModels.id)",
-        uselist=False,
-        lazy='joined')  # type: MeterModels
+        "MeterModels", primaryjoin="and_(Meter.model_id == MeterModels.id)", uselist=False, lazy="joined"
+    )  # type: MeterModels
 
     #: The meter config for this meter
     config = relationship(
-        "MeterConfig",
-        primaryjoin="and_(Meter.id == MeterConfig.meter_id)",
-        uselist=False,
-        overlaps="meter")  # type: MeterConfig
+        "MeterConfig", primaryjoin="and_(Meter.id == MeterConfig.meter_id)", uselist=False, overlaps="meter"
+    )  # type: MeterConfig
 
     sparkmac = relationship(
-        "SparkmacNode",
-        primaryjoin="and_(Meter.id == SparkmacNode.meter_id)",
-        uselist=False,
-        overlaps="meter")  # type: SparkmacNode
+        "SparkmacNode", primaryjoin="and_(Meter.id == SparkmacNode.meter_id)", uselist=False, overlaps="meter"
+    )  # type: SparkmacNode
 
     system_info = relationship(
         "MeterSystemInfo",
         primaryjoin="and_(Meter.id == MeterSystemInfo.meter_id)",
         uselist=False,
-        overlaps="meter")  # type: MeterSystemInfo
+        overlaps="meter",
+    )  # type: MeterSystemInfo
 
     #: The credit_wallet for this meter, only set for customer meters
     credit_wallet = relationship(
-        'Wallet', primaryjoin="and_(foreign(Meter.id) == Wallet.meter_id, "
-                              "Wallet.wallet_type == 'credit')",
+        "Wallet",
+        primaryjoin="and_(foreign(Meter.id) == Wallet.meter_id, Wallet.wallet_type == 'credit')",
         single_parent=True,
-        cascade="all, delete-orphan")  # type: Wallet
+        cascade="all, delete-orphan",
+    )  # type: Wallet
 
     #: The debt_wallet for this meter, only set for customer meters
     debt_wallet = relationship(
-        'Wallet', primaryjoin="and_(foreign(Meter.id) == Wallet.meter_id, "
-                              "Wallet.wallet_type == 'debt')",
+        "Wallet",
+        primaryjoin="and_(foreign(Meter.id) == Wallet.meter_id, Wallet.wallet_type == 'debt')",
         single_parent=True,
         cascade="all, delete-orphan",
-        overlaps="credit_wallet")  # type: Wallet
+        overlaps="credit_wallet",
+    )  # type: Wallet
 
     #: The plan_wallet for this meter, only set for customer meters
     plan_wallet = relationship(
-        'Wallet', primaryjoin="and_(foreign(Meter.id) == Wallet.meter_id, "
-                              "Wallet.wallet_type == 'plan')",
+        "Wallet",
+        primaryjoin="and_(foreign(Meter.id) == Wallet.meter_id, Wallet.wallet_type == 'plan')",
         single_parent=True,
         cascade="all, delete-orphan",
-        overlaps="credit_wallet,debt_wallet")  # type: Wallet
+        overlaps="credit_wallet,debt_wallet",
+    )  # type: Wallet
 
     #: The customer that owns this meter, only set for customer meters
     customer = relationship(
-        'Customer',
-        primaryjoin="Customer.meter_id == Meter.id",
-        uselist=False,
-        overlaps="meter")  # type: Customer
+        "Customer", primaryjoin="Customer.meter_id == Meter.id", uselist=False, overlaps="meter"
+    )  # type: Customer
 
     #: The billing information for this, only set for customer meters
     billing = relationship(
-        'MeterBilling',
-        primaryjoin="MeterBilling.meter_id == Meter.id",
-        uselist=False,
-        overlaps="meter")  # type: MeterBilling
+        "MeterBilling", primaryjoin="MeterBilling.meter_id == Meter.id", uselist=False, overlaps="meter"
+    )  # type: MeterBilling
 
     #: the tags for this meter
     tags = relationship(
-        'MeterTag',
+        "MeterTag",
         secondary=MetersTags.__table__,
-        secondaryjoin=and_(MetersTags.tag_id == MeterTag.id,
-                           MetersTags.active == true()),
-        order_by='MeterTag.name',
-        overlaps="meter,tag")  # type: MeterTag
+        secondaryjoin=and_(MetersTags.tag_id == MeterTag.id, MetersTags.active == true()),
+        order_by="MeterTag.name",
+        overlaps="meter,tag",
+    )  # type: MeterTag
 
     @classmethod
     def sync_init(cls, group):
         """Initialize sync cloud configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_GROUND)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 ground_t.c.id == group.format_trigger_attr(cls.ground_id),
@@ -906,24 +860,28 @@ class Meter(BaseDomain):
         if session.query(Wallet).filter_by(meter_id=self.id).count():  # pragma: nocoverage
             raise TypeError("Wallets already exists")
 
-        logger.info("Creating wallets for meter %s" % (self.id, ))
-        wallet_types = [('credit_wallet', Wallet.TYPE_CREDIT),
-                        ('debt_wallet', Wallet.TYPE_DEBT),
-                        ('plan_wallet', Wallet.TYPE_PLAN)]
+        logger.info("Creating wallets for meter %s" % (self.id,))
+        wallet_types = [
+            ("credit_wallet", Wallet.TYPE_CREDIT),
+            ("debt_wallet", Wallet.TYPE_DEBT),
+            ("plan_wallet", Wallet.TYPE_PLAN),
+        ]
         for attr, wallet_type in wallet_types:
-            wallet = Wallet(id=uuid.uuid4(),
-                            wallet_type=wallet_type,
-                            grid_id=self.ground.id,
-                            meter_id=self.id,
-                            negative_permitted=False,
-                            value=0)
+            wallet = Wallet(
+                id=uuid.uuid4(),
+                wallet_type=wallet_type,
+                grid_id=self.ground.id,
+                meter_id=self.id,
+                negative_permitted=False,
+                value=0,
+            )
             setattr(self, attr, wallet)
 
     @property
     def description(self):
         """Describe this meter."""
-        return u"{ground_name}, {title}".format(
-            ground_name=getattr(self.ground, 'name', "UNASSOCIATED"),
+        return "{ground_name}, {title}".format(
+            ground_name=getattr(self.ground, "name", "UNASSOCIATED"),
             title=self.title(),
         )
 
@@ -942,11 +900,7 @@ class Meter(BaseDomain):
     @classmethod
     def get_by_code(cls, ground, code):
         """Get a meter by code/mac address."""
-        return (
-            sql.session.query(cls)
-            .filter_by(ground=ground, code=code)
-            .scalar()
-        )
+        return sql.session.query(cls).filter_by(ground=ground, code=code).scalar()
 
     @classmethod
     def get_by_serial(cls, serial):
@@ -954,11 +908,7 @@ class Meter(BaseDomain):
         :rtype: Meter | None
         :returns the meter or None if it cannot be found
         """
-        return (
-            cls.query
-            .filter(func.lower(cls.serial) == func.lower(serial))
-            .scalar()
-        )
+        return cls.query.filter(func.lower(cls.serial) == func.lower(serial)).scalar()
 
     @classmethod
     def get_by_customer_code(cls, customer_code):
@@ -969,8 +919,7 @@ class Meter(BaseDomain):
         :returns the meter or None if it cannot be found
         """
         return (
-            cls.query
-            .filter(Meter.id == Customer.meter_id)
+            cls.query.filter(Meter.id == Customer.meter_id)
             .filter(func.lower(Customer.code) == func.lower(customer_code))
             .scalar()
         )
@@ -988,11 +937,11 @@ class Meter(BaseDomain):
     @classmethod
     def state_from_string(cls, state):
         """Convert a string on/off/auto to a meter config state."""
-        if state == 'on':
+        if state == "on":
             config_state = MeterConfig.STATE_ON
-        elif state == 'off':
+        elif state == "off":
             config_state = MeterConfig.STATE_OFF
-        elif state == 'auto':
+        elif state == "auto":
             config_state = MeterConfig.STATE_AUTO
         else:
             raise ValueError(state)
@@ -1001,9 +950,9 @@ class Meter(BaseDomain):
     @property
     def state_text(self):
         """Readable meter state."""
-        txt = [_(u"Off"), _(u"On")][self.state_value]
+        txt = [_("Off"), _("On")][self.state_value]
         if self.config.state == MeterConfig.STATE_AUTO:
-            txt = _(u"Auto (%(state)s)", state=txt)
+            txt = _("Auto (%(state)s)", state=txt)
         return txt
 
     @property
@@ -1019,10 +968,12 @@ class Meter(BaseDomain):
                 state = MeterConfig.STATE_OFF
             # If we don't have enough credits, in either the plan wallet or the
             # prepaid credits
-            elif (self.plan_wallet is not None
-                  and self.credit_wallet is not None
-                  and self.plan_wallet.value <= 0
-                  and self.credit_wallet.value <= 0):
+            elif (
+                self.plan_wallet is not None
+                and self.credit_wallet is not None
+                and self.plan_wallet.value <= 0
+                and self.credit_wallet.value <= 0
+            ):
                 state = MeterConfig.STATE_OFF
             else:
                 state = MeterConfig.STATE_ON
@@ -1056,8 +1007,10 @@ class Meter(BaseDomain):
         try:
             return self.model.scalars
         except AttributeError:
-            raise MeterError(MeterError.UNKNOWN_MODEL,
-                             'Cannot retrieve scalars for model with serial: {}'.format(self.serial))
+            raise MeterError(
+                MeterError.UNKNOWN_MODEL,
+                "Cannot retrieve scalars for model with serial: {}".format(self.serial),
+            )
 
     @property
     def continuous_current_limit(self):
@@ -1065,17 +1018,17 @@ class Meter(BaseDomain):
         try:
             return self.model.phase_count * self.model.continuous_limit
         except AttributeError:
-            raise MeterError(MeterError.UNKNOWN_MODEL,
-                             'Cannot retrieve attributes for model with serial: {}'.format(self.serial))
+            raise MeterError(
+                MeterError.UNKNOWN_MODEL,
+                "Cannot retrieve attributes for model with serial: {}".format(self.serial),
+            )
 
     def get_wallet(self, wallet_type):
         """Get a wallet for a given wallet type.
 
         :raises sqlalchemy.orm.exc.NoResultFound: if no wallets are in the database.
         """
-        return self.session.query(Wallet).filter_by(
-            meter_id=self.id,
-            wallet_type=wallet_type).one()
+        return self.session.query(Wallet).filter_by(meter_id=self.id, wallet_type=wallet_type).one()
 
     def is_customer_meter(self):
         """Figure out if this is a customer meter."""
@@ -1088,22 +1041,19 @@ class Meter(BaseDomain):
     def get_dataframe(self, since, before, fields):
         """Get a pandas dataframe of this meter's reading data."""
         import pandas  # lazy load pandas to avoid loading it into memory when not needed
+
         field_set = set(fields)
         columns = [getattr(Reading, field) for field in field_set]
         # make sure heartbeat_end is in the list of fields to query
         columns.append(Reading.heartbeat_end)
 
         query = (
-            sql.session
-            .query(*columns)
+            sql.session.query(*columns)
             .filter_by(meter=str(self.code))
             .filter(Reading.heartbeat_end.between(since, before))
         )
         c = query.statement.compile(sql.engine)
-        df = pandas.read_sql(sql=c.string,
-                             con=sql.engine,
-                             params=c.params,
-                             index_col='heartbeat_end')
+        df = pandas.read_sql(sql=c.string, con=sql.engine, params=c.params, index_col="heartbeat_end")
 
         # FIXME: do the sorting in postgres instead of pandas
         df = df.sort_index()
@@ -1111,7 +1061,7 @@ class Meter(BaseDomain):
 
     def title(self):
         """Meter object display title."""
-        return _(u"Meter %(serial)s", serial=self.serial)
+        return _("Meter %(serial)s", serial=self.serial)
 
     def get_transaction_view(self):
         """Get the transaction data for this meter.
@@ -1128,11 +1078,8 @@ class Meter(BaseDomain):
         Will return None if there hasn't been any transaction placed.
         """
         return (
-            Transaction.query
-            .filter(Transaction.state == Transaction.STATE_PROCESSED)
-            .filter(
-                and_(Transaction.to_wallet_id == Wallet.id,
-                     Wallet.meter_id == self.id))
+            Transaction.query.filter(Transaction.state == Transaction.STATE_PROCESSED)
+            .filter(and_(Transaction.to_wallet_id == Wallet.id, Wallet.meter_id == self.id))
             .order_by(Transaction.created.desc())
             .limit(1)
             .scalar()
@@ -1158,19 +1105,18 @@ class Meter(BaseDomain):
         if self.billing.last_cycle_start is None:
             return True
         # if the current plan hasn't expired yet, don't start a new cycle.
-        if (self.billing.last_plan_expiration_date is not None
-                and date < self.billing.last_plan_expiration_date):
+        if (
+            self.billing.last_plan_expiration_date is not None
+            and date < self.billing.last_plan_expiration_date
+        ):
             return False
         # if the cycle start date computed for this tariff would be later than the current
         # cycle start date stored by the meter, a new cycle should start.
         return self.tariff.get_last_cycle_start(date) > self.billing.last_cycle_start
 
-    def _needs_update(self,
-                      current_state=unset,
-                      current_load_limit=unset,
-                      override_meter_state=False,
-                      nominal_voltage=None
-                      ):
+    def _needs_update(
+        self, current_state=unset, current_load_limit=unset, override_meter_state=False, nominal_voltage=None
+    ):
         """
         Check the state/powerlimit to determine if a meter needs to be updated.
         """
@@ -1182,8 +1128,7 @@ class Meter(BaseDomain):
             return True
 
         if current_state is None or current_load_limit is None:
-            msg = ("{} has unknown current load_limit/state, requesting update "
-                   "(load_limit={}, state={}).")
+            msg = "{} has unknown current load_limit/state, requesting update (load_limit={}, state={})."
             logger.info(msg.format(self.title(), current_load_limit, current_state))
             return True
 
@@ -1217,8 +1162,7 @@ class Meter(BaseDomain):
                 log_current_state(self.state_text)
                 return True
 
-        logger.info("%s has state and load limit are up to date, skipping update.",
-                    self.title())
+        logger.info("%s has state and load limit are up to date, skipping update.", self.title())
         return False
 
     def set_state(self, state):
@@ -1232,8 +1176,7 @@ class Meter(BaseDomain):
             self.session.add(event)
 
     def reset_state(self):
-        """Reset the meter state for this meter.
-        """
+        """Reset the meter state for this meter."""
         event = Event.create(Event.TYPE_METER_STATE_CHANGED, obj=self)
         self.session.add(event)
 
@@ -1250,10 +1193,7 @@ class Meter(BaseDomain):
          - Application startup
          - Tariff change power limit
         """
-        return self._maybe_send_set_config(
-            state=unset,
-            load_limit=unset
-        )
+        return self._maybe_send_set_config(state=unset, load_limit=unset)
 
     def send_set_config_based_on_system_info(self, nominal_voltage=None):
         """Send a set-config if its desired state is conflicting
@@ -1287,10 +1227,7 @@ class Meter(BaseDomain):
         Called from:
          - Incoming reading (state & power limit from Reading instance)
         """
-        return self._maybe_send_set_config(
-            state=reading.state,
-            load_limit=reading.user_power_limit
-        )
+        return self._maybe_send_set_config(state=reading.state, load_limit=reading.user_power_limit)
 
     def get_total_balance(self):
         """Get the total balance associated with this meter, sum of credit and
@@ -1308,10 +1245,7 @@ class Meter(BaseDomain):
             return False
         return self.get_total_balance() <= threshold
 
-    def _maybe_send_set_config(self,
-                               state=None,
-                               load_limit=None,
-                               nominal_voltage=None):
+    def _maybe_send_set_config(self, state=None, load_limit=None, nominal_voltage=None):
         """
         Send a set config packet to the meter.
 
@@ -1327,11 +1261,12 @@ class Meter(BaseDomain):
         # FIXME: if we ever allow meter creation in heroku, this will not get
         # executed after syncing so this should be added to the eventual
         # post_sync update hook
-        if config['HEROKU'] or not self._needs_update(
-                override_meter_state=override_meter_state,
-                current_load_limit=load_limit,
-                current_state=state,
-                nominal_voltage=nominal_voltage):
+        if config["HEROKU"] or not self._needs_update(
+            override_meter_state=override_meter_state,
+            current_load_limit=load_limit,
+            current_state=state,
+            nominal_voltage=nominal_voltage,
+        ):
             return False
 
         power_limit = 65535
@@ -1364,7 +1299,7 @@ class Meter(BaseDomain):
             current_limit=current_limit,
             balance=balance,
             low_balance=low_balance,
-            firmware_version=self.system_info.firmware
+            firmware_version=self.system_info.firmware,
         )
         return True
 
@@ -1372,19 +1307,19 @@ class Meter(BaseDomain):
         """Apply the scalars from the metering IC."""
         scalars = self.scalars
         scalar_map = {
-            'frequency': scalars.frequency_scalar,
-            'energy': scalars.energy_scalar,
-            'power_factor_avg': scalars.power_factor_scalar,
-            'voltage_min': scalars.voltage_scalar,
-            'voltage_max': scalars.voltage_scalar,
-            'voltage_avg': scalars.voltage_scalar,
-            'current_min': scalars.current_scalar,
-            'current_max': scalars.current_scalar,
-            'current_avg': scalars.current_scalar,
-            'true_power_inst': scalars.power_scalar,
-            'true_power_avg': scalars.power_scalar,
-            'apparent_power_avg': scalars.power_scalar,
-            'user_power_limit': scalars.power_scalar,
+            "frequency": scalars.frequency_scalar,
+            "energy": scalars.energy_scalar,
+            "power_factor_avg": scalars.power_factor_scalar,
+            "voltage_min": scalars.voltage_scalar,
+            "voltage_max": scalars.voltage_scalar,
+            "voltage_avg": scalars.voltage_scalar,
+            "current_min": scalars.current_scalar,
+            "current_max": scalars.current_scalar,
+            "current_avg": scalars.current_scalar,
+            "true_power_inst": scalars.power_scalar,
+            "true_power_avg": scalars.power_scalar,
+            "apparent_power_avg": scalars.power_scalar,
+            "user_power_limit": scalars.power_scalar,
         }
 
         for field, scalar in list(scalar_map.items()):
@@ -1400,7 +1335,7 @@ class Meter(BaseDomain):
         The product code is derived from the first part meter serial.
         Serial: [Product Code]-[Version]-[GID MAC]
         """
-        return self.SERIAL_RE.match(self.serial).group('product_code')
+        return self.SERIAL_RE.match(self.serial).group("product_code")
 
     def remove(self):
         """Remove a meter from the system.
@@ -1428,11 +1363,13 @@ class Meter(BaseDomain):
 
     def _check_ground_access(self, prefix):
         from sparkmeter.ground.grounddomain import Ground
-        ground = Ground.get_by_serial(config['SERIAL'])
-        if not config['HEROKU'] and ground != self.ground:
-            message = prefix + _(u"transactions for this meter "
-                                 u"can only be placed on ground '%(ground)s'.",
-                                 ground=self.ground.name)
+
+        ground = Ground.get_by_serial(config["SERIAL"])
+        if not config["HEROKU"] and ground != self.ground:
+            message = prefix + _(
+                "transactions for this meter can only be placed on ground '%(ground)s'.",
+                ground=self.ground.name,
+            )
             raise TransactionError(TransactionError.ERROR_PERMISSION_DENIED, message)
 
     def check_can_sell_from(self, user):
@@ -1445,22 +1382,24 @@ class Meter(BaseDomain):
         :raises TransactionError: if it cannot be sold from
         """
 
-        prefix = _(u"user '%(username)s' cannot repay debt for meter '%(serial)s': ",
-                   username=user.username,
-                   serial=self.serial)
+        prefix = _(
+            "user '%(username)s' cannot repay debt for meter '%(serial)s': ",
+            username=user.username,
+            serial=self.serial,
+        )
 
         if user.is_api():
             raise TransactionError(
-                TransactionError.ERROR_PERMISSION_DENIED,
-                prefix + _(u"api users cannot repay debt."))
+                TransactionError.ERROR_PERMISSION_DENIED, prefix + _("api users cannot repay debt.")
+            )
 
         self._check_ground_access(prefix)
 
         if self.ground not in user.grounds:
             raise TransactionError(
                 TransactionError.ERROR_PERMISSION_DENIED,
-                prefix + _(u"user is not associated with ground '%(ground)s'.",
-                           ground=self.ground.name))
+                prefix + _("user is not associated with ground '%(ground)s'.", ground=self.ground.name),
+            )
 
     def check_can_sell_to(self, user):
         """
@@ -1474,17 +1413,19 @@ class Meter(BaseDomain):
         if user.is_api():
             return
 
-        prefix = _(u"user '%(username)s' cannot buy credit for meter '%(serial)s': ",
-                   username=user.username,
-                   serial=self.serial)
+        prefix = _(
+            "user '%(username)s' cannot buy credit for meter '%(serial)s': ",
+            username=user.username,
+            serial=self.serial,
+        )
 
         self._check_ground_access(prefix)
 
         if self.ground not in user.grounds:
             raise TransactionError(
                 TransactionError.ERROR_PERMISSION_DENIED,
-                prefix + _(u"user is not associated with ground '%(ground)s'.",
-                           ground=self.ground.name))
+                prefix + _("user is not associated with ground '%(ground)s'.", ground=self.ground.name),
+            )
 
     def maybe_convert_negative_balance_to_debt(self):
         """
@@ -1507,10 +1448,12 @@ class Meter(BaseDomain):
         if parameters.ALLOW_NEGATIVE_BALANCE:
             return False
 
-        logger.info("Converting {} credit balance for meter {} into debt".format(
-            self.credit_wallet.value,
-            self.serial,
-        ))
+        logger.info(
+            "Converting {} credit balance for meter {} into debt".format(
+                self.credit_wallet.value,
+                self.serial,
+            )
+        )
         self.debt_wallet.value += abs(self.credit_wallet.value)
         self.credit_wallet.value = 0
         return True
@@ -1572,8 +1515,7 @@ class Meter(BaseDomain):
                 if self.is_new_day():
                     # the reset time has passed, time to reset the energy limit for the day
                     msg = (
-                        "Meter {} has crossed the daily energy limit reset time. "
-                        "Resetting saved energy value"
+                        "Meter {} has crossed the daily energy limit reset time. Resetting saved energy value"
                     )
                     logger.info(msg.format(self.serial))
                     tariff_reset_dt = self.tariff.last_daily_energy_limit_reset_datetime()
@@ -1589,14 +1531,13 @@ class Meter(BaseDomain):
 
 
 class MeterView(BaseView):
-
     """
     A database view of meter and related columns.
     This contains aggregated columns of a meter list, suitable for usage within
     a form and listing.
     """
 
-    __tablename__ = 'meter_view'
+    __tablename__ = "meter_view"
 
     #: If the meter is active (!meter.hidden)
     active = Column(Boolean, default=False, nullable=False)
@@ -1633,9 +1574,7 @@ class MeterView(BaseView):
     current_state = Column(Integer, default=MeterState.STATE_OFF.id)
 
     #: Customer id (customer.id)
-    customer_id = Column(UUIDType(binary=False),
-                         ForeignKey('customer.id'),
-                         nullable=False)
+    customer_id = Column(UUIDType(binary=False), ForeignKey("customer.id"), nullable=False)
 
     #: Customer name (customer.name)
     customer_name = Column(String, default="new customer")
@@ -1653,9 +1592,7 @@ class MeterView(BaseView):
     debt_value = Column(Float, default=0, nullable=False)
 
     #: Ground id (ground.id)
-    ground_id = Column(UUIDType(binary=False),
-                       ForeignKey('ground.id'),
-                       nullable=False)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False)
 
     #: Ground name (ground.name)
     ground_name = Column(String, nullable=False)
@@ -1663,7 +1600,7 @@ class MeterView(BaseView):
     #: Ground serial (ground.serial)
     ground_serial = Column(String, nullable=False)
 
-    model_id = Column(UUIDType(binary=False), ForeignKey('meter_models.id'), nullable=False)
+    model_id = Column(UUIDType(binary=False), ForeignKey("meter_models.id"), nullable=False)
 
     model_name = Column(String, nullable=False)
 
@@ -1710,9 +1647,7 @@ class MeterView(BaseView):
     subnet = Column(Integer, default=255, nullable=False)
 
     #: Tariff (tariff.id)
-    tariff_id = Column(UUIDType(binary=False),
-                       ForeignKey('tariff.id'),
-                       nullable=False)
+    tariff_id = Column(UUIDType(binary=False), ForeignKey("tariff.id"), nullable=False)
 
     #: Tariff name (tariff.name)
     tariff_name = Column(String, nullable=False)
@@ -1727,15 +1662,15 @@ class MeterView(BaseView):
     total_cycle_energy = Column(Float, default=None)
 
     #: A reference to the ground
-    ground = relationship('Ground')
+    ground = relationship("Ground")
 
     #: A reference to the tariff
-    tariff = relationship('Tariff')
+    tariff = relationship("Tariff")
 
     #: A reference to the customer
-    customer = relationship('Customer')
+    customer = relationship("Customer")
 
-    model = relationship('MeterModels')
+    model = relationship("MeterModels")
 
     @classmethod
     def validate_serial(cls, serial, ground=None):
@@ -1753,7 +1688,7 @@ class MeterView(BaseView):
             message = "serial {} is not a valid meter serial".format(serial)
             raise MeterError(MeterError.INVALID_SERIAL, message)
 
-        code = int(Meter.SERIAL_RE.match(serial).group('gid_mac'), 16) & 0xFFFF
+        code = int(Meter.SERIAL_RE.match(serial).group("gid_mac"), 16) & 0xFFFF
         if Meter.get_by_serial(serial) or Meter.get_by_code(ground, code):
             message = "meter with serial {} already exists".format(serial)
             raise MeterError(MeterError.DUPLICATE_SERIAL, message)
@@ -1784,12 +1719,12 @@ class MeterView(BaseView):
         self.serial = serial
         self.code = code
         self.model = model
-        self.state = config.get('NEW_METER_STATE')
-        self.active = not config.get('NEW_METER_HIDDEN', True)
-        self.subnet = config.get('NEW_METER_SUBNET')
-        self.sparkmac_forwarding = config.get('NEW_METER_SPARKMAC_FORWARDING')
-        self.sparkmac_flooding_subnets = config.get('NEW_METER_SPARKMAC_FLOODING_SUBNETS')
-        self.sparkmac_ttl = config.get('NEW_METER_SPARKMAC_TTL')
+        self.state = config.get("NEW_METER_STATE")
+        self.active = not config.get("NEW_METER_HIDDEN", True)
+        self.subnet = config.get("NEW_METER_SUBNET")
+        self.sparkmac_forwarding = config.get("NEW_METER_SPARKMAC_FORWARDING")
+        self.sparkmac_flooding_subnets = config.get("NEW_METER_SPARKMAC_FLOODING_SUBNETS")
+        self.sparkmac_ttl = config.get("NEW_METER_SPARKMAC_TTL")
         return self
 
     @property
@@ -1798,15 +1733,17 @@ class MeterView(BaseView):
             return Meter.get_by_id(self.id)
 
     @classmethod
-    def get_view(cls,
-                 active=None,
-                 ground=None,
-                 tariff=None,
-                 user=None,
-                 meter_type=None,
-                 meter=None,
-                 customer_code=None,
-                 customer_phone_number=None):
+    def get_view(
+        cls,
+        active=None,
+        ground=None,
+        tariff=None,
+        user=None,
+        meter_type=None,
+        meter=None,
+        customer_code=None,
+        customer_phone_number=None,
+    ):
         # type: (bool, Ground, Tariff, User, str, str, str) -> sqlalchemy.orm.query.Query[MeterView]
         """
         Get a sequence of view of meters, given a set of conditions.
@@ -1838,9 +1775,8 @@ class MeterView(BaseView):
         if tariff is not None:
             q = q.filter_by(tariff=tariff)
         if user is not None:
-            users_grounds_t = get_table_by_name('users_grounds')
-            q = q.filter(users_grounds_t.c.user_id == user.id,
-                         users_grounds_t.c.ground_id == cls.ground_id)
+            users_grounds_t = get_table_by_name("users_grounds")
+            q = q.filter(users_grounds_t.c.user_id == user.id, users_grounds_t.c.ground_id == cls.ground_id)
         if meter_type is not None:
             q = q.filter_by(meter_type=meter_type)
         if meter is not None:
@@ -1887,15 +1823,12 @@ class MeterView(BaseView):
                 MeterView.credit_value,
                 MeterSystemInfo.firmware,
                 Tariff.low_balance_threshold,
-                MeterSystemInfo.last_energy_datetime
+                MeterSystemInfo.last_energy_datetime,
             )
             .select_from(
-                sql.outerjoin(
-                    MeterView,
-                    MeterSystemInfo,
-                    MeterView.id == MeterSystemInfo.meter_id
+                sql.outerjoin(MeterView, MeterSystemInfo, MeterView.id == MeterSystemInfo.meter_id).outerjoin(
+                    Tariff
                 )
-                .outerjoin(Tariff)
             )
             .where(MeterView.active)
             .order_by(func.random() if shuffle_request_data else MeterView.id)
@@ -1903,36 +1836,35 @@ class MeterView(BaseView):
         if codes is not None:
             query = query.where(MeterView.code.in_(codes))
 
-        cycle_length = config['HEARTBEAT_PERIOD']
-        cycle_length_delta = datetime.timedelta(minutes=config['HEARTBEAT_PERIOD'])
+        cycle_length = config["HEARTBEAT_PERIOD"]
+        cycle_length_delta = datetime.timedelta(minutes=config["HEARTBEAT_PERIOD"])
         now = datetime.datetime.utcnow()
         this_heartbeat_start = now.replace(
-            microsecond=0,
-            second=0,
-            minute=(old_div(now.minute, cycle_length)) * cycle_length)
+            microsecond=0, second=0, minute=(old_div(now.minute, cycle_length)) * cycle_length
+        )
         last_heartbeat_start = this_heartbeat_start - cycle_length_delta
         last_last_heartbeat_start = last_heartbeat_start - cycle_length_delta
 
         prioritized_readings_query = query.where(
-            MeterSystemInfo.last_energy_datetime == last_last_heartbeat_start)
+            MeterSystemInfo.last_energy_datetime == last_last_heartbeat_start
+        )
 
-        normal_priority_query = query.where(
-            MeterSystemInfo.last_energy_datetime != last_last_heartbeat_start)
+        normal_priority_query = query.where(MeterSystemInfo.last_energy_datetime != last_last_heartbeat_start)
 
         reading_query_batches = []
-        if config['PRIORITIZED_READ_QUEUE']:
+        if config["PRIORITIZED_READ_QUEUE"]:
             reading_query_batches = [prioritized_readings_query, normal_priority_query]
         else:
             reading_query_batches = [query]
 
         for batch_query in reading_query_batches:
-            for code, plan, credit, firmware, low_balance_threshold, last_read_time \
-                    in sql.session.execute(batch_query):
+            for code, plan, credit, firmware, low_balance_threshold, last_read_time in sql.session.execute(
+                batch_query
+            ):
                 credit = 0 if credit is None else credit
                 plan = 0 if plan is None else plan
                 total_balance = plan + credit
-                has_low_balance = (low_balance_threshold is not None
-                                   and total_balance <= low_balance_threshold)
+                has_low_balance = low_balance_threshold is not None and total_balance <= low_balance_threshold
                 yield code, firmware, total_balance, has_low_balance
 
     def finish_creation(self):
@@ -1941,7 +1873,7 @@ class MeterView(BaseView):
         meter = self.meter
         event = Event.create(Event.TYPE_METER_CREATED, obj=meter)
         self.session.add(event)
-        if not config['HEROKU']:
+        if not config["HEROKU"]:
             event.process()
 
     @property
@@ -1950,7 +1882,7 @@ class MeterView(BaseView):
             number = phonenumbers.parse(self.customer_phone_number)
             return str(number.country_code)
 
-        return getattr(self, '_customer_country_code', None)
+        return getattr(self, "_customer_country_code", None)
 
     @customer_country_code.setter
     def customer_country_code(self, value):
@@ -1963,7 +1895,7 @@ class MeterView(BaseView):
 
     @property
     def customer_national_number(self):
-        national_number = getattr(self, '_customer_national_number', None)
+        national_number = getattr(self, "_customer_national_number", None)
         if national_number is not None:  # pragma: nocoverage
             return str(national_number)
 
@@ -1973,7 +1905,7 @@ class MeterView(BaseView):
 
     @customer_national_number.setter
     def customer_national_number(self, value):
-        if hasattr(self, '_customer_country_code') and value:
+        if hasattr(self, "_customer_country_code") and value:
             phone_number = parse_country_national(self._customer_country_code, value)
         else:
             phone_number = None

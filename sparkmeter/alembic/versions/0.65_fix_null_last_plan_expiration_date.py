@@ -11,8 +11,8 @@ Create Date: 2018-09-20 10:34:00.0000
 
 from alembic import op
 
-revision = '0.65'
-down_revision = '0.64'
+revision = "0.65"
+down_revision = "0.64"
 
 
 def upgrade():

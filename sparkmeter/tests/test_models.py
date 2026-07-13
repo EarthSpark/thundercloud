@@ -8,12 +8,11 @@ from sparkmeter.transaction.transactiondomain import Wallet
 
 
 class ModelsTest(SparkMeterTestCaseBase):
-
     def test_get_one_or_create(self):
         account = SalesAccountFactory()
         created, w = Wallet.get_one_or_create(
             session=self.session,
-            wallet_type='acct_credit',
+            wallet_type="acct_credit",
             sales_account_id=account.id,
             grid_id=account.ground.id,
         )
@@ -22,7 +21,7 @@ class ModelsTest(SparkMeterTestCaseBase):
         self.session.commit()
         result = Wallet.get_one_or_create(
             session=self.session,
-            wallet_type='acct_credit',
+            wallet_type="acct_credit",
             sales_account_id=account.id,
             grid_id=account.ground.id,
         )

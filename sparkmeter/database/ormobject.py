@@ -13,11 +13,10 @@ from sqlalchemy.orm.session import Session
 from sparkmeter.database.alchemy import sql
 from sparkmeter.misc.pythonutils import classproperty
 
-GetOneOrCreateResult = collections.namedtuple('result', ['created', 'object'])
+GetOneOrCreateResult = collections.namedtuple("result", ["created", "object"])
 
 
 class ORMObject(sql.Model):
-
     """Mixin for some common sql model methods."""
 
     __abstract__ = True
@@ -49,14 +48,12 @@ class ORMObject(sql.Model):
     @classmethod
     def column_labels(cls, exclude):
         """Get the column name and translated labels."""
-        exclude.append('id')
+        exclude.append("id")
         include = [col.key for col in cls.table.columns]
 
         # FIXME: handle someref_id fields some how
         return [
-            (field, getattr(cls, field).info.get('label', field))
-            for field in include
-            if field not in exclude
+            (field, getattr(cls, field).info.get("label", field)) for field in include if field not in exclude
         ]
 
     def __repr__(self):
@@ -107,7 +104,7 @@ class ORMObject(sql.Model):
             try:
                 session.add(model)
                 created = True
-            except IntegrityError:   # pragma: nocoverage
+            except IntegrityError:  # pragma: nocoverage
                 session.rollback()
                 model = session.query(cls).filter_by(**kwargs).one()
             if flush:

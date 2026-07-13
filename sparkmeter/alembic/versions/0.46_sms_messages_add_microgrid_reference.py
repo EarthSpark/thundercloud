@@ -14,25 +14,19 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision = '0.46'
-down_revision = '0.45'
+revision = "0.46"
+down_revision = "0.45"
 logger = logging.getLogger()
 
 
 def upgrade():
     """Upgrade the database schema from 0.45 to 0.46."""
-    op.add_column('sms_message',
-                  sa.Column('microgrid_id', postgresql.UUID(),
-                            autoincrement=False))
+    op.add_column("sms_message", sa.Column("microgrid_id", postgresql.UUID(), autoincrement=False))
     conn = op.get_bind()
-    res = conn.execute(
-        'UPDATE sms_message '
-        'SET microgrid_id = microgrid.id '
-        'FROM microgrid;'
-    )
-    logger.info('Set microgrid of %r sms_message' % (res.rowcount, ))
+    res = conn.execute("UPDATE sms_message SET microgrid_id = microgrid.id FROM microgrid;")
+    logger.info("Set microgrid of %r sms_message" % (res.rowcount,))
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.46 to 0.45."""
-    op.drop_column('sms_message', 'microgrid_id')
+    op.drop_column("sms_message", "microgrid_id")

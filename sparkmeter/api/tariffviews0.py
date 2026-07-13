@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """API v0 system views."""
+
 import http.client
 import json
 import logging
@@ -48,14 +49,14 @@ def _format_tariff(tariff):
 def _format_tariff_form_errors(form):
     """Get a nice dict of stringified error messages"""
     errors = {field: [str(msg) for msg in errors] for field, errors in form.errors.items()}
-    if errors.get('plan_duration_and_start_day'):
-        if errors['plan_duration_and_start_day'][0] == 'Not a valid choice.':
+    if errors.get("plan_duration_and_start_day"):
+        if errors["plan_duration_and_start_day"][0] == "Not a valid choice.":
             new_message = "Invalid 'cycle_start_day_of_month' or 'plan_duration'"
             try:
                 parse_plan_duration_and_start_day_string(form.plan_duration_and_start_day.data)
             except ValueError as valerr:  # pragma: nocoverage
                 new_message = str(valerr)
-            errors['plan_duration_and_start_day'][0] = new_message
+            errors["plan_duration_and_start_day"][0] = new_message
     return errors
 
 
@@ -65,34 +66,38 @@ def _transform_incoming_json_fields(params):
     :param params: The request parameters.
     :returns: The in-place transformed parameters.
     """
-    for field in ('tous', 'blockrates', 'load_limits',):
+    for field in (
+        "tous",
+        "blockrates",
+        "load_limits",
+    ):
         if field in params:
             params[field] = json.dumps(params[field])
-    plan_duration = params.pop('plan_duration', '1m')
-    plan_start_day = params.get('cycle_start_day_of_month', 1)
-    params['plan_duration_and_start_day'] = "{}{}".format(plan_duration, plan_start_day)
+    plan_duration = params.pop("plan_duration", "1m")
+    plan_start_day = params.get("cycle_start_day_of_month", 1)
+    params["plan_duration_and_start_day"] = "{}{}".format(plan_duration, plan_start_day)
 
 
 def _patch_tariff(
-        form,
-        name=None,
-        cycle_start_day_of_month=None,
-        load_limit_type=None,
-        flat_load_limit=None,
-        load_limits=None,
-        low_balance_threshold=None,
-        plan_enabled=None,
-        plan_duration=None,
-        plan_fixed_fee=None,
-        plan_price=None,
-        tariff_type=None,
-        flat_price=None,
-        blockrates=None,
-        tou_enabled=None,
-        tous=None,
-        daily_energy_limit_enabled=None,
-        daily_energy_limit_reset_hour=None,
-        daily_energy_limit_value=None,
+    form,
+    name=None,
+    cycle_start_day_of_month=None,
+    load_limit_type=None,
+    flat_load_limit=None,
+    load_limits=None,
+    low_balance_threshold=None,
+    plan_enabled=None,
+    plan_duration=None,
+    plan_fixed_fee=None,
+    plan_price=None,
+    tariff_type=None,
+    flat_price=None,
+    blockrates=None,
+    tou_enabled=None,
+    tous=None,
+    daily_energy_limit_enabled=None,
+    daily_energy_limit_reset_hour=None,
+    daily_energy_limit_value=None,
 ):
     """Partially update (and validate) a TariffForm.
 
@@ -113,12 +118,11 @@ def _patch_tariff(
             raise ValueError("Invalid existing plan duration")
 
     if plan_duration is not None:
-        if plan_duration == '1d':
-            form.plan_duration_and_start_day.data = '1d1'
+        if plan_duration == "1d":
+            form.plan_duration_and_start_day.data = "1d1"
         else:
             form.plan_duration_and_start_day.data = "{}{}".format(
-                plan_duration,
-                form.plan_duration_and_start_day.data[2:]
+                plan_duration, form.plan_duration_and_start_day.data[2:]
             )
 
     if load_limit_type is not None and load_limit_type != form.load_limit_type.data:
@@ -179,8 +183,8 @@ def _patch_tariff(
             form.daily_energy_limit_value.data = daily_energy_limit_value
 
 
-@api.route('/tariff/<string:tariff_id>', methods=['GET', 'PUT', 'PATCH'])
-@roles_accepted('api', 'operator')
+@api.route("/tariff/<string:tariff_id>", methods=["GET", "PUT", "PATCH"])
+@roles_accepted("api", "operator")
 def tariff_view(tariff_id):
     """Get or edit tariff info.
     ---
@@ -231,60 +235,64 @@ def tariff_view(tariff_id):
         tariff = None
     if tariff is None:
         raise APIError("no such tariff", status_code=http.client.NOT_FOUND)
-    if request.method == 'GET':
+    if request.method == "GET":
         return success(tariff=_format_tariff(tariff))
     params = get_params()
-    if request.method == 'PATCH':
+    if request.method == "PATCH":
         form = TariffForm(MultiDict(), obj=tariff)
         try:
-            _patch_tariff(form,
-                          name=check_param(params, 'name', default=None),
-                          cycle_start_day_of_month=check_param(
-                              params, 'cycle_start_day_of_month', default=None),
-                          load_limit_type=check_param(params, 'load_limit_type', default=None),
-                          flat_load_limit=check_param(params, 'flat_load_limit', default=None),
-                          load_limits=check_param(params, 'load_limits', default=None),
-                          low_balance_threshold=check_param(params, 'low_balance_threshold', default=None),
-                          plan_enabled=check_param(params, 'plan_enabled', default=None),
-                          plan_duration=check_param(params, 'plan_duration', default=None),
-                          plan_fixed_fee=check_param(params, 'plan_fixed_fee', default=None),
-                          plan_price=check_param(params, 'plan_price', default=None),
-                          tariff_type=check_param(params, 'tariff_type', default=None),
-                          flat_price=check_param(params, 'flat_price', default=None),
-                          blockrates=check_param(params, 'blockrates', default=None),
-                          tou_enabled=check_param(params, 'tou_enabled', default=None),
-                          tous=check_param(params, 'tous', default=None),
-                          daily_energy_limit_enabled=check_param(
-                              params, 'daily_energy_limit_enabled', default=None),
-                          daily_energy_limit_reset_hour=check_param(
-                              params, 'daily_energy_limit_reset_hour', default=None),
-                          daily_energy_limit_value=check_param(
-                              params, 'daily_energy_limit_value', default=None),
-                          )
+            _patch_tariff(
+                form,
+                name=check_param(params, "name", default=None),
+                cycle_start_day_of_month=check_param(params, "cycle_start_day_of_month", default=None),
+                load_limit_type=check_param(params, "load_limit_type", default=None),
+                flat_load_limit=check_param(params, "flat_load_limit", default=None),
+                load_limits=check_param(params, "load_limits", default=None),
+                low_balance_threshold=check_param(params, "low_balance_threshold", default=None),
+                plan_enabled=check_param(params, "plan_enabled", default=None),
+                plan_duration=check_param(params, "plan_duration", default=None),
+                plan_fixed_fee=check_param(params, "plan_fixed_fee", default=None),
+                plan_price=check_param(params, "plan_price", default=None),
+                tariff_type=check_param(params, "tariff_type", default=None),
+                flat_price=check_param(params, "flat_price", default=None),
+                blockrates=check_param(params, "blockrates", default=None),
+                tou_enabled=check_param(params, "tou_enabled", default=None),
+                tous=check_param(params, "tous", default=None),
+                daily_energy_limit_enabled=check_param(params, "daily_energy_limit_enabled", default=None),
+                daily_energy_limit_reset_hour=check_param(
+                    params, "daily_energy_limit_reset_hour", default=None
+                ),
+                daily_energy_limit_value=check_param(params, "daily_energy_limit_value", default=None),
+            )
         except ValueError as valerr:
-            raise APIError('There was an error updating the tariff: {}'.format(str(valerr)),
-                           status_code=http.client.BAD_REQUEST)
+            raise APIError(
+                "There was an error updating the tariff: {}".format(str(valerr)),
+                status_code=http.client.BAD_REQUEST,
+            )
     else:  # PUT
         _validate_dependent_fields(params)
         _transform_incoming_json_fields(params)
-        for param_name in ('name', 'cycle_start_day_of_month', 'load_limit_type', 'tariff_type'):
+        for param_name in ("name", "cycle_start_day_of_month", "load_limit_type", "tariff_type"):
             check_param(params, param_name)
         form = TariffForm.from_json(params, obj=tariff)
     try:
         tariff = update_tariff_from_form(tariff, form)
     except ValueError as valerr:
-        raise APIError('There was an error updating the tariff: {}'.format(str(valerr)),
-                       status_code=http.client.BAD_REQUEST)
+        raise APIError(
+            "There was an error updating the tariff: {}".format(str(valerr)),
+            status_code=http.client.BAD_REQUEST,
+        )
     if tariff:
         return success(tariff=_format_tariff(tariff))
     raise APIError(
-        'There was an error updating the tariff.',
+        "There was an error updating the tariff.",
         status_code=http.client.BAD_REQUEST,
-        payload=_format_tariff_form_errors(form))
+        payload=_format_tariff_form_errors(form),
+    )
 
 
-@api.route('/tariffs', methods=['GET', 'POST'])
-@roles_accepted('api', 'operator')
+@api.route("/tariffs", methods=["GET", "POST"])
+@roles_accepted("api", "operator")
 def list_or_add_tariff():
     """Add a tariff
     ---
@@ -331,7 +339,7 @@ def list_or_add_tariff():
         400:
           description: Bad request
     """
-    if request.method == 'GET':
+    if request.method == "GET":
         tariffs = []
         for tariff in Tariff.get_all():
             tariffs.append(_format_tariff(tariff))
@@ -344,43 +352,46 @@ def list_or_add_tariff():
     try:
         tariff = add_tariff_from_form(form)
     except ValueError as valerr:
-        raise APIError('There was an error updating the tariff: {}'.format(str(valerr)),
-                       status_code=http.client.BAD_REQUEST)
+        raise APIError(
+            "There was an error updating the tariff: {}".format(str(valerr)),
+            status_code=http.client.BAD_REQUEST,
+        )
     if tariff:
         r = success(tariff=_format_tariff(tariff))
         r.status_code = http.client.CREATED
         return r
     raise APIError(
-        'There was an error creating the tariff.',
+        "There was an error creating the tariff.",
         status_code=http.client.BAD_REQUEST,
-        payload=_format_tariff_form_errors(form))
+        payload=_format_tariff_form_errors(form),
+    )
 
 
 def _validate_dependent_fields(params):
     """Raise errors if fields being updated don't have companion values."""
-    for param_name in ('name', 'cycle_start_day_of_month'):
+    for param_name in ("name", "cycle_start_day_of_month"):
         check_param(params, param_name)
 
-    if check_param(params, 'load_limit_type') == Tariff.LOAD_LIMIT_TYPE_FLAT:
-        check_param(params, 'flat_load_limit')
-    elif check_param(params, 'load_limit_type') == Tariff.LOAD_LIMIT_TYPE_SCHEDULED:
-        check_param(params, 'load_limits', param_type=list)
+    if check_param(params, "load_limit_type") == Tariff.LOAD_LIMIT_TYPE_FLAT:
+        check_param(params, "flat_load_limit")
+    elif check_param(params, "load_limit_type") == Tariff.LOAD_LIMIT_TYPE_SCHEDULED:
+        check_param(params, "load_limits", param_type=list)
 
-    if check_param(params, 'tariff_type') == Tariff.TYPE_FLAT:
-        check_param(params, 'flat_price')
-    elif check_param(params, 'tariff_type') == Tariff.TYPE_BLOCKRATE:
-        check_param(params, 'blockrates', param_type=list)
+    if check_param(params, "tariff_type") == Tariff.TYPE_FLAT:
+        check_param(params, "flat_price")
+    elif check_param(params, "tariff_type") == Tariff.TYPE_BLOCKRATE:
+        check_param(params, "blockrates", param_type=list)
 
-    if check_param(params, 'tou_enabled', param_type=bool, default=False):
-        check_param(params, 'tous', param_type=list)
+    if check_param(params, "tou_enabled", param_type=bool, default=False):
+        check_param(params, "tous", param_type=list)
 
-    if check_param(params, 'plan_enabled', param_type=bool, default=False):
-        check_param(params, 'plan_fixed_fee')
-        check_param(params, 'plan_price')
+    if check_param(params, "plan_enabled", param_type=bool, default=False):
+        check_param(params, "plan_fixed_fee")
+        check_param(params, "plan_price")
 
-    if check_param(params, 'daily_energy_limit_enabled', param_type=bool, default=False):
-        check_param(params, 'daily_energy_limit_reset_hour', param_type=int, strict=True)
-        check_param(params, 'daily_energy_limit_value', param_type=float)
+    if check_param(params, "daily_energy_limit_enabled", param_type=bool, default=False):
+        check_param(params, "daily_energy_limit_reset_hour", param_type=int, strict=True)
+        check_param(params, "daily_energy_limit_value", param_type=float)
 
 
 # These are OpenAPI docs for the various model objects. Once we pick a doc framework to use, they should be

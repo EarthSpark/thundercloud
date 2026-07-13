@@ -9,20 +9,25 @@ from testfixtures import LogCapture
 
 from sparkmeter.meter.meterdomain import Meter
 from sparkmeter.tests.base import SparkMeterTestCaseBase
-from sparkmeter.tests.test_data_factory import (EventFactory, GroundFactory, MeterFactory,
-                                                TariffFactory, TransactionFactory)
+from sparkmeter.tests.test_data_factory import (
+    EventFactory,
+    GroundFactory,
+    MeterFactory,
+    TariffFactory,
+    TransactionFactory,
+)
 
 
 @pytest.fixture()
 def getUtility(mocker):
-    yield mocker.patch('sparkmeter.meter.metercommand.getUtility')
+    yield mocker.patch("sparkmeter.meter.metercommand.getUtility")
 
 
 @pytest.fixture()
 def logger():
-    with LogCapture(('sparkmeter.controller',
-                     'sparkmeter.meter.metercommand',
-                     'sparkmeter.meter.meterdomain')) as logger:
+    with LogCapture(
+        ("sparkmeter.controller", "sparkmeter.meter.metercommand", "sparkmeter.meter.meterdomain")
+    ) as logger:
         yield logger
 
 
@@ -34,19 +39,17 @@ class MeterCommandTest(SparkMeterTestCaseBase):
         transaction.process()
         self.session.commit()
 
-        result = cli('meter', 'convert-to-totalizer', '-s', m.serial)
+        result = cli("meter", "convert-to-totalizer", "-s", m.serial)
         assert result.exit_code == 0
 
         logger.check(
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing transactions for meter SM15R-01-00000001'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing Customer and Billing for meter SM15R-01-00000001'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing wallets for meter SM15R-01-00000001')
+            ("sparkmeter.meter.meterdomain", "INFO", "Removing transactions for meter SM15R-01-00000001"),
+            (
+                "sparkmeter.meter.meterdomain",
+                "INFO",
+                "Removing Customer and Billing for meter SM15R-01-00000001",
+            ),
+            ("sparkmeter.meter.meterdomain", "INFO", "Removing wallets for meter SM15R-01-00000001"),
         )
         m = Meter.get_by_id(m.id)
         assert m.meter_type == Meter.TYPE_TOTALIZER
@@ -57,40 +60,46 @@ class MeterCommandTest(SparkMeterTestCaseBase):
         assert not m.customer
 
     def test_convert_customer_meter_does_not_exist(self, cli, logger):
-        result = cli('meter', 'convert-to-totalizer', '-s', 'invalid-serial')
+        result = cli("meter", "convert-to-totalizer", "-s", "invalid-serial")
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'meter does not exist'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "meter does not exist"))
 
     def test_convert_customer_meter_must_be_a_customer(self, cli, logger):
-        m = MeterFactory(billing=None, customer=None,
-                         meter_type=Meter.TYPE_TOTALIZER,
-                         credit_wallet=None,
-                         debt_wallet=None,
-                         plan_wallet=None)
+        m = MeterFactory(
+            billing=None,
+            customer=None,
+            meter_type=Meter.TYPE_TOTALIZER,
+            credit_wallet=None,
+            debt_wallet=None,
+            plan_wallet=None,
+        )
         self.session.commit()
-        result = cli('meter', 'convert-to-totalizer', '-s', m.serial)
+        result = cli("meter", "convert-to-totalizer", "-s", m.serial)
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'meter must be a customer meter'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "meter must be a customer meter"))
 
     def test_convert_totalizer(self, cli, logger):
-        m = MeterFactory(billing=None, customer=None,
-                         meter_type=Meter.TYPE_TOTALIZER,
-                         credit_wallet=None,
-                         debt_wallet=None,
-                         plan_wallet=None)
+        m = MeterFactory(
+            billing=None,
+            customer=None,
+            meter_type=Meter.TYPE_TOTALIZER,
+            credit_wallet=None,
+            debt_wallet=None,
+            plan_wallet=None,
+        )
         t = TariffFactory()
         self.session.commit()
 
-        result = cli('meter', 'convert-to-customer', '-s', m.serial, '-t', t.name)
+        result = cli("meter", "convert-to-customer", "-s", m.serial, "-t", t.name)
         assert result.exit_code == 0
 
-        logger.check(('sparkmeter.meter.meterdomain',
-                      'INFO',
-                      'Creating wallets for meter 00000001-0000-0000-0000-000000000001'))
+        logger.check(
+            (
+                "sparkmeter.meter.meterdomain",
+                "INFO",
+                "Creating wallets for meter 00000001-0000-0000-0000-000000000001",
+            )
+        )
         assert m.meter_type == Meter.TYPE_CUSTOMER
         assert m.billing.tariff.id == t.id
         assert m.credit_wallet
@@ -99,95 +108,94 @@ class MeterCommandTest(SparkMeterTestCaseBase):
         assert m.customer
 
     def test_convert_totalizer_meter_does_not_exist(self, cli, logger):
-        result = cli('meter', 'convert-to-customer', '-s', 'invalid-serial', '-t', 'unused')
+        result = cli("meter", "convert-to-customer", "-s", "invalid-serial", "-t", "unused")
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'meter does not exist'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "meter does not exist"))
 
     def test_convert_totalizer_meter_must_be_a_totalizer(self, cli, logger):
         m = MeterFactory()
         self.session.commit()
-        result = cli('meter', 'convert-to-customer', '-s', m.serial, '-t', 'unused')
+        result = cli("meter", "convert-to-customer", "-s", m.serial, "-t", "unused")
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'meter must be a totalizer meter'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "meter must be a totalizer meter"))
 
     def test_convert_totalizer_meter_tariff_does_not_exist(self, cli, logger):
-        m = MeterFactory(billing=None, customer=None,
-                         meter_type=Meter.TYPE_TOTALIZER,
-                         credit_wallet=None,
-                         debt_wallet=None,
-                         plan_wallet=None)
+        m = MeterFactory(
+            billing=None,
+            customer=None,
+            meter_type=Meter.TYPE_TOTALIZER,
+            credit_wallet=None,
+            debt_wallet=None,
+            plan_wallet=None,
+        )
         self.session.commit()
-        result = cli('meter', 'convert-to-customer', '-s', m.serial, '-t', 'invalid-tariff')
+        result = cli("meter", "convert-to-customer", "-s", m.serial, "-t", "invalid-tariff")
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'tariff does not exist'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "tariff does not exist"))
 
     def test_create(self, cli, config, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         ground = GroundFactory()
         tariff = TariffFactory()
         self.session.commit()
-        config.update(SERIAL=ground.serial,
-                      NEW_METER_ACCT_CREDIT=500,
-                      NEW_METER_STATE=1,
-                      NEW_METER_HIDDEN=False,
-                      NEW_METER_SUBNET=127,
-                      NEW_METER_TARIFF=tariff.name)
-        result = cli('meter', 'create', '-s', 'SM15R-01-00000000')
+        config.update(
+            SERIAL=ground.serial,
+            NEW_METER_ACCT_CREDIT=500,
+            NEW_METER_STATE=1,
+            NEW_METER_HIDDEN=False,
+            NEW_METER_SUBNET=127,
+            NEW_METER_TARIFF=tariff.name,
+        )
+        result = cli("meter", "create", "-s", "SM15R-01-00000000")
         assert result.exit_code == 0
 
         meter = Meter.query.one()
-        assert meter.serial == 'SM15R-01-00000000'
+        assert meter.serial == "SM15R-01-00000000"
         assert meter.ground.id == ground.id
         assert meter.config.state == 1
         assert not meter.config.hidden
         assert meter.config.subnet == 127
         assert meter.tariff.id == tariff.id
         assert event_create.mock_calls == [
-            mock.call('meter-created', obj=mock.ANY),
+            mock.call("meter-created", obj=mock.ANY),
         ]
 
     def test_create_error_duplicate(self, cli, config, logger, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         ground = GroundFactory()
         tariff = TariffFactory()
         self.session.commit()
-        config.update(SERIAL=ground.serial,
-                      NEW_METER_TARIFF=tariff.name)
-        result = cli('meter', 'create', '-s', 'SM15R-01-00000000')
+        config.update(SERIAL=ground.serial, NEW_METER_TARIFF=tariff.name)
+        result = cli("meter", "create", "-s", "SM15R-01-00000000")
         assert result.exit_code == 0
-        result = cli('meter', 'create', '-s', 'SM15R-01-00000000')
+        result = cli("meter", "create", "-s", "SM15R-01-00000000")
         assert result.exit_code == 1
 
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'ERROR: meter with serial SM15R-01-00000000 already exists'))
+        logger.check(
+            (
+                "sparkmeter.meter.metercommand",
+                "ERROR",
+                "ERROR: meter with serial SM15R-01-00000000 already exists",
+            )
+        )
         # FIXME: This should not have created the event!
         assert event_create.mock_calls == [
-            mock.call('meter-created', obj=mock.ANY),
+            mock.call("meter-created", obj=mock.ANY),
         ]
 
     def test_create_error_unknown_model(self, cli, config, logger, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         ground = GroundFactory()
         tariff = TariffFactory()
         self.session.commit()
-        config.update(SERIAL=ground.serial,
-                      NEW_METER_TARIFF=tariff.name)
-        result = cli('meter', 'create', '-s', 'SM2R-01-00000000')
+        config.update(SERIAL=ground.serial, NEW_METER_TARIFF=tariff.name)
+        result = cli("meter", "create", "-s", "SM2R-01-00000000")
         assert result.exit_code == 1
 
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'ERROR: No model found for SM2R-01-00000000'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "ERROR: No model found for SM2R-01-00000000"))
         assert len(event_create.mock_calls) == 0
 
     def test_remove(self, cli, logger):
@@ -198,77 +206,78 @@ class MeterCommandTest(SparkMeterTestCaseBase):
         TransactionFactory(_to_wallet_meter=m1)
         self.session.commit()
 
-        with mock.patch('sparkmeter.meter.metercommand.input') as f:
-            f.return_value = 'N'
-            cli('meter', 'remove', '-s', m1.serial)
+        with mock.patch("sparkmeter.meter.metercommand.input") as f:
+            f.return_value = "N"
+            cli("meter", "remove", "-s", m1.serial)
 
         logger.check(
-            ('sparkmeter.meter.metercommand', 'INFO', u'Meter: SM15R-01-00000001'),
-            ('sparkmeter.meter.metercommand', 'INFO', u'Customer: str\xebet'),
-            ('sparkmeter.meter.metercommand', 'WARNING', 'Credit balance: 10.000000'),
-            ('sparkmeter.meter.metercommand', 'WARNING', 'Debt balance: 20.000000'),
-            ('sparkmeter.meter.metercommand', 'WARNING', 'Plan balance: 30.000000'),
-            ('sparkmeter.meter.metercommand',
-             'WARNING',
-             u'Transaction 00000007-0000-0000-0000-000000000001 2013-01-01 01:01:01 100.0 credit'),
-            ('sparkmeter.meter.metercommand', 'INFO', 'Okay, aborting'))
+            ("sparkmeter.meter.metercommand", "INFO", "Meter: SM15R-01-00000001"),
+            ("sparkmeter.meter.metercommand", "INFO", "Customer: str\xebet"),
+            ("sparkmeter.meter.metercommand", "WARNING", "Credit balance: 10.000000"),
+            ("sparkmeter.meter.metercommand", "WARNING", "Debt balance: 20.000000"),
+            ("sparkmeter.meter.metercommand", "WARNING", "Plan balance: 30.000000"),
+            (
+                "sparkmeter.meter.metercommand",
+                "WARNING",
+                "Transaction 00000007-0000-0000-0000-000000000001 2013-01-01 01:01:01 100.0 credit",
+            ),
+            ("sparkmeter.meter.metercommand", "INFO", "Okay, aborting"),
+        )
         logger.clear()
 
-        with mock.patch('sparkmeter.meter.metercommand.input') as f:
-            f.return_value = 'Y'
-            cli('meter', 'remove', '-s', m1.serial)
+        with mock.patch("sparkmeter.meter.metercommand.input") as f:
+            f.return_value = "Y"
+            cli("meter", "remove", "-s", m1.serial)
 
         logger.check(
-            ('sparkmeter.meter.metercommand', 'INFO', u'Meter: SM15R-01-00000001'),
-            ('sparkmeter.meter.metercommand', 'INFO', u'Customer: str\xebet'),
-            ('sparkmeter.meter.metercommand', 'WARNING', 'Credit balance: 10.000000'),
-            ('sparkmeter.meter.metercommand', 'WARNING', 'Debt balance: 20.000000'),
-            ('sparkmeter.meter.metercommand', 'WARNING', 'Plan balance: 30.000000'),
-            ('sparkmeter.meter.metercommand',
-             'WARNING',
-             u'Transaction 00000007-0000-0000-0000-000000000001 2013-01-01 01:01:01 100.0 credit'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing transactions for meter SM15R-01-00000001'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing meter SM15R-01-00000001 and associated tables'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing transactions for meter SM15R-01-00000001'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing Customer and Billing for meter SM15R-01-00000001'),
-            ('sparkmeter.meter.meterdomain',
-             'INFO',
-             u'Removing wallets for meter SM15R-01-00000001'),
+            ("sparkmeter.meter.metercommand", "INFO", "Meter: SM15R-01-00000001"),
+            ("sparkmeter.meter.metercommand", "INFO", "Customer: str\xebet"),
+            ("sparkmeter.meter.metercommand", "WARNING", "Credit balance: 10.000000"),
+            ("sparkmeter.meter.metercommand", "WARNING", "Debt balance: 20.000000"),
+            ("sparkmeter.meter.metercommand", "WARNING", "Plan balance: 30.000000"),
+            (
+                "sparkmeter.meter.metercommand",
+                "WARNING",
+                "Transaction 00000007-0000-0000-0000-000000000001 2013-01-01 01:01:01 100.0 credit",
+            ),
+            ("sparkmeter.meter.meterdomain", "INFO", "Removing transactions for meter SM15R-01-00000001"),
+            (
+                "sparkmeter.meter.meterdomain",
+                "INFO",
+                "Removing meter SM15R-01-00000001 and associated tables",
+            ),
+            ("sparkmeter.meter.meterdomain", "INFO", "Removing transactions for meter SM15R-01-00000001"),
+            (
+                "sparkmeter.meter.meterdomain",
+                "INFO",
+                "Removing Customer and Billing for meter SM15R-01-00000001",
+            ),
+            ("sparkmeter.meter.meterdomain", "INFO", "Removing wallets for meter SM15R-01-00000001"),
         )
 
     def test_remove_does_not_exist(self, cli, logger):
-        result = cli('meter', 'remove', '-s', 'foobar')
+        result = cli("meter", "remove", "-s", "foobar")
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'ERROR',
-                      'No such meter with serial: foobar'))
+        logger.check(("sparkmeter.meter.metercommand", "ERROR", "No such meter with serial: foobar"))
 
     def test_send_config(self, cli, logger):
         m1 = MeterFactory()
         self.session.commit()
 
-        result = cli('meter', 'send-config')
+        result = cli("meter", "send-config")
         assert result.exit_code == 1
-        logger.check(('sparkmeter.meter.metercommand',
-                      'INFO',
-                      'must supply either --all or a --mac parameter'))
+        logger.check(
+            ("sparkmeter.meter.metercommand", "INFO", "must supply either --all or a --mac parameter")
+        )
 
-        with mock.patch('sparkmeter.meter.meterdomain.Meter.send_set_config_unconditionally') as f:
-            result = cli('meter', 'send-config', '-a')
+        with mock.patch("sparkmeter.meter.meterdomain.Meter.send_set_config_unconditionally") as f:
+            result = cli("meter", "send-config", "-a")
             assert result.exit_code == 0
             assert f.mock_calls == [mock.call()]
 
             f.reset_mock()
 
-            result = cli('meter', 'send-config', '-m', str(m1.code))
+            result = cli("meter", "send-config", "-m", str(m1.code))
             assert result.exit_code == 0
             assert f.mock_calls == [mock.call()]
 
@@ -276,23 +285,26 @@ class MeterCommandTest(SparkMeterTestCaseBase):
         """`meter get-heartbeat -m <mac>` exits 1 when no readings exist."""
         m = MeterFactory()
         self.session.commit()
-        result = cli('meter', 'get-heartbeat', '-m', str(m.code))
+        result = cli("meter", "get-heartbeat", "-m", str(m.code))
         assert result.exit_code == 1
 
     def test_get_heartbeat_reading_prints_latest(self, cli):
         """`meter get-heartbeat -m <mac>` prints the latest stored reading."""
         from sparkmeter.meter.meterstate import MeterState
         from sparkmeter.reading.readingdomain import Reading
+
         m = MeterFactory()
-        self.session.add(Reading(
-            meter=m.code,
-            state=MeterState.STATE_ON.id,
-            uptime=10,
-            heartbeat_start=datetime.datetime(2026, 1, 1, 0, 0),
-            heartbeat_end=datetime.datetime(2026, 1, 1, 0, 15),
-        ))
+        self.session.add(
+            Reading(
+                meter=m.code,
+                state=MeterState.STATE_ON.id,
+                uptime=10,
+                heartbeat_start=datetime.datetime(2026, 1, 1, 0, 0),
+                heartbeat_end=datetime.datetime(2026, 1, 1, 0, 15),
+            )
+        )
         self.session.commit()
-        result = cli('meter', 'get-heartbeat', '-m', str(m.code))
+        result = cli("meter", "get-heartbeat", "-m", str(m.code))
         assert "'meter': '%d'" % m.code in result.output
 
     def test_ping(self, cli, mocker, capfd):
@@ -306,9 +318,7 @@ class MeterCommandTest(SparkMeterTestCaseBase):
             for mid in meter_ids:
                 await submitter(mocker.MagicMock(), mid, "corr-" + mid)
 
-        mocker.patch(
-            "sparkmeter.metering.tools.cli_client.submit_ping", fake_submit_ping
-        )
+        mocker.patch("sparkmeter.metering.tools.cli_client.submit_ping", fake_submit_ping)
         mocker.patch(
             "sparkmeter.metering.tools.cli_client.run_per_meter_command",
             fake_run_per_meter_command,
@@ -331,9 +341,7 @@ class MeterCommandTest(SparkMeterTestCaseBase):
             for mid in meter_ids:
                 await submitter(mocker.MagicMock(), mid, "corr-" + mid)
 
-        mocker.patch(
-            "sparkmeter.metering.tools.cli_client.submit_ping", fake_submit_ping
-        )
+        mocker.patch("sparkmeter.metering.tools.cli_client.submit_ping", fake_submit_ping)
         mocker.patch(
             "sparkmeter.metering.tools.cli_client.run_per_meter_command",
             fake_run_per_meter_command,
@@ -379,6 +387,7 @@ class NeighborListCommandTest(SparkMeterTestCaseBase):
 class WithForeverTest:
     def test_runs_once_without_forever(self):
         from sparkmeter.meter.metercommand import with_forever
+
         call_count = [0]
 
         @with_forever
@@ -390,6 +399,7 @@ class WithForeverTest:
 
     def test_loops_with_forever(self):
         from sparkmeter.meter.metercommand import with_forever
+
         call_count = [0]
 
         @with_forever
@@ -407,7 +417,7 @@ class ReadingGeneratorTest(SparkMeterTestCaseBase):
     def test_heartbeat(self, mocker):
         from sparkmeter.reading.readingcommand import ReadingGenerator
 
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
 
         m = MeterFactory()

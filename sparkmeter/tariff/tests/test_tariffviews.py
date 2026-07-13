@@ -58,24 +58,26 @@ class TariffViewTest(WebViewTestCaseBase):
     def test_add_form(self, client, config):
         path = "/tariff/add"
 
-        data = dict(name='TARIFF',
-                    flat_load_limit=150,
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tous='')
+        data = dict(
+            name="TARIFF",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path, data=data, follow_redirects=True)
 
         tariffs = Tariff.get_all()
         assert len(tariffs) == 1
         t = tariffs[0]
-        assert t.name == data['name']
-        assert t.flat_load_limit == data['flat_load_limit']
-        assert t.tariff_type == data['tariff_type']
-        assert t.flat_price == data['flat_price']
+        assert t.name == data["name"]
+        assert t.flat_load_limit == data["flat_load_limit"]
+        assert t.tariff_type == data["tariff_type"]
+        assert t.flat_price == data["flat_price"]
         assert not t.tou_enabled
         assert len(t.blockrates) == 0
         assert len(t.tous) == 0
@@ -83,22 +85,24 @@ class TariffViewTest(WebViewTestCaseBase):
 
         self.verify_response(response, ignore_values=[str(tariffs[0].id)])
 
-        link = build_link(url_for('tariff.edit', tariff_id=t.id), 'TARIFF')
-        assert 'Tariff %s created' % (link,) in response.text
+        link = build_link(url_for("tariff.edit", tariff_id=t.id), "TARIFF")
+        assert "Tariff %s created" % (link,) in response.text
 
     def test_add_form_int_outrange(self, client, config):
         path = "/tariff/add"
 
-        data = dict(name='TARIFF',
-                    flat_load_limit=MAX_SIGNED_INT + 1,
-                    load_limit_type='flat',
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tous='')
+        data = dict(
+            name="TARIFF",
+            flat_load_limit=MAX_SIGNED_INT + 1,
+            load_limit_type="flat",
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path, data=data, follow_redirects=True)
 
         self.verify_response(response)
@@ -107,16 +111,18 @@ class TariffViewTest(WebViewTestCaseBase):
     def test_add_form_int_max_allowed(self, client, config):
         path = "/tariff/add"
 
-        data = dict(name='TARIFF',
-                    flat_load_limit=MAX_SIGNED_INT,
-                    load_limit_type='flat',
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tous='')
+        data = dict(
+            name="TARIFF",
+            flat_load_limit=MAX_SIGNED_INT,
+            load_limit_type="flat",
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path, data=data, follow_redirects=True)
 
         tariff = Tariff.query.one()
@@ -125,53 +131,62 @@ class TariffViewTest(WebViewTestCaseBase):
     def test_add_form_with_tous(self, client, config):
         path = "/tariff/add"
 
-        data = dict(tous=json_dumps([{"end": "24:00",
-                                      "id": "612aaccf-a86f-486e-82b4-3abd136f34ef",
-                                      "start": "00:00",
-                                      "value": 100}]),
-                    name='TARIFF TOU',
-                    load_limit_type='flat',
-                    flat_load_limit=150,
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tou_enabled=True,
-                    )
+        data = dict(
+            tous=json_dumps(
+                [
+                    {
+                        "end": "24:00",
+                        "id": "612aaccf-a86f-486e-82b4-3abd136f34ef",
+                        "start": "00:00",
+                        "value": 100,
+                    }
+                ]
+            ),
+            name="TARIFF TOU",
+            load_limit_type="flat",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tou_enabled=True,
+        )
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path, data=data, follow_redirects=True)
 
         tariffs = Tariff.get_all()
         assert len(tariffs) == 1
         t = tariffs[0]
-        assert t.name == data['name']
-        assert t.flat_load_limit == data['flat_load_limit']
-        assert t.tariff_type == data['tariff_type']
-        assert t.flat_price == data['flat_price']
-        assert t.tou_enabled == data['tou_enabled']
+        assert t.name == data["name"]
+        assert t.flat_load_limit == data["flat_load_limit"]
+        assert t.tariff_type == data["tariff_type"]
+        assert t.flat_price == data["flat_price"]
+        assert t.tou_enabled == data["tou_enabled"]
         assert len(t.blockrates) == 0
         assert len(t.tous) == 1
         tous = t.get_tous()
-        assert tous[0].start == '00:00'
-        assert tous[0].end == '00:00'
+        assert tous[0].start == "00:00"
+        assert tous[0].end == "00:00"
         assert tous[0].value == 100
 
-        self.verify_response(response, variant='tous-post',
-                             ignore_values=[str(tariffs[0].id)])
-        link = build_link(url_for('tariff.edit', tariff_id=t.id), 'TARIFF TOU')
-        assert 'Tariff %s created' % (link,) in response.text
+        self.verify_response(response, variant="tous-post", ignore_values=[str(tariffs[0].id)])
+        link = build_link(url_for("tariff.edit", tariff_id=t.id), "TARIFF TOU")
+        assert "Tariff %s created" % (link,) in response.text
 
     def test_add_form_with_blockrates(self, client, config):
         path = "/tariff/add"
 
-        data = dict(blockrates=json_dumps([
-            {"lower": 0, "upper": 20, "value": 1},
-            {"lower": 20, "upper": 40, "value": 2},
-            {"lower": 40, "upper": 0, "value": 3.5},
-        ]),
-            name='TARIFF BLOCKRATES',
-            load_limit_type='flat',
+        data = dict(
+            blockrates=json_dumps(
+                [
+                    {"lower": 0, "upper": 20, "value": 1},
+                    {"lower": 20, "upper": 40, "value": 2},
+                    {"lower": 40, "upper": 0, "value": 3.5},
+                ]
+            ),
+            name="TARIFF BLOCKRATES",
+            load_limit_type="flat",
             flat_load_limit=150,
             plan_price=0,
             cycle_start_day_of_month=1,
@@ -179,20 +194,20 @@ class TariffViewTest(WebViewTestCaseBase):
             flat_price=4,
         )
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path, data=data, follow_redirects=True)
 
         tariffs = Tariff.get_all()
         assert len(tariffs) == 1
         t = tariffs[0]
-        assert t.name == data['name']
-        assert t.flat_load_limit == data['flat_load_limit']
-        assert t.tariff_type == data['tariff_type']
-        assert t.flat_price == data['flat_price']
+        assert t.name == data["name"]
+        assert t.flat_load_limit == data["flat_load_limit"]
+        assert t.tariff_type == data["tariff_type"]
+        assert t.flat_price == data["flat_price"]
         assert not t.tou_enabled
         assert len(t.tous) == 0
         assert len(t.blockrates) == 3
-        blockrates = list(sorted(t.get_blockrates(), key=operator.attrgetter('value')))
+        blockrates = list(sorted(t.get_blockrates(), key=operator.attrgetter("value")))
         assert blockrates[0].lower == 0
         assert blockrates[0].upper == 20
         assert blockrates[0].value == 1
@@ -204,18 +219,21 @@ class TariffViewTest(WebViewTestCaseBase):
         assert blockrates[2].value == 3.5
 
         self.verify_response(response, ignore_values=[str(tariffs[0].id)])
-        link = build_link(url_for('tariff.edit', tariff_id=t.id), u'TARIFF BLOCKRATES')
-        assert 'Tariff %s created' % (link,) in response.text
+        link = build_link(url_for("tariff.edit", tariff_id=t.id), "TARIFF BLOCKRATES")
+        assert "Tariff %s created" % (link,) in response.text
 
     def test_add_form_with_load_limits(self, client, config):
         path = "/tariff/add"
 
-        data = dict(load_limits=json_dumps([
-            {"start": "00:00", "end": "18:00", "value": 1},
-            {"start": "18:00", "end": "22:00", "value": 2},
-            {"start": "22:00", "end": "00:00", "value": 3.5},
-        ]),
-            name='TARIFF LOAD LIMITS',
+        data = dict(
+            load_limits=json_dumps(
+                [
+                    {"start": "00:00", "end": "18:00", "value": 1},
+                    {"start": "18:00", "end": "22:00", "value": 2},
+                    {"start": "22:00", "end": "00:00", "value": 3.5},
+                ]
+            ),
+            name="TARIFF LOAD LIMITS",
             load_limit_type=Tariff.LOAD_LIMIT_TYPE_SCHEDULED,
             flat_load_limit=150,
             plan_price=0,
@@ -224,21 +242,21 @@ class TariffViewTest(WebViewTestCaseBase):
             flat_price=4,
         )
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path, data=data, follow_redirects=True)
 
         tariffs = Tariff.get_all()
         assert len(tariffs) == 1
         t = tariffs[0]
-        assert t.name == data['name']
-        assert t.flat_load_limit == data['flat_load_limit']
-        assert t.tariff_type == data['tariff_type']
-        assert t.flat_price == data['flat_price']
+        assert t.name == data["name"]
+        assert t.flat_load_limit == data["flat_load_limit"]
+        assert t.tariff_type == data["tariff_type"]
+        assert t.flat_price == data["flat_price"]
         assert not t.tou_enabled
         assert len(t.tous) == 0
         assert len(t.blockrates) == 0
         assert len(t.load_limits) == 3
-        limits = list(sorted(t.get_load_limits(), key=operator.attrgetter('value')))
+        limits = list(sorted(t.get_load_limits(), key=operator.attrgetter("value")))
         assert limits[0].start == "00:00"
         assert limits[0].end == "18:00"
         assert limits[0].value == 1
@@ -250,64 +268,72 @@ class TariffViewTest(WebViewTestCaseBase):
         assert limits[2].value == 3.5
 
         self.verify_response(response, ignore_values=[str(tariffs[0].id)])
-        link = build_link(url_for('tariff.edit', tariff_id=t.id), u'TARIFF LOAD LIMITS')
+        link = build_link(url_for("tariff.edit", tariff_id=t.id), "TARIFF LOAD LIMITS")
         print(response.data)
-        assert 'Tariff %s created' % (link,) in response.text
+        assert "Tariff %s created" % (link,) in response.text
 
     def test_add_with_invalid_blockrates(self, client):
         path = "/tariff/add"
-        data = dict(blockrates=json_dumps([{"lower": "1",
-                                            "upper": "20",
-                                            "value": "1"}]),
-                    name='Tariff',
-                    load_limit_type='flat',
-                    flat_load_limit=150,
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type=Tariff.TYPE_BLOCKRATE
-                    )
+        data = dict(
+            blockrates=json_dumps([{"lower": "1", "upper": "20", "value": "1"}]),
+            name="Tariff",
+            load_limit_type="flat",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type=Tariff.TYPE_BLOCKRATE,
+        )
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        msg = 'Block rates contain at least one gap, between 0 and 65535'
+        msg = "Block rates contain at least one gap, between 0 and 65535"
         assert msg in response.text
 
     def test_add_with_invalid_tous(self, client):
         path = "/tariff/add"
-        data = dict(tous=json_dumps([{"end": "24:00",
-                                      "id": "612aaccf-a86f-486e-82b4-3abd136f34ef",
-                                      "start": "00:00",
-                                      "value": -100}]),
-                    name='TARIFF TOU',
-                    load_limit_type='flat',
-                    flat_load_limit=150,
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tou_enabled=True,
-                    )
+        data = dict(
+            tous=json_dumps(
+                [
+                    {
+                        "end": "24:00",
+                        "id": "612aaccf-a86f-486e-82b4-3abd136f34ef",
+                        "start": "00:00",
+                        "value": -100,
+                    }
+                ]
+            ),
+            name="TARIFF TOU",
+            load_limit_type="flat",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tou_enabled=True,
+        )
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        msg = 'The TOU period modifier must be a positive number.'
+        msg = "The TOU period modifier must be a positive number."
         assert msg in response.text
 
     def test_error_empty_name(self, client):
         path = "/tariff/add"
-        data = dict(name='', flat_load_limit=150, flat_price=4)
+        data = dict(name="", flat_load_limit=150, flat_price=4)
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        msg = 'Please set a name for this tariff'
+        msg = "Please set a name for this tariff"
         assert msg in response.text
 
     def test_error_duplicate_name(self, client):
         path = "/tariff/add"
-        data = dict(name='TARIFF',
-                    flat_load_limit=150,
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tous='')
+        data = dict(
+            name="TARIFF",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
         client.post(path, data=data, follow_redirects=True)
         tariffs = Tariff.get_all()
         assert len(tariffs) == 1
@@ -318,16 +344,18 @@ class TariffViewTest(WebViewTestCaseBase):
 
     def test_error_existing_duplicate_names(self, client):
         path = "/tariff/add"
-        TariffFactory(name='TARIFF', flat_load_limit=30)
-        TariffFactory(name='TARIFF', flat_load_limit=31)
+        TariffFactory(name="TARIFF", flat_load_limit=30)
+        TariffFactory(name="TARIFF", flat_load_limit=31)
         self.session.commit()
-        data = dict(name='TARIFF',
-                    flat_load_limit=150,
-                    plan_price=0,
-                    cycle_start_day_of_month=1,
-                    tariff_type='flat',
-                    flat_price=4,
-                    tous='')
+        data = dict(
+            name="TARIFF",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
         tariffs = Tariff.get_all()
@@ -335,35 +363,35 @@ class TariffViewTest(WebViewTestCaseBase):
 
     def test_error_enter_load_limit(self, client):
         path = "/tariff/add"
-        data = dict(name='Tariff', load_limit_type='flat', flat_price=4)
+        data = dict(name="Tariff", load_limit_type="flat", flat_price=4)
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        msg = 'Please enter a Load Limit for this tariff'
+        msg = "Please enter a Load Limit for this tariff"
         assert msg in response.text
 
     def test_error_no_scheduled_load_limits(self, client):
         path = "/tariff/add"
-        data = dict(name='Tariff', load_limit_type='scheduled', load_limits=[])
+        data = dict(name="Tariff", load_limit_type="scheduled", load_limits=[])
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
 
     def test_error_negative_load_limit(self, client):
         path = "/tariff/add"
         data = dict(
-            name='Tariff',
-            load_limit_type='flat',
+            name="Tariff",
+            load_limit_type="flat",
             flat_load_limit=-2,
             flat_price=4,
         )
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        msg = 'Load Limits cannot be negative'
+        msg = "Load Limits cannot be negative"
         assert msg in response.text
 
     def test_error_enter_monthly_plan_price(self, client):
         path = "/tariff/add"
         data = dict(
-            name='Tariff',
+            name="Tariff",
             flat_load_limit=60,
             flat_price=1,
             plan_enabled=True,
@@ -372,76 +400,61 @@ class TariffViewTest(WebViewTestCaseBase):
         )
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Number must be at least 0.' in response.text
+        assert "Number must be at least 0." in response.text
 
     def test_error_flat_rate(self, client):
         path = "/tariff/add"
         data = dict(
-            name='Tariff',
-            load_limit_type='flat',
+            name="Tariff",
+            load_limit_type="flat",
             flat_load_limit=60,
-            tariff_type='flat',
+            tariff_type="flat",
             flat_price=0,
         )
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Please set a Flat Rate' in response.text
+        assert "Please set a Flat Rate" in response.text
 
     def test_error_negative_flat_rate(self, client):
         path = "/tariff/add"
-        data = dict(
-            name='Tariff',
-            flat_load_limit=60,
-            tarriff_type='flat',
-            flat_price=-2
-        )
+        data = dict(name="Tariff", flat_load_limit=60, tarriff_type="flat", flat_price=-2)
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Flat Rate cannot be negative' in response.text
+        assert "Flat Rate cannot be negative" in response.text
 
     def test_error_blockrate(self, client):
         path = "/tariff/add"
-        data = dict(
-            name='Tariff',
-            flat_load_limit=60,
-            tariff_type=Tariff.TYPE_BLOCKRATE)
+        data = dict(name="Tariff", flat_load_limit=60, tariff_type=Tariff.TYPE_BLOCKRATE)
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Please add some block rates.' in response.text
+        assert "Please add some block rates." in response.text
 
     def test_error_tous(self, client):
         path = "/tariff/add"
-        data = dict(
-            name='Tariff',
-            flat_load_limit=60,
-            tou_enabled=True)
+        data = dict(name="Tariff", flat_load_limit=60, tou_enabled=True)
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Please add some TOU periods.' in response.text
+        assert "Please add some TOU periods." in response.text
 
     def test_error_low_balance_empty(self, client):
         path = "/tariff/add"
-        data = dict(
-            name='Tariff',
-            flat_load_limit=60,
-            low_balance_threshold=''
-        )
+        data = dict(name="Tariff", flat_load_limit=60, low_balance_threshold="")
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Low Balance cannot be empty.' in response.text
+        assert "Low Balance cannot be empty." in response.text
 
     def test_error_low_balance_negative(self, client):
         path = "/tariff/add"
-        data = dict(name='Tariff', flat_load_limit=60, low_balance_threshold=-1)
+        data = dict(name="Tariff", flat_load_limit=60, low_balance_threshold=-1)
         response = client.post(path, data=data, follow_redirects=True)
         self.verify_response(response)
-        assert 'Low Balance must be higher or equals to 0.' in response.text
+        assert "Low Balance must be higher or equals to 0." in response.text
 
     def test_edit(self, client, config):
-        config['HEROKU'] = True
+        config["HEROKU"] = True
         path = "/tariff/%s/edit"
 
-        tariff = TariffFactory(name='Tariff', flat_load_limit=30)
+        tariff = TariffFactory(name="Tariff", flat_load_limit=30)
         MeterFactory(code=1, config__state=MeterConfig.STATE_AUTO, tariff=tariff)
         MeterFactory(code=2, config__state=MeterConfig.STATE_AUTO, tariff=tariff)
         MeterFactory(code=3, config__state=MeterConfig.STATE_AUTO)
@@ -451,45 +464,35 @@ class TariffViewTest(WebViewTestCaseBase):
 
         self.verify_response(response)
 
-        data = dict(name='Tariff',
-                    load_limit_type='flat',
-                    flat_price=0,
-                    tariff_type='flat',
-                    flat_load_limit=60)
-        response = client.post(path % (tariff.id), data=data,
-                               follow_redirects=True)
-        self.verify_response(response, variant='edit-post-error')
-        assert 'Please set a Flat Rate' in response.text
+        data = dict(
+            name="Tariff", load_limit_type="flat", flat_price=0, tariff_type="flat", flat_load_limit=60
+        )
+        response = client.post(path % (tariff.id), data=data, follow_redirects=True)
+        self.verify_response(response, variant="edit-post-error")
+        assert "Please set a Flat Rate" in response.text
 
-        data = dict(name='Tariff',
-                    load_limit_type='flat',
-                    flat_price=-1,
-                    flat_load_limit=60)
-        response = client.post(path % (tariff.id), data=data,
-                               follow_redirects=True)
-        self.verify_response(response, variant='edit-negative-post-error')
-        assert 'Flat Rate cannot be negative' in response.text
+        data = dict(name="Tariff", load_limit_type="flat", flat_price=-1, flat_load_limit=60)
+        response = client.post(path % (tariff.id), data=data, follow_redirects=True)
+        self.verify_response(response, variant="edit-negative-post-error")
+        assert "Flat Rate cannot be negative" in response.text
 
-        data = dict(name='new tariff',
-                    load_limit_type='flat',
-                    flat_load_limit=150,
-                    tariff_type='flat',
-                    flat_price=4)
-        response = client.post(path % (tariff.id), data=data,
-                               follow_redirects=True)
-        self.verify_response(response, variant='new-tariff')
-        assert 'Tariff updated.' in response.text
+        data = dict(
+            name="new tariff", load_limit_type="flat", flat_load_limit=150, tariff_type="flat", flat_price=4
+        )
+        response = client.post(path % (tariff.id), data=data, follow_redirects=True)
+        self.verify_response(response, variant="new-tariff")
+        assert "Tariff updated." in response.text
 
     def test_edit_remove_blockrate(self, client):
         path = "/tariff/%s/edit"
         block1 = dict(lower=0, upper=20, value=1.0)
-        tariff = TariffFactory(name='Tariff', flat_load_limit=30)
+        tariff = TariffFactory(name="Tariff", flat_load_limit=30)
 
         self.session.commit()
 
         data = dict(
-            name='Tariff',
-            load_limit_type='flat',
+            name="Tariff",
+            load_limit_type="flat",
             flat_load_limit=150,
             tariff_type=Tariff.TYPE_BLOCKRATE,
             blockrates=json_dumps([block1]),
@@ -508,7 +511,7 @@ class TariffViewTest(WebViewTestCaseBase):
         self.session.commit()
 
         data = dict(name="Tariff", flat_load_limit=20)
-        config['HEROKU'] = True
+        config["HEROKU"] = True
         response = client.post(path % (tariff.id), data=data)
         assert response.status_code == http.client.FOUND
         events = Event.query.all()
@@ -525,7 +528,7 @@ class TariffViewTest(WebViewTestCaseBase):
         self.session.commit()
 
         data = dict(name="Tariff", flat_load_limit=20)
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.post(path % (tariff.id), data=data)
         assert response.status_code == http.client.FOUND
         events = Event.query.all()
@@ -541,10 +544,11 @@ class TariffViewTest(WebViewTestCaseBase):
                 current_limit=10000.0,
                 load_limit=10.0,
                 mac=1,
-                command='disable',
+                command="disable",
                 balance=0,
                 low_balance=True,
-                firmware_version=u'abc1234'),
+                firmware_version="abc1234",
+            ),
         ]
 
     def test_edit_scheduled_load_limit(self, client, config, mocker, send_set_config):
@@ -554,7 +558,8 @@ class TariffViewTest(WebViewTestCaseBase):
             load_limits=[
                 {"start": "00:00", "end": "12:00", "value": 5},
                 {"start": "12:00", "end": "00:00", "value": 10},
-            ],)
+            ],
+        )
 
         MeterFactory(tariff=tariff)
         self.session.commit()
@@ -564,9 +569,9 @@ class TariffViewTest(WebViewTestCaseBase):
             flat_load_limit=5,
             load_limit_type=Tariff.LOAD_LIMIT_TYPE_FLAT,
         )
-        config['HEROKU'] = False
+        config["HEROKU"] = False
 
-        f = mocker.patch.object(Tariff, 'get_current_load_limit')
+        f = mocker.patch.object(Tariff, "get_current_load_limit")
         f.side_effect = [10, 20, 20]
 
         response = client.post(path % (tariff.id), data=data)
@@ -585,8 +590,9 @@ class TariffViewTest(WebViewTestCaseBase):
                 current_limit=10000.0,
                 load_limit=10.0,
                 mac=1,
-                command='disable',
+                command="disable",
                 balance=0,
                 low_balance=True,
-                firmware_version=u'abc1234'),
+                firmware_version="abc1234",
+            ),
         ]

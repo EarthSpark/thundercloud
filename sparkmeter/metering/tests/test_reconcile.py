@@ -15,15 +15,14 @@ import pytest
 
 from sparkmeter.metering import reconcile
 from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import \
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
+    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
+)
 
 
 class TestBuildRegister:
     def test_with_mac(self):
-        body = reconcile._build_register(
-            {"meter_id": "100", "meter_type": "SM5R", "mac": 0xABCD}
-        )
+        body = reconcile._build_register({"meter_id": "100", "meter_type": "SM5R", "mac": 0xABCD})
         assert body.command_type is CommandTypeEnum.REGISTER_METER
         assert body.params.meter_id == "100"
         assert body.params.meter_type == "SM5R"
@@ -86,9 +85,7 @@ class TestBuildConfigure:
 
 class TestBuildBalance:
     def test_with_balance(self):
-        body = reconcile._build_balance(
-            {"meter_id": "9", "balance": 12.5, "low_balance": True}
-        )
+        body = reconcile._build_balance({"meter_id": "9", "balance": 12.5, "low_balance": True})
         assert body is not None
         assert body.command_type is CommandTypeEnum.SET_BALANCE
         assert body.params.meter_id == "9"
@@ -99,9 +96,7 @@ class TestBuildBalance:
         assert reconcile._build_balance({"meter_id": "9"}) is None
 
     def test_decimal_string_preserves_precision(self):
-        body = reconcile._build_balance(
-            {"meter_id": "9", "balance": "0.00001", "low_balance": False}
-        )
+        body = reconcile._build_balance({"meter_id": "9", "balance": "0.00001", "low_balance": False})
         assert body is not None
         assert body.params.balance == "0.00001"
 

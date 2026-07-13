@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Event domain."""
+
 import collections
 import datetime
 import logging
@@ -30,61 +31,58 @@ from sparkmeter.user.userutils import get_current_user
 
 logger = logging.getLogger(__name__)
 
-EventTypeInfo = collections.namedtuple('EventTypeInfo', 'label object_type')
-MessageTypeInfo = collections.namedtuple('MessageTypeInfo', 'label default description')
+EventTypeInfo = collections.namedtuple("EventTypeInfo", "label object_type")
+MessageTypeInfo = collections.namedtuple("MessageTypeInfo", "label default description")
 
 
 @syncchannel(SYNC_CHANNEL_EVENT)
 class Event(BaseDomain):
-
     """Event.
 
     Collection of something that happened, such as an error,
     a meter balance out, meter went off etc.
     """
 
-    __tablename__ = 'event'
+    __tablename__ = "event"
 
     #: A customer credit cash transaction has been processed
-    TYPE_CUSTOMER_CREDIT_TRANSACTION = 'customer-credit-transaction-processed'
+    TYPE_CUSTOMER_CREDIT_TRANSACTION = "customer-credit-transaction-processed"
 
     #: A customer credit bonus transaction has been processed
-    TYPE_CUSTOMER_CREDIT_BONUS_TRANSACTION = 'customer-credit-bonus-transaction-processed'
+    TYPE_CUSTOMER_CREDIT_BONUS_TRANSACTION = "customer-credit-bonus-transaction-processed"
 
     #: A transaction has been reversed
-    TYPE_REVERSAL_TRANSACTION = 'reversal-transaction-processed'
+    TYPE_REVERSAL_TRANSACTION = "reversal-transaction-processed"
 
     #: A customer is low on balance
-    TYPE_CUSTOMER_LOW_BALANCE = 'customer-low-balance'
+    TYPE_CUSTOMER_LOW_BALANCE = "customer-low-balance"
 
     #: A new meter has been created
-    TYPE_METER_CREATED = 'meter-created'
+    TYPE_METER_CREATED = "meter-created"
 
     #: The state of a meter changed
-    TYPE_METER_STATE_CHANGED = 'meter-state-changed'
+    TYPE_METER_STATE_CHANGED = "meter-state-changed"
 
     #: The tariff of a meter changed
-    TYPE_METER_TARIFF_CHANGED = 'meter-tariff-changed'
+    TYPE_METER_TARIFF_CHANGED = "meter-tariff-changed"
 
     #: The power limit of a tariff changed
-    TYPE_TARIFF_POWER_LIMIT_CHANGED = 'tariff-power-limit-changed'
+    TYPE_TARIFF_POWER_LIMIT_CHANGED = "tariff-power-limit-changed"
 
     #: Ground override meter state has been enabled
-    TYPE_GROUND_OVERRIDE_METER_STATE_ENABLED = 'ground-override-meter-state-enabled'
+    TYPE_GROUND_OVERRIDE_METER_STATE_ENABLED = "ground-override-meter-state-enabled"
 
     #: Ground override meter state has been disabled
-    TYPE_GROUND_OVERRIDE_METER_STATE_DISABLED = 'ground-override-meter-state-disabled'
+    TYPE_GROUND_OVERRIDE_METER_STATE_DISABLED = "ground-override-meter-state-disabled"
 
     #: Configuration parameter changed
-    TYPE_CONFIG_PARAMETER_CHANGED = 'config-parameter-changed'
+    TYPE_CONFIG_PARAMETER_CHANGED = "config-parameter-changed"
 
     #: A customer wallet zero request has been emitted
-    TYPE_CUSTOMER_WALLET_ZERO_REQUESTED = 'customer-wallet-zero-requested'
+    TYPE_CUSTOMER_WALLET_ZERO_REQUESTED = "customer-wallet-zero-requested"
 
     #: ID of ground this address belongs to, NULL for global events like tariff changes
-    ground_id = Column(UUIDType(binary=False),
-                       ForeignKey('ground.id'),
-                       nullable=True)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=True)
 
     #: Event timestamp
     timestamp = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
@@ -102,49 +100,43 @@ class Event(BaseDomain):
     processed = Column(Boolean, default=False)
 
     #: User which has most recently updated the parameter
-    created_by_id = Column(ForeignKey('user.id'), nullable=True)
+    created_by_id = Column(ForeignKey("user.id"), nullable=True)
 
     #: Snapshot for the object data
-    snapshot_id = Column(ForeignKey('snapshot.id'), nullable=True)
+    snapshot_id = Column(ForeignKey("snapshot.id"), nullable=True)
 
     #: When the event was processed, in UTC
     processed_timestamp = Column(DateTime, nullable=True)
 
     #: Reference to the user that created the event
-    created_by = relationship('User')
+    created_by = relationship("User")
 
     #: Reference to the ground
-    ground = relationship('Ground')  # type: Ground
+    ground = relationship("Ground")  # type: Ground
 
     #: Reference to the snapshot
-    snapshot = relationship('Snapshot')  # type: Snapshot
+    snapshot = relationship("Snapshot")  # type: Snapshot
 
     #: List of events and description and argument type
     events = {
-        TYPE_CUSTOMER_CREDIT_TRANSACTION: EventTypeInfo(
-            _('Successful cash payment'), 'transactions'),
-        TYPE_CUSTOMER_CREDIT_BONUS_TRANSACTION: EventTypeInfo(
-            _('Successful bonus payment'), 'transactions'),
-        TYPE_REVERSAL_TRANSACTION: EventTypeInfo(
-            _('Payment reversed'), 'transactions'),
-        TYPE_CUSTOMER_LOW_BALANCE: EventTypeInfo(
-            _('Low balance'), 'meter'),
-        TYPE_METER_CREATED: EventTypeInfo(
-            _('Meter created'), 'meter'),
-        TYPE_METER_STATE_CHANGED: EventTypeInfo(
-            _('Meter state changed'), 'meter'),
-        TYPE_METER_TARIFF_CHANGED: EventTypeInfo(
-            _('Meter tariff changed'), 'meter'),
-        TYPE_TARIFF_POWER_LIMIT_CHANGED: EventTypeInfo(
-            _('Tariff power limit changed'), 'tariff'),
+        TYPE_CUSTOMER_CREDIT_TRANSACTION: EventTypeInfo(_("Successful cash payment"), "transactions"),
+        TYPE_CUSTOMER_CREDIT_BONUS_TRANSACTION: EventTypeInfo(_("Successful bonus payment"), "transactions"),
+        TYPE_REVERSAL_TRANSACTION: EventTypeInfo(_("Payment reversed"), "transactions"),
+        TYPE_CUSTOMER_LOW_BALANCE: EventTypeInfo(_("Low balance"), "meter"),
+        TYPE_METER_CREATED: EventTypeInfo(_("Meter created"), "meter"),
+        TYPE_METER_STATE_CHANGED: EventTypeInfo(_("Meter state changed"), "meter"),
+        TYPE_METER_TARIFF_CHANGED: EventTypeInfo(_("Meter tariff changed"), "meter"),
+        TYPE_TARIFF_POWER_LIMIT_CHANGED: EventTypeInfo(_("Tariff power limit changed"), "tariff"),
         TYPE_GROUND_OVERRIDE_METER_STATE_ENABLED: EventTypeInfo(
-            ('Ground meter state override enabled'), 'ground'),
+            ("Ground meter state override enabled"), "ground"
+        ),
         TYPE_GROUND_OVERRIDE_METER_STATE_DISABLED: EventTypeInfo(
-            _('Ground meter state override disabled'), 'ground'),
-        TYPE_CONFIG_PARAMETER_CHANGED: EventTypeInfo(
-            _('Config parameter changed'), 'config_parameter'),
+            _("Ground meter state override disabled"), "ground"
+        ),
+        TYPE_CONFIG_PARAMETER_CHANGED: EventTypeInfo(_("Config parameter changed"), "config_parameter"),
         TYPE_CUSTOMER_WALLET_ZERO_REQUESTED: EventTypeInfo(
-            _('Customer wallet zero request received'), 'wallet'),
+            _("Customer wallet zero request received"), "wallet"
+        ),
     }
 
     @classmethod
@@ -165,31 +157,28 @@ class Event(BaseDomain):
         """Create a new event."""
         event_info = cls.events.get(event_type)
         if event_info is None:
-            raise ValueError("Invalid event_type: %s" % (event_type, ))
+            raise ValueError("Invalid event_type: %s" % (event_type,))
 
         object_type = get_class_by_tablename(event_info.object_type)
         if not isinstance(obj, object_type):
-            raise TypeError("obj must be a %s, not %s" % (
-                object_type.__name__,
-                type(obj).__name__))
+            raise TypeError("obj must be a %s, not %s" % (object_type.__name__, type(obj).__name__))
 
-        if event_info.object_type in ['meter', 'transactions']:
+        if event_info.object_type in ["meter", "transactions"]:
             ground = obj.ground
-        elif event_info.object_type == 'ground':
+        elif event_info.object_type == "ground":
             ground = obj
         else:
             ground = None
-        event = cls(event_type=event_type,
-                    ground=ground)
+        event = cls(event_type=event_type, ground=ground)
         event.created_by = get_current_user()
         event.object = obj
-        if event_info.object_type == 'meter':
+        if event_info.object_type == "meter":
             snapshot = Snapshot.get_or_create_meter_snapshot(meter_id=obj.id)
-        elif event_info.object_type == 'ground':
+        elif event_info.object_type == "ground":
             snapshot = Snapshot.get_or_create_ground_snapshot(obj)
-        elif event_info.object_type == 'tariff':
+        elif event_info.object_type == "tariff":
             snapshot = Snapshot.get_or_create_tariff_snapshot(obj)
-        elif event_info.object_type == 'wallet':
+        elif event_info.object_type == "wallet":
             if obj.meter_id:
                 snapshot = Snapshot.get_or_create_meter_snapshot(meter_id=obj.meter_id)
             else:  # pragma: nocover
@@ -267,8 +256,7 @@ class Event(BaseDomain):
         :returns: the last event for the event_type and obj
         """
         return (
-            cls.query
-            .filter(cls.object_id == obj.id)
+            cls.query.filter(cls.object_id == obj.id)
             .filter(cls.object_table == obj.__tablename__)
             .filter_by(event_type=event_type)
             .order_by(cls.timestamp.desc())
@@ -293,12 +281,11 @@ class Event(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_EVENT)
 class SMSConfig(BaseDomain):
-
     """
     SMS Configuration.
     """
 
-    __tablename__ = 'sms_config'
+    __tablename__ = "sms_config"
 
     #: Dictionary of SMS config commands, indexed using code
     commands = Column(MutableJSONDict, default={})
@@ -320,13 +307,13 @@ class SMSConfig(BaseDomain):
         # FIXME: Evaluate if we should indexed by ID instead in the future,
         #        that will require a database migration script though.
         objects = getattr(self, name) or {}
-        object_id = values.get('id')
+        object_id = values.get("id")
 
         # Delete old object(s) that has the same id, make a copy of
         # the dictionary items (which is required by python 3) to
         # avoid corrupting it as we iterate over it.
         for name, object_ in list(objects.items()):
-            if object_.get('id') == object_id:
+            if object_.get("id") == object_id:
                 del objects[name]
 
         # Insert the new values by the new key
@@ -335,8 +322,7 @@ class SMSConfig(BaseDomain):
 
 
 class SMSJSONObject(object):
-
-    """ Helper class for JSON SMS config object."""
+    """Helper class for JSON SMS config object."""
 
     config_attribute = None
     config_key = None
@@ -376,8 +362,7 @@ class SMSJSONObject(object):
     @classmethod
     def get_active(cls):
         """Get all active objects."""
-        return sorted([obj for obj in cls.get_all() if obj.active],
-                      key=operator.attrgetter(cls.config_key))
+        return sorted([obj for obj in cls.get_all() if obj.active], key=operator.attrgetter(cls.config_key))
 
     def save(self):
         """Save the object.
@@ -392,21 +377,18 @@ class SMSJSONObject(object):
 
 
 class SMSConfigCommand(SMSJSONObject):
-
     """A two-way SMS command like BAL to retrive balance."""
 
     DEFAULT_COMMANDS = {
-        'CHECK': _(
-            'Thank you! '
-            'This phone number has been added to {customer_name} in SparkMeter.'),
+        "CHECK": _("Thank you! This phone number has been added to {customer_name} in SparkMeter."),
     }
 
-    config_attribute = 'commands'
-    config_key = 'code'
+    config_attribute = "commands"
+    config_key = "code"
 
     #: Regexp used to match messages, strips all leading and trailing white space
     #: around the command code
-    MATCH_RE = r'(^|\s+)%s($|\s+)'
+    MATCH_RE = r"(^|\s+)%s($|\s+)"
 
     def __init__(self, id=None, active=True, code=None, template=None):
         if id is None:
@@ -418,10 +400,7 @@ class SMSConfigCommand(SMSJSONObject):
 
     def as_dict(self):
         """Serialize as dictionary."""
-        return dict(id=self.id,
-                    active=self.active,
-                    code=self.code,
-                    template=self.template)
+        return dict(id=self.id, active=self.active, code=self.code, template=self.template)
 
     @classmethod
     def parse_message(cls, message):
@@ -440,7 +419,7 @@ class SMSConfigCommand(SMSJSONObject):
 
         :returns: True if a command code was found, otherwise False.
         """
-        code_regexp = self.MATCH_RE % (re.escape(self.code.lower()), )
+        code_regexp = self.MATCH_RE % (re.escape(self.code.lower()),)
         return bool(re.match(code_regexp, text.lower()))
 
     def render_text(self, customer):
@@ -456,11 +435,10 @@ class SMSConfigCommand(SMSJSONObject):
 
 
 class SMSConfigAlert(SMSJSONObject):
-
     """An alert, tied to an event that will be sent to an end-user."""
 
-    config_attribute = 'alerts'
-    config_key = 'event_type'
+    config_attribute = "alerts"
+    config_key = "event_type"
 
     def __init__(self, id=None, active=True, event_type=None, template=None):
         if id is None:
@@ -472,10 +450,7 @@ class SMSConfigAlert(SMSJSONObject):
 
     def as_dict(self):
         """Serialize as dictionary."""
-        return dict(id=self.id,
-                    active=self.active,
-                    event_type=self.event_type,
-                    template=self.template)
+        return dict(id=self.id, active=self.active, event_type=self.event_type, template=self.template)
 
     @classmethod
     def get_by_event_type(cls, event_type):
@@ -485,53 +460,61 @@ class SMSConfigAlert(SMSJSONObject):
         :returns: an alert or None if not configured
         """
         d = cls.get_objects().get(event_type)
-        if d is not None and d['active']:
+        if d is not None and d["active"]:
             return cls(**d)
 
 
 class SMSConfigMessage(SMSJSONObject):
-
     """An system message, like no such number."""
 
     #: Phone number if not recognized, sent when the phone number is not in the system.
-    TYPE_NO_SUCH_NUMBER = 'no-such-number'
+    TYPE_NO_SUCH_NUMBER = "no-such-number"
 
     #: Sent if the code of an inbound message is invalid
-    TYPE_WRONG_CODE = 'wrong-code'
+    TYPE_WRONG_CODE = "wrong-code"
 
     #: If this number has not yet been verified with a CHECK command
-    TYPE_VERIFY_NUMBER = 'verify-number'
+    TYPE_VERIFY_NUMBER = "verify-number"
 
     #: List of command and description
     messages = {
         TYPE_NO_SUCH_NUMBER: MessageTypeInfo(
-            _('No such number'),
-            _('This phone number is not recognized by SparkMeter.'),
-            _('This message is sent back if the phone number of an '
-              'inbound message is not recognized.\n'
-              'The message will appear to the recipient exactly as '
-              'typed (no keywords used).')),
-
+            _("No such number"),
+            _("This phone number is not recognized by SparkMeter."),
+            _(
+                "This message is sent back if the phone number of an "
+                "inbound message is not recognized.\n"
+                "The message will appear to the recipient exactly as "
+                "typed (no keywords used)."
+            ),
+        ),
         TYPE_WRONG_CODE: MessageTypeInfo(
-            _('Wrong code'),
-            _('This SMS code is not recognized by SparkMeter.'),
-            _('This message is sent back if the code in an inbound message '
-              'is not recognized.\n'
-              'The message will appear to the recipient exactly as '
-              'typed (no keywords used).')),
-
+            _("Wrong code"),
+            _("This SMS code is not recognized by SparkMeter."),
+            _(
+                "This message is sent back if the code in an inbound message "
+                "is not recognized.\n"
+                "The message will appear to the recipient exactly as "
+                "typed (no keywords used)."
+            ),
+        ),
         TYPE_VERIFY_NUMBER: MessageTypeInfo(
-            _('Verify number'),
-            _('Send back CHECK to validate this phone number. '
-              'This will allow you to receive alerts from SparkMeter.'),
-            _('This message is sent when a phone number is added to the system. '
-              'Customers must reply to this message with code CHECK and '
-              'should be instructed to do so in this message is not recognized.\n'
-              'The message will appear to the recipient exactly as '
-              'typed (no keywords used).')),
+            _("Verify number"),
+            _(
+                "Send back CHECK to validate this phone number. "
+                "This will allow you to receive alerts from SparkMeter."
+            ),
+            _(
+                "This message is sent when a phone number is added to the system. "
+                "Customers must reply to this message with code CHECK and "
+                "should be instructed to do so in this message is not recognized.\n"
+                "The message will appear to the recipient exactly as "
+                "typed (no keywords used)."
+            ),
+        ),
     }
-    config_attribute = 'messages'
-    config_key = 'message_type'
+    config_attribute = "messages"
+    config_key = "message_type"
 
     def __init__(self, id=None, active=True, message_type=None, template=None):
         if id is None:
@@ -543,10 +526,7 @@ class SMSConfigMessage(SMSJSONObject):
 
     def as_dict(self):
         """Serialize as dictionary."""
-        return dict(id=self.id,
-                    active=self.active,
-                    message_type=self.message_type,
-                    template=self.template)
+        return dict(id=self.id, active=self.active, message_type=self.message_type, template=self.template)
 
     @classmethod
     def get_by_message_type(cls, message_type):
@@ -577,29 +557,28 @@ class SMSConfigMessage(SMSJSONObject):
 
 @syncchannel(SYNC_CHANNEL_EVENT)
 class SMSMessage(BaseDomain):
-
     """An incoming or outgoing SMS message."""
 
-    __tablename__ = 'sms_message'
+    __tablename__ = "sms_message"
 
     #: An incoming SMS messages
-    DIRECTION_IN = 'in'
+    DIRECTION_IN = "in"
 
     #: An outgoing SMS message
-    DIRECTION_OUT = 'out'
+    DIRECTION_OUT = "out"
 
     #: The origin is unrecognized, (unrecognized phone number or core)
-    ORIGIN_UNKNOWN = 'unknown'
+    ORIGIN_UNKNOWN = "unknown"
 
     #: This is message originates from a command, it's either a customer sending a
     #: reply or a the system replying to one.
-    ORIGIN_COMMAND = 'command'
+    ORIGIN_COMMAND = "command"
 
     #: This message originates from an alert, e.g. 'low balance'
-    ORIGIN_ALERT = 'alert'
+    ORIGIN_ALERT = "alert"
 
     #: This message originates from the system, e.g. verify a phone number
-    ORIGIN_SYSTEM = 'system'
+    ORIGIN_SYSTEM = "system"
 
     #: For outgoing SMS messages, the receiver
     #: For incoming SMS messages, the sender
@@ -622,13 +601,13 @@ class SMSMessage(BaseDomain):
     processed = Column(Boolean, default=False)
 
     #: An optional link to the event that generated this SMS message
-    event_id = Column(UUIDType(binary=False), ForeignKey('event.id'))
+    event_id = Column(UUIDType(binary=False), ForeignKey("event.id"))
 
     #: A reference to an ID in another system
     external_id = Column(String)
 
     #: For replies, a reference to the message that is being replied to
-    in_reply_to_id = Column(UUIDType(binary=False), ForeignKey('sms_message.id'))
+    in_reply_to_id = Column(UUIDType(binary=False), ForeignKey("sms_message.id"))
 
     #: The event type, if this message originates from an alert
     config_event_type = Column(String)
@@ -640,20 +619,20 @@ class SMSMessage(BaseDomain):
     config_message_type = Column(String)
 
     #: The ground this message belongs to
-    ground_id = Column(UUIDType(binary=False),
-                       ForeignKey('ground.id'),
-                       nullable=True)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=True)
 
     #: a reference to the event for this message
-    event = relationship('Event', foreign_keys=[event_id])
+    event = relationship("Event", foreign_keys=[event_id])
 
     #: a reference to the message we're replying to
-    in_reply_to = relationship('SMSMessage', uselist=False, remote_side=[in_reply_to_id])
+    in_reply_to = relationship("SMSMessage", uselist=False, remote_side=[in_reply_to_id])
 
     #: The customers with the phone number of this message, if any
-    customers = relationship('Customer',
-                             load_on_pending=True,
-                             primaryjoin="foreign(Customer.phone_number) == SMSMessage.phone_number")
+    customers = relationship(
+        "Customer",
+        load_on_pending=True,
+        primaryjoin="foreign(Customer.phone_number) == SMSMessage.phone_number",
+    )
 
     #: The ground this event is created on
     ground = relationship("Ground")  # type: Ground
@@ -671,12 +650,7 @@ class SMSMessage(BaseDomain):
             )
 
     @classmethod
-    def create_outgoing(cls,
-                        phone_number,
-                        text,
-                        event=None,
-                        ground=None,
-                        in_reply_to=None):
+    def create_outgoing(cls, phone_number, text, event=None, ground=None, in_reply_to=None):
         """Create an outgoing SMS message.
 
         :param phone_number: phone number to send the message to
@@ -711,11 +685,8 @@ class SMSMessage(BaseDomain):
         :param message_ids: sequence of message ids (UUID)
         :returns: sequence of messages
         """
-        query = (
-            cls.query
-            .filter_by(direction=cls.DIRECTION_OUT,
-                       processed=False)
-            .filter(cls.event_id != null())
+        query = cls.query.filter_by(direction=cls.DIRECTION_OUT, processed=False).filter(
+            cls.event_id != null()
         )
         if message_ids is not None:
             query = query.filter(cls.id.in_(message_ids))
@@ -727,15 +698,17 @@ class SMSMessage(BaseDomain):
         return cls.query.filter_by(external_id=external_id).scalar()
 
     @classmethod
-    def get_messages_view(cls,
-                          meter=None,
-                          ground=None,
-                          user=None,
-                          query_string='',
-                          order='timestamp',
-                          ascending=False,
-                          offset=None,
-                          limit=None):
+    def get_messages_view(
+        cls,
+        meter=None,
+        ground=None,
+        user=None,
+        query_string="",
+        order="timestamp",
+        ascending=False,
+        offset=None,
+        limit=None,
+    ):
         """Get a set of messages.
 
         This will be used to display the list of messages for a whole system or for a
@@ -754,47 +727,46 @@ class SMSMessage(BaseDomain):
         :returns: messages query
         :rtype: sqlalchemy.query.Query
         """
-        customer_t = get_table_by_name('customer')
-        meter_t = get_table_by_name('meter')
-        ground_t = get_table_by_name('ground')
+        customer_t = get_table_by_name("customer")
+        meter_t = get_table_by_name("meter")
+        ground_t = get_table_by_name("ground")
 
         # Create a temporary "SMS Type" field that corresponds to the "Type" field in the messages view
         # Build the whens list and unpack as positional args (SQLAlchemy 2.0 syntax)
         sms_type_whens = [
             (cls.config_command_code != null(), cls.config_command_code),
-            (cls.config_message_type != null(), 'System'),
+            (cls.config_message_type != null(), "System"),
         ] + [
             (cls.config_event_type == event_type, str(event_type_info.label))
             for event_type, event_type_info in Event.events.items()
         ]
-        sms_type = case(*sms_type_whens, else_='N/A')
+        sms_type = case(*sms_type_whens, else_="N/A")
 
         # Create a temporary "Processed Fmt" field that corresponds to the formatted processed state
         processed_fmt = case(
-            (cls.processed.is_(True), 'Yes'),
-            (cls.processed.is_(False), 'No'),
+            (cls.processed.is_(True), "Yes"),
+            (cls.processed.is_(False), "No"),
         )
 
         columns = [
-            cls.timestamp.label('timestamp'),
-            cls.direction.label('direction'),
-            customer_t.c.name.label('customer_name'),
-            cls.phone_number.label('phone_number'),
-            cls.text.label('text'),
-            cls.processed.label('processed'),
-            cls.origin.label('origin'),
-            cls.config_event_type.label('event_type'),
-            cls.config_command_code.label('code'),
-            cls.config_message_type.label('message_type'),
-            ground_t.c.name.label('ground_name'),
-            ground_t.c.serial.label('ground_serial'),
-            func.count(cls.id).over().label('total'),
-            sms_type.label('sms_type'),
-            processed_fmt.label('processed_fmt'),
+            cls.timestamp.label("timestamp"),
+            cls.direction.label("direction"),
+            customer_t.c.name.label("customer_name"),
+            cls.phone_number.label("phone_number"),
+            cls.text.label("text"),
+            cls.processed.label("processed"),
+            cls.origin.label("origin"),
+            cls.config_event_type.label("event_type"),
+            cls.config_command_code.label("code"),
+            cls.config_message_type.label("message_type"),
+            ground_t.c.name.label("ground_name"),
+            ground_t.c.serial.label("ground_serial"),
+            func.count(cls.id).over().label("total"),
+            sms_type.label("sms_type"),
+            processed_fmt.label("processed_fmt"),
         ]
         joins = (
-            cls.__table__
-            .outerjoin(ground_t, ground_t.c.id == cls.ground_id)
+            cls.__table__.outerjoin(ground_t, ground_t.c.id == cls.ground_id)
             .outerjoin(Event, Event.id == cls.event_id)
             .outerjoin(customer_t, customer_t.c.phone_number == cls.phone_number)
             .outerjoin(meter_t, meter_t.c.id == customer_t.c.meter_id)
@@ -807,33 +779,32 @@ class SMSMessage(BaseDomain):
             wheres.append(ground_t.c.id == ground.id)
 
         if user is not None:
-            users_ground_t = get_table_by_name('users_grounds')
-            subquery = select(users_ground_t.c.ground_id).where(
-                users_ground_t.c.user_id == user.id)
+            users_ground_t = get_table_by_name("users_grounds")
+            subquery = select(users_ground_t.c.ground_id).where(users_ground_t.c.user_id == user.id)
             # Doing a simple OR here, even on ground is fine, since we have a filter
             # above that restricts messages appropriately.
-            wheres.append(or_(ground_t.c.id.in_(subquery),
-                              ground_t.c.id == null()))
+            wheres.append(or_(ground_t.c.id.in_(subquery), ground_t.c.id == null()))
 
         # Build the query (SQLAlchemy 2.0: unpack columns as positional args)
         query = (
             select(*columns)
             .select_from(joins)
             .where(and_(*wheres))
-            .order_by(getattr(literal_column(order), 'asc' if ascending else 'desc')())
+            .order_by(getattr(literal_column(order), "asc" if ascending else "desc")())
         )
 
         # Since we're doing complex mappings, the query needs to be converted to a subquery if string matching
         if query_string:
-            query_format = '{}::text ~* :query_string'
+            query_format = "{}::text ~* :query_string"
             query = (
                 # Name the subquery "base_query" and map the column labels back to the unprefixed versions
-                select(*[text('base_query.{} as {}'.format(col._label, col._label)) for col in columns])
-                .select_from(query.alias('base_query'))
+                select(*[text("base_query.{} as {}".format(col._label, col._label)) for col in columns])
+                .select_from(query.alias("base_query"))
                 .where(
                     or_(
                         text(query_format.format(col._label)).params(query_string=query_string)
-                        for col in columns if col._label not in (None, 'total', 'processed')
+                        for col in columns
+                        if col._label not in (None, "total", "processed")
                     )
                 )
             )
@@ -856,44 +827,38 @@ class SMSMessage(BaseDomain):
         :param event: the event triggering the alert
         """
         if not isinstance(event, Event):  # pragma: nocoverage
-            raise TypeError("event must be an event, not %r" % (
-                type(event).__name__))
+            raise TypeError("event must be an event, not %r" % (type(event).__name__))
 
         alert_config = SMSConfigAlert.get_by_event_type(event.event_type)
         if alert_config is None:
-            logger.info("Not creating {!r} alert, missing alert config".format(
-                event.event_type,
-            ))
+            logger.info(
+                "Not creating {!r} alert, missing alert config".format(
+                    event.event_type,
+                )
+            )
             return
 
         phone_number = event.get_customer_phone_number()
         if phone_number is None:
-            msg = ("Not creating {!r} alert, customer {!r} lacks "
-                   "a verified phone number")
-            logger.info(msg.format(
-                event.event_type,
-                event.spec.get_customer_for_object(event.object),
-            ))
+            msg = "Not creating {!r} alert, customer {!r} lacks a verified phone number"
+            logger.info(
+                msg.format(
+                    event.event_type,
+                    event.spec.get_customer_for_object(event.object),
+                )
+            )
             return
 
         text = event.render(alert_config.template)
-        logger.info("Creating alert {!r} for {!r}: {!r}".format(
-            event.event_type,
-            phone_number,
-            text
-        ))
-        message = cls.create_outgoing(phone_number=phone_number,
-                                      text=text,
-                                      event=event,
-                                      ground=event.ground)
+        logger.info("Creating alert {!r} for {!r}: {!r}".format(event.event_type, phone_number, text))
+        message = cls.create_outgoing(phone_number=phone_number, text=text, event=event, ground=event.ground)
         message.set_config_alert(alert_config)
         return message
 
     def _raise_reply_error(self, message_type):
         config = SMSConfigMessage.get_by_message_type(message_type)
         reply = config.create(self.phone_number, in_reply_to=self)
-        raise IncomingMessageReplyError(message_type=message_type,
-                                        reply=reply)
+        raise IncomingMessageReplyError(message_type=message_type, reply=reply)
 
     def _parse_incoming_command(self):
         # Parse the incoming message and see if it contains any
@@ -916,8 +881,7 @@ class SMSMessage(BaseDomain):
             self._raise_reply_error(SMSConfigMessage.TYPE_NO_SUCH_NUMBER)
 
         if len(self.customers) != 1:
-            logger.exception('Multiple customers for phone number {number}'.format(
-                number=self.phone_number))
+            logger.exception("Multiple customers for phone number {number}".format(number=self.phone_number))
 
         # This will pick the first customer by insertion order, eg the customer that
         # was created first.

@@ -12,9 +12,10 @@ import sys
 # Fix bcrypt compatibility issue with newer versions
 try:
     import bcrypt
-    if not hasattr(bcrypt, '__about__'):
+
+    if not hasattr(bcrypt, "__about__"):
         # Create a dummy __about__ attribute to prevent passlib warnings
-        bcrypt.__about__ = type('About', (), {'__version__': '4.0.0'})()
+        bcrypt.__about__ = type("About", (), {"__version__": "4.0.0"})()
 except ImportError:
     pass
 
@@ -22,7 +23,7 @@ except ImportError:
 # TODO: Replace vincent with a maintained library (e.g. plotly or altair)
 import pandas
 
-if not hasattr(pandas.Series, 'iteritems'):
+if not hasattr(pandas.Series, "iteritems"):
     pandas.Series.iteritems = pandas.Series.items
 
 from flask import Flask
@@ -36,18 +37,18 @@ logger = logging.getLogger(__name__)
 _GZIP_MIN_SIZE = 860
 _GZIP_LEVEL = 6
 _GZIP_MIMETYPES = [
-    'application/javascript',
-    'application/json',
-    'text/css',
-    'text/html',
+    "application/javascript",
+    "application/json",
+    "text/css",
+    "text/html",
 ]
 
 
 # Secrets that must be configured before a request-serving process boots.
 # Each entry maps the config key to the SM_* env override operators set.
 REQUIRED_PRODUCTION_SECRETS = (
-    ('SECRET_KEY', 'SM_SECRET_KEY'),
-    ('SECURITY_PASSWORD_SALT', 'SM_SECURITY_PASSWORD_SALT'),
+    ("SECRET_KEY", "SM_SECRET_KEY"),
+    ("SECURITY_PASSWORD_SALT", "SM_SECURITY_PASSWORD_SALT"),
 )
 
 
@@ -64,32 +65,28 @@ def secret_configured(config, key):
 
 def password_salt_configured(config):
     """Return True when SECURITY_PASSWORD_SALT holds a usable value."""
-    return secret_configured(config, 'SECURITY_PASSWORD_SALT')
+    return secret_configured(config, "SECURITY_PASSWORD_SALT")
 
 
 class SparkmeterApplication(Flask):
-
     """Flask application subclass."""
 
-    MODE_ALEMBIC = 'alembic'
-    MODE_MANAGE = 'manage'
-    MODE_PRODUCTION = 'production'
-    MODE_UNITTEST = 'unittest'
-    MODE_UNKNOWN = 'unknown'
+    MODE_ALEMBIC = "alembic"
+    MODE_MANAGE = "manage"
+    MODE_PRODUCTION = "production"
+    MODE_UNITTEST = "unittest"
+    MODE_UNKNOWN = "unknown"
 
     STATIC_FOLDER_CANDIDATES = [
-        os.path.join(os.path.dirname(__file__), '..', 'static'),
-        os.path.join(sys.prefix, 'share', 'sparkmeter', 'static'),
+        os.path.join(os.path.dirname(__file__), "..", "static"),
+        os.path.join(sys.prefix, "share", "sparkmeter", "static"),
     ]
 
     def __init__(self, mode=MODE_UNKNOWN):
         """Flask app factory."""
-        super(SparkmeterApplication, self).__init__(
-            __name__,
-            static_folder=self._get_static_folder())
+        super(SparkmeterApplication, self).__init__(__name__, static_folder=self._get_static_folder())
         self.mode = mode
-        self.developer_mode = os.path.exists(
-            os.path.join(os.path.dirname(__file__), '..', '.git'))
+        self.developer_mode = os.path.exists(os.path.join(os.path.dirname(__file__), "..", ".git"))
         self._setup_logging()
         self._load_configuration()
         self._load_domain_modules()
@@ -110,12 +107,14 @@ class SparkmeterApplication(Flask):
 
         try:
             import uwsgi  # noqa: F401
+
             under_uwsgi = True
         except ImportError:
             under_uwsgi = False
 
         if self.mode in (self.MODE_PRODUCTION, self.MODE_MANAGE):  # pragma: nocoverage
             from sparkmeter.database.database import bootstrap_production
+
             if self.mode == self.MODE_MANAGE or not under_uwsgi:
                 # Single-process init paths (manage CLI, ASGI server) — no inter-worker
                 # contention to serialize, just bootstrap directly.
@@ -123,6 +122,7 @@ class SparkmeterApplication(Flask):
             else:
                 # MODE_PRODUCTION under uwsgi: serialize bootstrap across workers.
                 from sparkmeter.web.uwsgiutils import uwsgi_worker_lock
+
                 with uwsgi_worker_lock(1) as first:
                     if first:
                         bootstrap_production(self)
@@ -133,6 +133,7 @@ class SparkmeterApplication(Flask):
 
         # Register CLI commands
         from sparkmeter.cli import register_cli_commands
+
         register_cli_commands(self)
 
         if self.mode == self.MODE_UNITTEST:
@@ -143,6 +144,7 @@ class SparkmeterApplication(Flask):
                     self._maybe_send_broadcast()
             else:
                 from sparkmeter.web.uwsgiutils import uwsgi_worker_lock
+
                 with uwsgi_worker_lock(2) as first:
                     if first:
                         with self.app_context():
@@ -150,24 +152,22 @@ class SparkmeterApplication(Flask):
 
     def _maybe_send_broadcast(self):
         from sparkmeter.ground.grounddomain import Ground
-        if self.config['HEROKU']:
+
+        if self.config["HEROKU"]:
             return False
         ground = Ground.get_current()
         if ground is None:
-            logger.info("No ground found, "
-                        "not sending set-config to active meters.")
+            logger.info("No ground found, not sending set-config to active meters.")
             return False
         if not ground.private.override_meter_state:
-            logger.info("Override meter state disable, "
-                        "not sending set-config to active meters.")
+            logger.info("Override meter state disable, not sending set-config to active meters.")
             return False
         from sparkmeter.config.configparameter import parameters
+
         if not parameters.SEND_SET_CONFIG_AT_STARTUP:
-            logger.info("Configuration parameter disabled, "
-                        "not sending set-config to active meters.")
+            logger.info("Configuration parameter disabled, not sending set-config to active meters.")
             return False
-        logger.info("Sending set-config to active meters, "
-                    "with override enabled.")
+        logger.info("Sending set-config to active meters, with override enabled.")
         ground.update_all_active_customer_meters()
         return True
 
@@ -189,8 +189,9 @@ class SparkmeterApplication(Flask):
         self._register_blueprints()
 
         from sparkmeter.misc.jsonutils import JsonEncoder
+
         self.json_encoder = JsonEncoder
-        self.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+        self.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
 
     def _harden_session_cookie(self):
         """Mark the session cookie Secure when the deployment serves HTTPS.
@@ -203,8 +204,9 @@ class SparkmeterApplication(Flask):
         stays False in dev and tests over plain HTTP. This is promote-only: an
         explicitly configured ``True`` is never downgraded.
         """
-        self.config['SESSION_COOKIE_SECURE'] = (
-            self.config.get('SESSION_COOKIE_SECURE', False) or self._should_use_https())
+        self.config["SESSION_COOKIE_SECURE"] = (
+            self.config.get("SESSION_COOKIE_SECURE", False) or self._should_use_https()
+        )
 
     def _provide_utility(self):
         from zope.component import getUtility, provideUtility
@@ -239,9 +241,10 @@ class SparkmeterApplication(Flask):
 
     def _load_configuration(self):
         from sparkmeter.config.configdict import config
+
         config.load(self)
         self.config = config
-        self.debug = config.get('DEBUG')
+        self.debug = config.get("DEBUG")
         self._require_production_secrets(config, self.mode)
 
     def _require_production_secrets(self, config, mode):
@@ -258,15 +261,17 @@ class SparkmeterApplication(Flask):
         for key, env_var in REQUIRED_PRODUCTION_SECRETS:
             if not secret_configured(config, key):
                 raise SystemExit(
-                    '%s must be set in production; refusing to boot '
-                    'without a configured %s.' % (env_var, key))
+                    "%s must be set in production; refusing to boot without a configured %s." % (env_var, key)
+                )
 
     def _setup_logging(self):
         from sparkmeter.misc.logutils import setup_logging
-        setup_logging(level=self.config.get('LOG_LEVEL', logging.INFO))
+
+        setup_logging(level=self.config.get("LOG_LEVEL", logging.INFO))
 
     def _setup_bootstrap(self):
         from flask_bootstrap import Bootstrap
+
         bootstrap = Bootstrap()
         bootstrap.init_app(self)
 
@@ -287,7 +292,7 @@ class SparkmeterApplication(Flask):
                     # otherwise try to guess the language from the user accept
                     # header the browser transmits.  We support de/fr/en in this
                     # example.  The best match wins.
-                    return request.accept_languages.best_match(['fr', 'en'])
+                    return request.accept_languages.best_match(["fr", "en"])
             return None
 
         babel = Babel()
@@ -297,7 +302,7 @@ class SparkmeterApplication(Flask):
         from sparkmeter.sentry_proxy import _SENTRY_SDK, SentryProxy
 
         # Only enable sentry when it's enabled in the configuration
-        if self.mode == self.MODE_UNITTEST or self.config.get('SENTRY_DSN') is None:
+        if self.mode == self.MODE_UNITTEST or self.config.get("SENTRY_DSN") is None:
             self.sentry = SentryProxy()
             return
 
@@ -306,27 +311,27 @@ class SparkmeterApplication(Flask):
         from sentry_sdk.integrations.flask import FlaskIntegration
 
         sentry_sdk.init(
-            dsn=self.config['SENTRY_DSN'],
+            dsn=self.config["SENTRY_DSN"],
             integrations=[FlaskIntegration(), FastApiIntegration()],
         )
         self.sentry = SentryProxy(_SENTRY_SDK)
 
     def _setup_sqlalchemy(self):
-        if 'sqlalchemy' in self.extensions:
+        if "sqlalchemy" in self.extensions:
             return
 
         from sparkmeter.database.alchemy import sql
+
         sql.init_app(self)
-        logger.info(" * Connected to %s" % (
-            self.config['SQLALCHEMY_DATABASE_URI'], ))
+        logger.info(" * Connected to %s" % (self.config["SQLALCHEMY_DATABASE_URI"],))
         self.sql = sql
 
     def _demo_login_enabled(self):
-        return self.config.get('ENABLE_DEMO_LOGIN', False)
+        return self.config.get("ENABLE_DEMO_LOGIN", False)
 
     def _setup_flask_security(self):
         # This is called twice to be able to test database commands
-        if 'security' in self.extensions:
+        if "security" in self.extensions:
             return
         from flask_security import Security
 
@@ -341,7 +346,7 @@ class SparkmeterApplication(Flask):
         # app.extensions['security'] so that the state is correctly referenced
         # https://github.com/mattupstate/flask-security/issues/211
         # https://github.com/mattupstate/flask-security/issues/141
-        security_ctx = self.extensions['security']
+        security_ctx = self.extensions["security"]
 
         def set_users():
             """Inject the systems users into the security tempalates if using the demo system."""
@@ -349,15 +354,16 @@ class SparkmeterApplication(Flask):
                 from sparkmeter.user.userdomain import User
 
                 # FIXME: Only include active users
-                return {'demo_users': User.get_login_users()}
+                return {"demo_users": User.get_login_users()}
             return {}
+
         security_ctx.login_context_processor(set_users)
 
     def _cache_buster(self, filename):
         import hashlib
 
         # If CDN_URL is configured, use it instead of serving locally
-        cdn_url = self.config.get('CDN_URL')
+        cdn_url = self.config.get("CDN_URL")
         if cdn_url:
             from sparkmeter import __version__
 
@@ -365,21 +371,20 @@ class SparkmeterApplication(Flask):
             # busting via file modification time or version
             # TODO: include file hashes in the file names and for each
             # TC version record which hashes go with the release.
-            cdn_url = cdn_url.rstrip('/')
-            return '%s/%s/static/%s' % (cdn_url,
-                                        __version__.version,
-                                        filename)
+            cdn_url = cdn_url.rstrip("/")
+            return "%s/%s/static/%s" % (cdn_url, __version__.version, filename)
 
         # Fall back to local serving with cache busting
         full = os.path.join(self.static_folder, filename)
-        if (self.developer_mode and not os.path.exists(full)):  # pragma: nocoverage
-            relativename = full[len(self.static_folder) + 1:]
+        if self.developer_mode and not os.path.exists(full):  # pragma: nocoverage
+            relativename = full[len(self.static_folder) + 1 :]
             import subprocess
-            subprocess.check_call(['make', 'static/' + relativename])
 
-        with open(full, 'rb') as f:
+            subprocess.check_call(["make", "static/" + relativename])
+
+        with open(full, "rb") as f:
             file_hash = hashlib.sha1(f.read()).hexdigest()
-        filename = '/static/%s?%s' % (full[len(self.static_folder) + 1:], file_hash)
+        filename = "/static/%s?%s" % (full[len(self.static_folder) + 1 :], file_hash)
         return filename
 
     def _setup_jinja(self):
@@ -390,42 +395,53 @@ class SparkmeterApplication(Flask):
         from markupsafe import Markup
 
         from sparkmeter import __version__
+
         base = os.path.dirname(__file__)
-        my_loader = ChoiceLoader([
-            FileSystemLoader([base + '/dashboard/templates',
-                              base + '/config/templates',
-                              base + '/event/templates',
-                              base + '/history/templates',
-                              base + '/meter/templates',
-                              base + '/ground/templates',
-                              base + '/reading/templates',
-                              base + '/salesaccount/templates',
-                              base + '/tariff/templates',
-                              base + '/transaction/templates',
-                              base + '/user/templates',
-                              base + '/homepage/templates',
-                              base + '/templates']),
-        ])
+        my_loader = ChoiceLoader(
+            [
+                FileSystemLoader(
+                    [
+                        base + "/dashboard/templates",
+                        base + "/config/templates",
+                        base + "/event/templates",
+                        base + "/history/templates",
+                        base + "/meter/templates",
+                        base + "/ground/templates",
+                        base + "/reading/templates",
+                        base + "/salesaccount/templates",
+                        base + "/tariff/templates",
+                        base + "/transaction/templates",
+                        base + "/user/templates",
+                        base + "/homepage/templates",
+                        base + "/templates",
+                    ]
+                ),
+            ]
+        )
         self.jinja_loader = my_loader
-        self.jinja_env.add_extension('jinja2.ext.do')
+        self.jinja_env.add_extension("jinja2.ext.do")
         self.jinja_env.trim_blocks = True
         self.jinja_env.lstrip_blocks = True
-        self.jinja_env.globals.update(dict(
-            APPLICATION_CSS=self._cache_buster('stylesheets/application.css'),
-            APPLICATION_JS=self._cache_buster('javascripts/application.js'),
-            VENDOR_JS=self._cache_buster('javascripts/vendor.js'),
-            APP_VERSION=__version__.version,
-            GIT_VERSION=__version__.git_version,
-            Markup=Markup,
-        ))
+        self.jinja_env.globals.update(
+            dict(
+                APPLICATION_CSS=self._cache_buster("stylesheets/application.css"),
+                APPLICATION_JS=self._cache_buster("javascripts/application.js"),
+                VENDOR_JS=self._cache_buster("javascripts/vendor.js"),
+                APP_VERSION=__version__.version,
+                GIT_VERSION=__version__.git_version,
+                Markup=Markup,
+            )
+        )
 
     def _setup_permissions(self):
         from sparkmeter.web.permission import register_functions
+
         register_functions(self)
 
     def _setup_filters(self):
         with self.app_context():
             from sparkmeter.web.filters import register_filters
+
             register_filters(self)
 
     def _app_error_handler(self, exc):
@@ -435,11 +451,12 @@ class SparkmeterApplication(Flask):
         from flask import render_template, request
 
         from sparkmeter.misc.jsonutils import jsonify
-        if request.path.startswith('/api/'):
-            r = jsonify(dict(error='no such api', status='failure'))
+
+        if request.path.startswith("/api/"):
+            r = jsonify(dict(error="no such api", status="failure"))
             r.status_code = http.client.NOT_FOUND
         else:
-            r = render_template('404.html'), http.client.NOT_FOUND
+            r = render_template("404.html"), http.client.NOT_FOUND
         return r
 
     def _app_readonly_handler(self, exc):
@@ -449,14 +466,15 @@ class SparkmeterApplication(Flask):
         from flask import make_response, render_template, request
 
         from sparkmeter.misc.jsonutils import jsonify
+
         error_info = {
-            'error': exc.description,
-            'status': 'failure',
+            "error": exc.description,
+            "status": "failure",
         }
-        if request.path.startswith('/api/'):
+        if request.path.startswith("/api/"):
             r = jsonify(error_info)
         else:
-            r = render_template('503.html', **error_info)
+            r = render_template("503.html", **error_info)
         return make_response(r, exc.code)
 
     def _register_blueprints(self):
@@ -470,53 +488,69 @@ class SparkmeterApplication(Flask):
             self.register_error_handler(ReadOnlyError, self._app_readonly_handler)
 
             from sparkmeter.event.alertviews import alert
+
             self.register_blueprint(alert)
 
             from sparkmeter.event.eventviews import event
+
             self.register_blueprint(event)
 
             from sparkmeter.api.apiviews0 import register_api_blueprint
+
             register_api_blueprint(self)
 
             from sparkmeter.config.configviews import config
+
             self.register_blueprint(config)
 
             from sparkmeter.dashboard.dashboardview import dashboard
+
             self.register_blueprint(dashboard)
 
             from sparkmeter.meter.meterview import meter
+
             self.register_blueprint(meter)
 
             from sparkmeter.ground.groundview import ground
+
             self.register_blueprint(ground)
 
             from sparkmeter.reading.readingview import reading
+
             self.register_blueprint(reading)
 
             from sparkmeter.tariff.tariffview import tariff
+
             self.register_blueprint(tariff)
 
             from sparkmeter.salesaccount.salesaccountviews import sales_account
+
             self.register_blueprint(sales_account)
 
             from sparkmeter.transaction.transactionview import transaction
+
             self.register_blueprint(transaction)
 
             from sparkmeter.user.userview import user
+
             self.register_blueprint(user)
 
             from sparkmeter.web.views import web
+
             self.register_blueprint(web)
 
             from sparkmeter.homepage.homepageview import homepage
+
             self.register_blueprint(homepage)
 
-            if self.config.get('S3_HISTORY_BUCKET') and self.config.get('S3_SITE'):
+            if self.config.get("S3_HISTORY_BUCKET") and self.config.get("S3_SITE"):
                 from sparkmeter.history.historyview import historyview
+
                 self.register_blueprint(historyview)
 
-            if self.config.get('MEMORY_DEBUG', False):
+            if self.config.get("MEMORY_DEBUG", False):
                 from sparkmeter.debug_memory import debug_memory
+
                 self.register_blueprint(debug_memory)
 
         # Enable http->https direct for Heroku
@@ -532,6 +566,7 @@ class SparkmeterApplication(Flask):
     def _check_readonly_mode(self):
         if self.readonly_mode:
             from sparkmeter.exceptions import ReadOnlyError
+
             raise ReadOnlyError()
 
     @property
@@ -539,7 +574,7 @@ class SparkmeterApplication(Flask):
         """Check to see if the app is in readonly mode."""
         # for now just check to see if the config is defined as RO, later this
         # will probably check a few sources to determine the right state.
-        return self.config.get('READONLY', False)
+        return self.config.get("READONLY", False)
 
     def _add_ssl_headers_and_redirect_http(self):  # pragma nocoverage
         import http.client
@@ -550,19 +585,19 @@ class SparkmeterApplication(Flask):
         if request.is_secure:
             return
 
-        if request.headers.get('X-Forwarded-Proto', 'http') == 'https':
+        if request.headers.get("X-Forwarded-Proto", "http") == "https":
             return
 
-        if request.url.startswith('http://'):
-            url = request.url.replace('http://', 'https://', 1)
+        if request.url.startswith("http://"):
+            url = request.url.replace("http://", "https://", 1)
             return redirect(url, code=http.client.MOVED_PERMANENTLY)
 
     def _add_htsh_header(self, response):  # pragma nocoverage
         from flask.globals import request
+
         if request.is_secure:
             # Number of seconds per day; 365 * 24 * 3600 = 31536000
-            response.headers.setdefault('Strict-Transport-Security',
-                                        'max-age={0}'.format(31536000))
+            response.headers.setdefault("Strict-Transport-Security", "max-age={0}".format(31536000))
         return response
 
     def _should_use_https(self):
@@ -573,10 +608,10 @@ class SparkmeterApplication(Flask):
             return False
 
         # FIXME: Enable this for gateways once we figured out the certificate
-        if not self.config.get('HEROKU', False):  # pragma: nocoverage
+        if not self.config.get("HEROKU", False):  # pragma: nocoverage
             return False
 
-        return self.config.get('USE_HTTPS', True)  # pragma: nocoverage
+        return self.config.get("USE_HTTPS", True)  # pragma: nocoverage
 
     def _gzip_can_compress(self, response):
         # We can only compress pages with successful status codes
@@ -594,9 +629,9 @@ class SparkmeterApplication(Flask):
         # We can only compress to user agents that supports compression and
         # we will not compress already compressed responses
         from flask.globals import request
-        accept_encoding = request.headers.get('Accept-Encoding', '')
-        if ('gzip' not in accept_encoding.lower()
-           or 'Content-Encoding' in response.headers):
+
+        accept_encoding = request.headers.get("Accept-Encoding", "")
+        if "gzip" not in accept_encoding.lower() or "Content-Encoding" in response.headers:
             return False
 
         # Only compress mimetypes that aren't already compressed like
@@ -608,13 +643,11 @@ class SparkmeterApplication(Flask):
 
     def _gzip_compress_response_data(self, response):
         gzip_buffer = io.BytesIO()
-        with gzip.GzipFile(mode='wb',
-                           compresslevel=_GZIP_LEVEL,
-                           fileobj=gzip_buffer) as f:
+        with gzip.GzipFile(mode="wb", compresslevel=_GZIP_LEVEL, fileobj=gzip_buffer) as f:
             f.write(response.get_data())
         response.set_data(gzip_buffer.getvalue())
-        response.headers['Content-Encoding'] = 'gzip'
-        response.headers['Content-Length'] = response.content_length
+        response.headers["Content-Encoding"] = "gzip"
+        response.headers["Content-Length"] = response.content_length
 
     def _gzip_maybe_compress_response(self, response):
         if self._gzip_can_compress(response):
@@ -623,8 +656,9 @@ class SparkmeterApplication(Flask):
         return response
 
     def _setup_unittest(self):
-        logger.info('Setting up unittests')
+        logger.info("Setting up unittests")
         from sparkmeter.web.unittestutils import TestFlaskClient, TestResponse
+
         self.response_class = TestResponse
         self.test_client_class = TestFlaskClient
 
@@ -647,6 +681,7 @@ class SparkmeterApplication(Flask):
                     return self.session_class(data)
                 except Exception:
                     return self.session_class()
+
         self.session_interface = TestSessionInterface()
 
         # Push an app context (not request context) for test setup
@@ -654,4 +689,5 @@ class SparkmeterApplication(Flask):
         ctx.push()
         # Close the internal SQLAlchemy transaction, we will replace it with our own
         from sparkmeter.database.alchemy import sql
+
         sql.session.remove()

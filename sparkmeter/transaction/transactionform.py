@@ -26,66 +26,64 @@ def transaction_sources():
 
 
 class TransactionForm(BaseForm):
-
     """Transaction Form."""
-    template_filename = 'transaction-form.html'
+
+    template_filename = "transaction-form.html"
 
     amount = FloatField(
-        _('Amount'),
+        _("Amount"),
         default=100,
         validators=[DataRequired(), NumberRange(min=0)],
     )
 
-    account = QuerySelectField(
-        _('From Sales Account'),
-        get_label='name')
+    account = QuerySelectField(_("From Sales Account"), get_label="name")
 
     acct_type = SelectField(
-        _('Type'),
+        _("Type"),
         choices=[
-            (u'credit', _('Credit')),
-            (u'debt', _('Debt')),
-        ]
+            ("credit", _("Credit")),
+            ("debt", _("Debt")),
+        ],
     )
 
     source = QuerySelectField(
-        _('Source'),
+        _("Source"),
         query_factory=transaction_sources,
-        get_label='name',
+        get_label="name",
         allow_blank=True,
         blank_text="select payment source",
     )
 
 
 class TransactionTransferForm(BaseForm):
-
     """Transfer Form."""
-    template_filename = 'transaction-transfer-form.html'
+
+    template_filename = "transaction-transfer-form.html"
 
     amount = FloatField(
-        _('Amount'),
+        _("Amount"),
         default=100,
         validators=[DataRequired(), NumberRange(min=0)],
     )
 
     markup = FloatField(
-        _('Bonus rate'),
+        _("Bonus rate"),
         validators=[NumberRange(min=0, max=1)],
         default=0.0,
     )
 
     acct_type = SelectField(
-        _('Type'),
+        _("Type"),
         choices=[
-            (u'credit', _('Credit')),
-            (u'debt', _('Debt')),
-        ]
+            ("credit", _("Credit")),
+            ("debt", _("Debt")),
+        ],
     )
 
     source = QuerySelectField(
-        _('Source'),
+        _("Source"),
         query_factory=transaction_sources,
-        get_label='name',
+        get_label="name",
         allow_blank=True,
         blank_text="select payment source",
     )

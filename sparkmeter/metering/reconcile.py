@@ -24,21 +24,23 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from sparkmeter.metering._generated.models.configure_meter_command import ConfigureMeterCommand
 from sparkmeter.metering._generated.models.configure_meter_params import ConfigureMeterParams
-from sparkmeter.metering._generated.models.configure_provider_command import \
-    ConfigureProviderCommand
-from sparkmeter.metering._generated.models.configure_provider_command_vendor_options import \
-    ConfigureProviderCommandVendorOptions
+from sparkmeter.metering._generated.models.configure_provider_command import ConfigureProviderCommand
+from sparkmeter.metering._generated.models.configure_provider_command_vendor_options import (
+    ConfigureProviderCommandVendorOptions,
+)
 from sparkmeter.metering._generated.models.configure_provider_params import ConfigureProviderParams
 from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
 from sparkmeter.metering._generated.models.meter_configuration import MeterConfiguration
 from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
-from sparkmeter.metering._generated.models.register_meter_command_vendor_options import \
-    RegisterMeterCommandVendorOptions
+from sparkmeter.metering._generated.models.register_meter_command_vendor_options import (
+    RegisterMeterCommandVendorOptions,
+)
 from sparkmeter.metering._generated.models.register_meter_params import RegisterMeterParams
 from sparkmeter.metering._generated.models.set_balance_command import SetBalanceCommand
 from sparkmeter.metering._generated.models.set_balance_params import SetBalanceParams
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import \
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum
+from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
+    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
+)
 from sparkmeter.metering._generated.models.throttle_config import ThrottleConfig
 
 if TYPE_CHECKING:
@@ -50,9 +52,23 @@ logger = logging.getLogger(__name__)
 
 
 _KNOWN_METER_TYPES = {
-    "SM5R", "SM5XR", "SM15R", "SM20R", "SM20XR", "SM60R", "SM60RP",
-    "SM100E", "SM200E", "SMRSD", "SMRPI", "SMRSDRF", "SMRSDPLC",
-    "SMRPIRF", "SMRPIPLC", "SM16R", "SMHCE",
+    "SM5R",
+    "SM5XR",
+    "SM15R",
+    "SM20R",
+    "SM20XR",
+    "SM60R",
+    "SM60RP",
+    "SM100E",
+    "SM200E",
+    "SMRSD",
+    "SMRPI",
+    "SMRSDRF",
+    "SMRSDPLC",
+    "SMRPIRF",
+    "SMRPIPLC",
+    "SM16R",
+    "SMHCE",
 }
 
 
@@ -86,9 +102,7 @@ async def reconcile_all(client: "APIClient", flask_app: "Flask") -> None:
             if balance is not None:
                 await client.default.submit_command_v1_commands_post(balance)
         except Exception:  # noqa: BLE001
-            logger.exception(
-                "metering reconcile: failed for meter_id=%s", m.get("meter_id", "?")
-            )
+            logger.exception("metering reconcile: failed for meter_id=%s", m.get("meter_id", "?"))
 
     logger.info("metering reconcile: done (%d meters registered)", len(meters_data))
 
@@ -190,9 +204,7 @@ def _build_configure(m: dict) -> Optional[ConfigureMeterCommand]:
     config = m.get("config")
     if config is None:
         return None
-    behavior = (
-        MeterBehaviorCommand.ENABLE if m.get("is_active") else MeterBehaviorCommand.DISABLE
-    )
+    behavior = MeterBehaviorCommand.ENABLE if m.get("is_active") else MeterBehaviorCommand.DISABLE
     return ConfigureMeterCommand(
         command_type=CommandTypeEnum.CONFIGURE_METER,
         correlation_id="reconcile-configure-" + uuid.uuid4().hex[:12],

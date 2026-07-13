@@ -2,6 +2,7 @@
 # Copyright © 2019 SparkMeter, Inc.
 # All Rights Reserved.
 """API v0 sales account views."""
+
 import http.client
 
 from flask import request
@@ -94,10 +95,11 @@ def pay_sales_account(account_id):
     memo = check_param(params, "memo", required=False)
     source = TransactionSource.get_by_name(source_name)
     if not source:
-        raise APIError("bad parameter: 'source', must be one of: '{}', '{}'".format(
-            TransactionSource.CASH,
-            TransactionSource.BONUS
-        ))
+        raise APIError(
+            "bad parameter: 'source', must be one of: '{}', '{}'".format(
+                TransactionSource.CASH, TransactionSource.BONUS
+            )
+        )
     try:
         transaction, bonus_transaction = Transaction.create_transactions(
             from_object=user.api_sales_account,

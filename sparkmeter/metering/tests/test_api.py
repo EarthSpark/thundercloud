@@ -110,9 +110,7 @@ def test_register_meter_enqueues(loop_with_queue):
     loop, queue = loop_with_queue
     api.register_meter(node_id=100, node_type="SM5R", mac=0xABCD)
     items = _drain(loop, queue)
-    assert items == [
-        {"op": "register_meter", "node_id": 100, "node_type": "SM5R", "mac": 0xABCD}
-    ]
+    assert items == [{"op": "register_meter", "node_id": 100, "node_type": "SM5R", "mac": 0xABCD}]
 
 
 def test_unregister_meter_enqueues(loop_with_queue):
@@ -126,9 +124,7 @@ def test_legacy_register_node_alias_works(loop_with_queue):
     loop, queue = loop_with_queue
     api.register_node(node_id=1, node_type="SM5R")
     items = _drain(loop, queue)
-    assert items == [
-        {"op": "register_meter", "node_id": 1, "node_type": "SM5R", "mac": None}
-    ]
+    assert items == [{"op": "register_meter", "node_id": 1, "node_type": "SM5R", "mac": None}]
 
 
 def test_legacy_unregister_node_alias_works(loop_with_queue):

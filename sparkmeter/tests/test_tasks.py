@@ -6,13 +6,11 @@ from sparkmeter.event.eventdomain import Event, SMSMessage
 from sparkmeter.meter.meterdomain import Meter
 from sparkmeter.tasks import process_events
 from sparkmeter.tests.base import SparkMeterTestCaseBase
-from sparkmeter.tests.test_data_factory import (MeterFactory, SMSConfigAlertFactory,
-                                                TransactionFactory)
+from sparkmeter.tests.test_data_factory import MeterFactory, SMSConfigAlertFactory, TransactionFactory
 from sparkmeter.transaction.transactiondomain import Transaction, TransactionSource
 
 
 class TaskTest(SparkMeterTestCaseBase):
-
     def test_process_event_low_balance(self):
         meter = MeterFactory()
         self.session.commit()
@@ -48,8 +46,8 @@ class TaskTest(SparkMeterTestCaseBase):
         self.session.commit()
 
         t = TransactionFactory(
-            source=TransactionSource.get_by_name(TransactionSource.CASH),
-            state=Transaction.STATE_PENDING)
+            source=TransactionSource.get_by_name(TransactionSource.CASH), state=Transaction.STATE_PENDING
+        )
         t.from_wallet.value = 100
         self.session.commit()
         t_id = t.id
@@ -67,7 +65,7 @@ class TaskTest(SparkMeterTestCaseBase):
 
         assert SMSMessage.query.count() == 0
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         process_events()
         self.session.commit()
 

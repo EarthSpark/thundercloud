@@ -7,8 +7,7 @@ from sparkmeter.tests.base import SparkMeterTestCaseBase
 
 
 class CliCommandTest(SparkMeterTestCaseBase):
-
     def test_status(self, cli):
-        result = cli('status')
+        result = cli("status")
         assert result.exit_code == 0
-        assert 'Sparkmeter Application Status' in result.output
+        assert "Sparkmeter Application Status" in result.output

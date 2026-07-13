@@ -18,21 +18,20 @@ from sparkmeter.misc.pythonutils import unset
 
 def success(**kwargs):
     """Return a successful JSON response."""
-    return jsonify(error=None,
-                   status="success",
-                   **kwargs)
+    return jsonify(error=None, status="success", **kwargs)
 
 
 def get_params():
     """Parse the request and get parameters depending on the mime type."""
-    if request.mimetype == 'application/x-www-form-urlencoded':
+    if request.mimetype == "application/x-www-form-urlencoded":
         params = request.form
-    elif request.mimetype == 'application/json':
+    elif request.mimetype == "application/json":
         params = request.get_json()
     else:
         raise APIError(
             "bad mimetype, must be application/x-www-form-urlencoded or application/json",
-            status_code=http.client.UNSUPPORTED_MEDIA_TYPE)
+            status_code=http.client.UNSUPPORTED_MEDIA_TYPE,
+        )
 
     return params
 
@@ -56,16 +55,15 @@ def check_param(params, param, param_type=None, name=None, default=unset):
     elif default is not unset:
         value = default
     else:
-        raise APIError("missing parameter: %s" % (param, ))
+        raise APIError("missing parameter: %s" % (param,))
 
     if value == "":
-        raise APIError("bad parameter: %s, cannot be empty" % (param, ))
+        raise APIError("bad parameter: %s, cannot be empty" % (param,))
 
     if param_type is not None:
         try:
             value = param_type(value)
         except ValueError:
-            raise APIError("bad parameter: %s, must be a %s" % (
-                param, name or param_type.__name__))
+            raise APIError("bad parameter: %s, must be a %s" % (param, name or param_type.__name__))
 
     return value

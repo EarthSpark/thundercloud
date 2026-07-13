@@ -8,7 +8,6 @@ from sparkmeter.transaction.transactiondomain import Transaction
 
 
 class SalesAccountListTest(APIView0TestCaseBase):
-
     path = "v0/sales-accounts"
 
     def test_get(self):
@@ -29,7 +28,6 @@ class SalesAccountListTest(APIView0TestCaseBase):
 
 
 class SalesAccountGetTest(APIView0TestCaseBase):
-
     path = "v0/sales-accounts/{}"
 
     def test_get_restricted(self):
@@ -50,7 +48,6 @@ class SalesAccountGetTest(APIView0TestCaseBase):
 
 
 class SalesAccountPaymentTest(APIView0TestCaseBase):
-
     path = "v0/sales-accounts/{}/payment"
 
     def test_successful_transaction_no_markup(self):
@@ -58,11 +55,14 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "cash",
-            "markup": 0,
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "cash",
+                "markup": 0,
+            },
+        )
         response_data = response.json()
         self.verify_response(response, ignore_values=[response_data["transaction_id"]])
         t = Transaction.get_by_id(response_data["transaction_id"])
@@ -77,17 +77,23 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "cash",
-            "markup": 0.5,
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "cash",
+                "markup": 0.5,
+            },
+        )
         response_data = response.json()
         assert response_data.get("bonus_transaction_id") is not None
-        self.verify_response(response, ignore_values=[
-            response_data["transaction_id"],
-            response_data["bonus_transaction_id"],
-        ])
+        self.verify_response(
+            response,
+            ignore_values=[
+                response_data["transaction_id"],
+                response_data["bonus_transaction_id"],
+            ],
+        )
         t = Transaction.get_by_id(response_data["transaction_id"])
         b = Transaction.get_by_id(response_data["bonus_transaction_id"])
         assert b.amount == 5
@@ -102,16 +108,22 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(markup=0.8, credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "cash",
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "cash",
+            },
+        )
         response_data = response.json()
         assert response_data.get("bonus_transaction_id") is not None
-        self.verify_response(response, ignore_values=[
-            response_data["transaction_id"],
-            response_data["bonus_transaction_id"],
-        ])
+        self.verify_response(
+            response,
+            ignore_values=[
+                response_data["transaction_id"],
+                response_data["bonus_transaction_id"],
+            ],
+        )
         t = Transaction.get_by_id(response_data["transaction_id"])
         b = Transaction.get_by_id(response_data["bonus_transaction_id"])
         assert b.amount == 8
@@ -126,10 +138,13 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "bonus",
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "bonus",
+            },
+        )
         response_data = response.json()
         assert response_data.get("bonus_transaction_id") is None
         self.verify_response(response, ignore_values=[response_data["transaction_id"]])
@@ -145,13 +160,16 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "cash",
-            "external_id": "123A",
-            "memo": "Note to self",
-            "markup": 0,
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "cash",
+                "external_id": "123A",
+                "memo": "Note to self",
+                "markup": 0,
+            },
+        )
         response_data = response.json()
         assert response_data.get("bonus_transaction_id") is None
         self.verify_response(response, ignore_values=[response_data["transaction_id"]])
@@ -168,11 +186,14 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": -10,
-            "source": "cash",
-            "markup": 0,
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": -10,
+                "source": "cash",
+                "markup": 0,
+            },
+        )
         response_data = response.json()
         assert response_data.get("bonus_transaction_id") is None
         self.verify_response(response, ignore_values=[response_data["transaction_id"]])
@@ -252,10 +273,13 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         self.session.commit()
         recipient = SalesAccount.get_system()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "cash",
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "cash",
+            },
+        )
         self.verify_response(response)
 
     def test_handle_transaction_errors(self):
@@ -263,15 +287,21 @@ class SalesAccountPaymentTest(APIView0TestCaseBase):
         self.user.api_sales_account = account
         recipient = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": 10,
-            "source": "cash",
-            "markup": 2,
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": 10,
+                "source": "cash",
+                "markup": 2,
+            },
+        )
         self.verify_response(response, variant="markup-out-of-range")
-        response = self.post(self.path.format(recipient.id), json={
-            "amount": -10,
-            "source": "cash",
-            "markup": 0.3,
-        })
+        response = self.post(
+            self.path.format(recipient.id),
+            json={
+                "amount": -10,
+                "source": "cash",
+                "markup": 0.3,
+            },
+        )
         self.verify_response(response, variant="markup-with-negative-tx")

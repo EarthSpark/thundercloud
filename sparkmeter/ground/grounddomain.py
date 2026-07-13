@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Ground domain."""
+
 import datetime
 import logging
 import socket
@@ -16,8 +17,7 @@ from sparkmeter.config.configdict import config
 from sparkmeter.config.configparameter import parameters
 from sparkmeter.database.alchemy import sql
 from sparkmeter.database.symmetricdsdomain import NodeHost
-from sparkmeter.database.sync import (SYNC_CHANNEL_ADDRESS, SYNC_CHANNEL_GROUND, SYNC_GROUP_CLOUD,
-                                      syncchannel)
+from sparkmeter.database.sync import SYNC_CHANNEL_ADDRESS, SYNC_CHANNEL_GROUND, SYNC_GROUP_CLOUD, syncchannel
 from sparkmeter.database.tables import get_table_by_name
 from sparkmeter.database.types import UUIDType
 from sparkmeter.event.eventdomain import Event
@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 
 @syncchannel(SYNC_CHANNEL_ADDRESS)
 class GroundsAddresses(BaseDomain):
-
     """Ground Address mapper.
 
     The only reason this exists is to avoid cyclic references between the
@@ -44,23 +43,16 @@ class GroundsAddresses(BaseDomain):
     entry in this table per ground.
     """
 
-    __tablename__ = 'grounds_addresses'
+    __tablename__ = "grounds_addresses"
     __table_args__ = (
-        UniqueConstraint('ground_id', 'address_id',
-                         name='grounds_addresses_ground_address_unique'),
+        UniqueConstraint("ground_id", "address_id", name="grounds_addresses_ground_address_unique"),
     )
 
-    ground_id = Column(UUIDType(binary=False),
-                       ForeignKey('ground.id'),
-                       nullable=False,
-                       unique=True)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False, unique=True)
 
-    address_id = Column(UUIDType(binary=False),
-                        ForeignKey('address.id'),
-                        nullable=False,
-                        unique=True)
+    address_id = Column(UUIDType(binary=False), ForeignKey("address.id"), nullable=False, unique=True)
 
-    address = relationship('Address', foreign_keys=[address_id])
+    address = relationship("Address", foreign_keys=[address_id])
 
     @classmethod
     def sync_init(cls, group):
@@ -76,20 +68,16 @@ class GroundsAddresses(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_GROUND)
 class GroundPrivate(BaseDomain):
-
     """Ground private data.
 
     This contain private properties for a ground, it is separated from the
     main table to avoid sending this data to other grounds.
     """
 
-    __tablename__ = 'ground_private'
+    __tablename__ = "ground_private"
 
     #: Ground this private relates to
-    ground_id = Column(
-        UUIDType(binary=False),
-        ForeignKey('ground.id'),
-        nullable=False)
+    ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False)
 
     #: Maximum capacity of this grid, in watts
     max_capacity = Column(Integer, default=1000)
@@ -98,22 +86,20 @@ class GroundPrivate(BaseDomain):
     secret_key = Column(String)
 
     #: If this is ``True``, do not allow meters to be turned off.
-    override_meter_state = Column(Boolean, default=False,
-                                  server_default='false',
-                                  nullable=False)
+    override_meter_state = Column(Boolean, default=False, server_default="false", nullable=False)
 
     #: When the override meter state was last modified
     override_meter_state_modified = Column(DateTime)
 
     #: A reference to the ground
-    ground = relationship('Ground')
+    ground = relationship("Ground")
 
     @classmethod
     def sync_init(cls, group):
         """Initialize sync cloud configuration for this table."""
         group.set_conflict_winner(SYNC_GROUP_CLOUD)
         if group.is_cloud():
-            ground_t = get_table_by_name('ground')
+            ground_t = get_table_by_name("ground")
             group.set_column_router("external_data=:EXTERNAL_ID")
             group.set_external_select(
                 group.format_trigger_attr(cls.ground_id) == ground_t.c.id,
@@ -144,7 +130,7 @@ class GroundPrivate(BaseDomain):
         self.override_meter_state = state
         self.override_meter_state_modified = datetime.datetime.utcnow()
         self.session.flush()
-        if not config['HEROKU']:
+        if not config["HEROKU"]:
             if state:
                 # We are turning on override, need to make sure that all meters are turned
                 # off as fast as possible.
@@ -160,10 +146,9 @@ class GroundPrivate(BaseDomain):
 
 @syncchannel(SYNC_CHANNEL_GROUND)
 class Ground(BaseDomain):
-
     """Ground table mapper."""
 
-    __tablename__ = 'ground'
+    __tablename__ = "ground"
 
     #: Name of this ground
     name = Column(String, unique=True)
@@ -172,22 +157,24 @@ class Ground(BaseDomain):
     serial = Column(String, unique=True)
 
     #: The address of this ground
-    address = relationship('Address',
-                           cascade='save-update, merge, delete',
-                           secondary=GroundsAddresses.__table__,
-                           passive_deletes=True,
-                           uselist=False,
-                           overlaps="address")
+    address = relationship(
+        "Address",
+        cascade="save-update, merge, delete",
+        secondary=GroundsAddresses.__table__,
+        passive_deletes=True,
+        uselist=False,
+        overlaps="address",
+    )
 
     #: The private, ground specific attributes of this ground
-    private = relationship("GroundPrivate",
-                           primaryjoin='and_(Ground.id == GroundPrivate.ground_id)',
-                           uselist=False,
-                           overlaps="ground")  # type: GroundPrivate
+    private = relationship(
+        "GroundPrivate",
+        primaryjoin="and_(Ground.id == GroundPrivate.ground_id)",
+        uselist=False,
+        overlaps="ground",
+    )  # type: GroundPrivate
 
-    max_capacity = association_proxy(
-        'private',
-        'max_capacity')
+    max_capacity = association_proxy("private", "max_capacity")
 
     @classmethod
     def sync_init(cls, group):
@@ -206,16 +193,16 @@ class Ground(BaseDomain):
         :returns the newly created ground.
         """
         if name is None:
-            name = config.get('GROUND_NAME') or socket.gethostname()
+            name = config.get("GROUND_NAME") or socket.gethostname()
         if serial is None:
-            serial = config.get('SERIAL') or name + '-serial'
+            serial = config.get("SERIAL") or name + "-serial"
         if secret_key is None:
-            secret_key = config.get('SPARKCLOUD_API_KEY') or name + '-secret-key'
+            secret_key = config.get("SPARKCLOUD_API_KEY") or name + "-secret-key"
 
         if cls.query.filter_by(name=name).count():
-            raise ValueError("A ground with name %s already exists" % (name, ))
+            raise ValueError("A ground with name %s already exists" % (name,))
         if cls.query.filter_by(serial=serial).count():
-            raise ValueError("A ground with serial %s already exists" % (serial, ))
+            raise ValueError("A ground with serial %s already exists" % (serial,))
 
         self = cls(id=as_uuid(serial), serial=serial)
         session.add(self)
@@ -223,7 +210,7 @@ class Ground(BaseDomain):
         self.address = Address(id=as_uuid("{}-address".format(serial)), ground=self)
         private = GroundPrivate(id=as_uuid(secret_key), ground=self, secret_key=secret_key)
         session.add(private)
-        logger.info("Created ground with serial %r" % (serial, ))
+        logger.info("Created ground with serial %r" % (serial,))
         session.flush()
         return self
 
@@ -240,12 +227,12 @@ class Ground(BaseDomain):
         the default SERIAL configuration variable, then by ordering the
         grounds by name and selecting the first.
         """
-        serial = config.get('SERIAL')
+        serial = config.get("SERIAL")
         if serial:
             ground = cls.get_by_serial(serial)
             if ground:
                 return ground
-        return cls.query.order_by('name').first()
+        return cls.query.order_by("name").first()
 
     @classmethod
     def get_by_id(cls, object_id):
@@ -265,9 +252,9 @@ class Ground(BaseDomain):
         :returns: the Ground or None:
         :rtype: Ground
         """
-        if config['HEROKU']:
+        if config["HEROKU"]:
             return None
-        return cls.get_by_serial(config.get('SERIAL'))
+        return cls.get_by_serial(config.get("SERIAL"))
 
     @classmethod
     def get_by_name(cls, name):
@@ -277,11 +264,7 @@ class Ground(BaseDomain):
         :type name: str
         :rtype: Ground
         """
-        return (
-            cls.query
-            .filter(func.lower(cls.name) == func.lower(name))
-            .scalar()
-        )
+        return cls.query.filter(func.lower(cls.name) == func.lower(name)).scalar()
 
     @classmethod
     def get_override_view(cls):
@@ -293,15 +276,12 @@ class Ground(BaseDomain):
         # This query does several things together by design, this runs every time a template if rendered,
         # once we can cache some of this on client side we need to be as performant as possible as reduce
         # the amount of queries.
-        return (
-            sql.session.query(
-                cls.serial,
-                cls.name,
-                GroundPrivate.override_meter_state,
-                GroundPrivate.override_meter_state_modified,
-            )
-            .outerjoin(GroundPrivate, cls.id == GroundPrivate.ground_id)
-        )
+        return sql.session.query(
+            cls.serial,
+            cls.name,
+            GroundPrivate.override_meter_state,
+            GroundPrivate.override_meter_state_modified,
+        ).outerjoin(GroundPrivate, cls.id == GroundPrivate.ground_id)
 
     def remove(self):
         """Remove a ground from the system.
@@ -311,6 +291,7 @@ class Ground(BaseDomain):
         """
         from sparkmeter.dashboard.dashboarddomain import DashboardDailyTariffSummary
         from sparkmeter.salesaccount.salesaccountdomain import SalesAccount
+
         if self.private:
             sql.session.delete(self.private)
         address = self.address
@@ -339,23 +320,28 @@ class Ground(BaseDomain):
             Ground.id == self.id,
             Meter.ground_id == Ground.id,
             Meter.id == MeterConfig.meter_id,
-            MeterConfig.hidden == false()
+            MeterConfig.hidden == false(),
         ).order_by(Meter.code)
 
     def get_active_customer_meters(self):
         """Get all the active (non-hidden) customer meter objects in this ground."""
-        return self.get_active_meters().filter(
-            Meter.meter_type == Meter.TYPE_CUSTOMER)
+        return self.get_active_meters().filter(Meter.meter_type == Meter.TYPE_CUSTOMER)
 
     def get_used_capacity(self):
         """Get ground allocated tariff capacity in watts."""
-        return sql.session.query(func.sum(Tariff.flat_load_limit)).filter(
-            Ground.id == self.id,
-            Meter.ground_id == Ground.id,
-            MeterBilling.meter_id == Meter.id,
-            MeterBilling.tariff_id == Tariff.id,
-            MeterConfig.meter_id == Meter.id,
-            MeterConfig.hidden == false()).scalar() or 0
+        return (
+            sql.session.query(func.sum(Tariff.flat_load_limit))
+            .filter(
+                Ground.id == self.id,
+                Meter.ground_id == Ground.id,
+                MeterBilling.meter_id == Meter.id,
+                MeterBilling.tariff_id == Tariff.id,
+                MeterConfig.meter_id == Meter.id,
+                MeterConfig.hidden == false(),
+            )
+            .scalar()
+            or 0
+        )
 
     # FIXME: should this be removed
     def get_readings(self):  # pragma nocover (unused)
@@ -363,16 +349,15 @@ class Ground(BaseDomain):
         # FIXME: this can return many thousands of object, perhaps limit it by
         #        default somehow to avoid huge queries.
         return Reading.query.filter(
-            MeterConfig.hidden == false(),
-            MeterConfig.meter_id == Meter.id,
-            Meter.ground_id == self.id)
+            MeterConfig.hidden == false(), MeterConfig.meter_id == Meter.id, Meter.ground_id == self.id
+        )
 
     def get_last_sync_date(self):
         """Get the last time this ground was synchronized against the cloud."""
-        if config['HEROKU']:
+        if config["HEROKU"]:
             node_id = self.serial
         else:
-            node_id = 'cloud'
+            node_id = "cloud"
         return NodeHost.get_heartbeat_time(self.session, node_id)
 
     def update_all_active_customer_meters(self):

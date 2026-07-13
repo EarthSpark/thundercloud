@@ -2,6 +2,7 @@
 # Copyright © 2026 SparkMeter, Inc.
 # All Rights Reserved.
 """Helpers for open-redirect-resistant redirects."""
+
 from urllib.parse import urlparse
 
 
@@ -21,16 +22,14 @@ def safe_redirect_target(target, fallback, current_host=None):
     """
     if not target:
         return fallback
-    if (target != target.strip()
-            or '\\' in target
-            or '\t' in target or '\n' in target or '\r' in target):
+    if target != target.strip() or "\\" in target or "\t" in target or "\n" in target or "\r" in target:
         return fallback
     try:
         parsed = urlparse(target)
     except ValueError:
         # Malformed URL (e.g. an unbalanced IPv6 bracket) -- never trust it.
         return fallback
-    if parsed.scheme not in ('', 'http', 'https'):
+    if parsed.scheme not in ("", "http", "https"):
         return fallback
     if not parsed.netloc:
         # Rooted local path only -- checked against the original target string,
@@ -38,7 +37,7 @@ def safe_redirect_target(target, fallback, current_host=None):
         # missing-slash scheme folds like ``https:/evil``, and not
         # ``startswith('//')`` rejects protocol-relative ``//evil`` (browsers
         # resolve both cross-origin).
-        if target.startswith('/') and not target.startswith('//'):
+        if target.startswith("/") and not target.startswith("//"):
             return target
         return fallback
     # Absolute URL: honor only when it points at our own host (same-site Referer).

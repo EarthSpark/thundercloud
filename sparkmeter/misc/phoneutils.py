@@ -21,6 +21,7 @@ def _lazy_load_metadata():
     if _phone_country_codes is not None:
         return
     from phonenumbers.phonenumberutil import COUNTRY_CODE_TO_REGION_CODE
+
     _phone_country_codes = COUNTRY_CODE_TO_REGION_CODE
 
 
@@ -38,13 +39,13 @@ def list_country_codes(locale=None):
 
     :returns: a list of tuples (prefix, E164)
     """
-    loc = Locale.parse(locale or 'en_US')
+    loc = Locale.parse(locale or "en_US")
     # Reference https://en.wikipedia.org/wiki/E.164
     _lazy_load_metadata()
     codes = []
     for country_code, e164s in list(_phone_country_codes.items()):
         country = loc.territories.get(e164s[0])
-        label = '%s (+%d)' % (country, country_code)
+        label = "%s (+%d)" % (country, country_code)
         codes.append((str(country_code), label))
     return sorted(codes, key=operator.itemgetter(1))
 
@@ -62,35 +63,32 @@ def parse_phone_number(value, country_code=None):
     try:
         number = phonenumbers.parse(value, region=region)
     except (phonenumbers.phonenumberutil.NumberParseException, TypeError):
-        raise ValueError(
-            _("Invalid phone number: %(value)r",
-              value=value))
+        raise ValueError(_("Invalid phone number: %(value)r", value=value))
     return number
 
 
 def country_code_to_display_name(locale, country_code):
     """Format a country code to a display name."""
-    loc = Locale.parse(locale or 'en_US')
+    loc = Locale.parse(locale or "en_US")
     region = country_code_to_region_code(country_code)
     return loc.territories.get(region)
 
 
-def format_phone_number(number, format='INTERNATIONAL'):
+def format_phone_number(number, format="INTERNATIONAL"):
     """Format a phone number.
 
     :param number: the phone number to parse.
     :param format: either 'E164' or 'INTERNATIONAL'
     """
-    if format == 'E164':
+    if format == "E164":
         f = phonenumbers.PhoneNumberFormat.E164
-    elif format == 'INTERNATIONAL':
+    elif format == "INTERNATIONAL":
         f = phonenumbers.PhoneNumberFormat.INTERNATIONAL
     else:  # pragma: nocoverage
-        raise ValueError("Unsupported format: %s" % (format, ))
+        raise ValueError("Unsupported format: %s" % (format,))
 
     if not isinstance(number, phonenumbers.PhoneNumber):  # pragma nocoverage
-        raise TypeError("number must be a PhoneNumber, not %s" % (
-            type(number).__name__))
+        raise TypeError("number must be a PhoneNumber, not %s" % (type(number).__name__))
     return phonenumbers.format_number(number, f)
 
 
@@ -103,5 +101,4 @@ def parse_country_national(country_code, national_number):
     """
     region = country_code_to_region_code(country_code)
     number = phonenumbers.parse(national_number, region=region)
-    return phonenumbers.format_number(
-        number, phonenumbers.PhoneNumberFormat.E164)
+    return phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.E164)

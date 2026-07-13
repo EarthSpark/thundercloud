@@ -16,47 +16,53 @@ from sqlalchemy.dialects import postgresql
 
 from sparkmeter.misc.uuidutils import as_uuid
 
-revision = '0.25'
-down_revision = '0.24'
+revision = "0.25"
+down_revision = "0.24"
 
 
 def upgrade():
     """Upgrade the database schema from 0.24 to 0.25."""
-    op.add_column('user', sa.Column('vendor_id', postgresql.UUID(), nullable=True))
-    op.create_foreign_key(u'user_vendor_id_fkey', 'user', 'user', ['vendor_id'], ['id'])
+    op.add_column("user", sa.Column("vendor_id", postgresql.UUID(), nullable=True))
+    op.create_foreign_key("user_vendor_id_fkey", "user", "user", ["vendor_id"], ["id"])
     conn = op.get_bind()
     conn.execute(
         sa.sql.text("""INSERT INTO role VALUES (
         :id, :last_update, :needs_sync, :last_sync, :name, :description)"""),
-        id=uuid.UUID('000000000-0000-0000-0001-00000000004'),
-        last_update=None, needs_sync=True, last_sync=None,
-        name='api', description='')
+        id=uuid.UUID("000000000-0000-0000-0001-00000000004"),
+        last_update=None,
+        needs_sync=True,
+        last_sync=None,
+        name="api",
+        description="",
+    )
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.25 to 0.24."""
-    op.drop_constraint(u'user_vendor_id_fkey', 'user', type_='foreignkey')
-    op.drop_column(u'user', 'vendor_id')
+    op.drop_constraint("user_vendor_id_fkey", "user", type_="foreignkey")
+    op.drop_column("user", "vendor_id")
 
 
 def test_defaults():
     """Add an API user for the unittests."""
     conn = op.get_bind()
-    microgrid_id = conn.execute('SELECT id FROM microgrid;').fetchone()[0]
-    vendor_role_id = conn.execute('SELECT id FROM role WHERE name = \'vendor\';').fetchone()[0]
-    api_role_id = conn.execute('SELECT id FROM role WHERE name = \'api\';').fetchone()[0]
-    vendor_id = as_uuid('api-user-vendor')
-    api_user_id = as_uuid('api-user')
+    microgrid_id = conn.execute("SELECT id FROM microgrid;").fetchone()[0]
+    vendor_role_id = conn.execute("SELECT id FROM role WHERE name = 'vendor';").fetchone()[0]
+    api_role_id = conn.execute("SELECT id FROM role WHERE name = 'api';").fetchone()[0]
+    vendor_id = as_uuid("api-user-vendor")
+    api_user_id = as_uuid("api-user")
 
     # Vendor w/ wallets
-    for wallet_type in ['debt', 'credit']:
+    for wallet_type in ["debt", "credit"]:
         wallet_id = as_uuid(wallet_type, vendor_id)
         conn.execute(
             sa.sql.text("""INSERT INTO wallet VALUES (
             :id, :last_update, :needs_sync, :last_sync,
             :meter_id, :microgrid_id, :user_id, :wallet_type, :value, :negative_permitted)"""),
             id=wallet_id,
-            last_update=None, needs_sync=True, last_sync=None,
+            last_update=None,
+            needs_sync=True,
+            last_sync=None,
             meter_id=None,
             microgrid_id=None,
             user_id=vendor_id,
@@ -65,8 +71,8 @@ def test_defaults():
             negative_permitted=False,
         )
     data = [
-        (vendor_id, 'api-vendor', 'api-vendor@example.com', None, vendor_role_id),
-        (api_user_id, 'api-user', None, vendor_id, api_role_id)
+        (vendor_id, "api-vendor", "api-vendor@example.com", None, vendor_role_id),
+        (api_user_id, "api-user", None, vendor_id, api_role_id),
     ]
     for user_id, username, email, vendor_id, role_id in data:
         conn.execute(
@@ -74,12 +80,14 @@ def test_defaults():
             :id, :last_update, :needs_sync, :last_sync, :username, :password,
             :email, :active, :locale, :microgrid_id, :markup, :vendor_id)"""),
             id=user_id,
-            last_update=None, needs_sync=True, last_sync=None,
+            last_update=None,
+            needs_sync=True,
+            last_sync=None,
             username=username,
-            password='$2a$12$5dvgOSHS3.St0vlrffQ2JOSabs4fLF1R1V3oQ6o/nESp4fYbC2uju',
+            password="$2a$12$5dvgOSHS3.St0vlrffQ2JOSabs4fLF1R1V3oQ6o/nESp4fYbC2uju",
             email=email,
             active=True,
-            locale='en_US',
+            locale="en_US",
             microgrid_id=microgrid_id,
             markup=0,
             vendor_id=vendor_id,
@@ -88,7 +96,9 @@ def test_defaults():
             sa.sql.text("""INSERT INTO roles_users VALUES (
             :id, :last_update, :needs_sync, :last_sync, :role_id, :user_id)"""),
             id=as_uuid(user_id, role_id),
-            last_update=None, needs_sync=True, last_sync=None,
+            last_update=None,
+            needs_sync=True,
+            last_sync=None,
             user_id=user_id,
             role_id=role_id,
         )
@@ -104,5 +114,5 @@ def test_defaults():
               '2015-02-16 21:38:15.752043', 'processed', 'system', 85, 'credit',
               '73f3a4f0-de22-4609-9bdc-d64c381c5d6d',
               :to_wallet_id, NULL, NULL, NULL, NULL, NULL);"""),
-        to_wallet_id=as_uuid('credit', vendor_id)
+        to_wallet_id=as_uuid("credit", vendor_id),
     )

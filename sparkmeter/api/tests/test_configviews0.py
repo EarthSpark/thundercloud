@@ -7,7 +7,6 @@ from sparkmeter.config.configparameter import ParameterObject
 
 
 class TestConfigParameterList(APIView0TestCaseBase):
-
     path = "v0/config/"
 
     def test_get(self):
@@ -19,7 +18,6 @@ class TestConfigParameterList(APIView0TestCaseBase):
 
 
 class TestConfigParameterSet(APIView0TestCaseBase):
-
     path = "v0/config/{}"
 
     def test_put_form(self):
@@ -29,7 +27,7 @@ class TestConfigParameterSet(APIView0TestCaseBase):
         assert param.value is True
         prev_modified = param.last_modified
 
-        response = self.put(path, data={'value': False})
+        response = self.put(path, data={"value": False})
         self.verify_response(response)
 
         self.session.expire_all()
@@ -48,7 +46,7 @@ class TestConfigParameterSet(APIView0TestCaseBase):
         assert param.value is True
         prev_modified = param.last_modified
 
-        response = self.put(path, json={'value': False})
+        response = self.put(path, json={"value": False})
         self.verify_response(response)
 
         self.session.expire_all()
@@ -61,11 +59,11 @@ class TestConfigParameterSet(APIView0TestCaseBase):
         assert param.updated_by is not None
 
     def test_no_such_parameter(self):
-        path = self.path.format('does-not-exist')
-        response = self.put(path, json={'value': True})
+        path = self.path.format("does-not-exist")
+        response = self.put(path, json={"value": True})
         self.verify_response(response)
 
     def test_invalid_type(self):
         path = self.path.format(ParameterObject.ALLOW_NEGATIVE_BALANCE.name)
-        response = self.put(path, json={'value': 'xxx'})
+        response = self.put(path, json={"value": "xxx"})
         self.verify_response(response)

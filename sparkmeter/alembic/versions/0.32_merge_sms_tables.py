@@ -7,6 +7,7 @@ Revises: 0.31
 Create Date: 2016-05-25 16:22:58.981848
 
 """
+
 from builtins import str
 
 import sqlalchemy as sa
@@ -17,26 +18,26 @@ from sparkmeter.database.columns import JSONString
 from sparkmeter.misc.jsonutils import json_dumps
 from sparkmeter.misc.uuidutils import as_uuid
 
-revision = '0.32'
-down_revision = '0.31'
+revision = "0.32"
+down_revision = "0.31"
 
 
 def upgrade():
     """Upgrade the database schema from 0.31 to 0.32."""
     op.create_table(
-        'sms_config',
-        sa.Column('id', postgresql.UUID(), nullable=False),
-        sa.Column('last_update', sa.DateTime(), nullable=True),
-        sa.Column('needs_sync', sa.Boolean(), nullable=True),
-        sa.Column('last_sync', sa.DateTime(), nullable=True),
-        sa.Column('alerts', JSONString(), nullable=True),
-        sa.Column('commands', JSONString(), nullable=True),
-        sa.Column('messages', JSONString(), nullable=True),
-        sa.PrimaryKeyConstraint('id')
+        "sms_config",
+        sa.Column("id", postgresql.UUID(), nullable=False),
+        sa.Column("last_update", sa.DateTime(), nullable=True),
+        sa.Column("needs_sync", sa.Boolean(), nullable=True),
+        sa.Column("last_sync", sa.DateTime(), nullable=True),
+        sa.Column("alerts", JSONString(), nullable=True),
+        sa.Column("commands", JSONString(), nullable=True),
+        sa.Column("messages", JSONString(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.add_column('sms_message', sa.Column('config_event_type', sa.String(), nullable=True))
-    op.add_column('sms_message', sa.Column('config_command_code', sa.String(), nullable=True))
-    op.add_column('sms_message', sa.Column('config_message_type', sa.String(), nullable=True))
+    op.add_column("sms_message", sa.Column("config_event_type", sa.String(), nullable=True))
+    op.add_column("sms_message", sa.Column("config_command_code", sa.String(), nullable=True))
+    op.add_column("sms_message", sa.Column("config_message_type", sa.String(), nullable=True))
 
     alerts = {}
     commands = {}
@@ -45,14 +46,10 @@ def upgrade():
     conn = op.get_bind()
     for result in conn.execute("SELECT id, code, active, template FROM sms_config_command;"):
         commands[result.code] = dict(
-            code=result.code,
-            id=str(result.id),
-            active=result.active,
-            template=result.template)
+            code=result.code, id=str(result.id), active=result.active, template=result.template
+        )
         stmt = sa.sql.text(
-            "UPDATE sms_message "
-            "SET config_command_code = :code "
-            "WHERE sms_message.config_command_id = :id;"
+            "UPDATE sms_message SET config_command_code = :code WHERE sms_message.config_command_id = :id;"
         )
         conn.execute(
             stmt,
@@ -62,14 +59,10 @@ def upgrade():
 
     for result in conn.execute("SELECT id, event_type, active, template FROM sms_config_alert;"):
         alerts[result.event_type] = dict(
-            event_type=result.event_type,
-            id=str(result.id),
-            active=result.active,
-            template=result.template)
+            event_type=result.event_type, id=str(result.id), active=result.active, template=result.template
+        )
         stmt = sa.sql.text(
-            "UPDATE sms_message "
-            "SET config_event_type = :event_type "
-            "WHERE sms_message.config_alert_id = :id;"
+            "UPDATE sms_message SET config_event_type = :event_type WHERE sms_message.config_alert_id = :id;"
         )
         conn.execute(
             stmt,
@@ -82,7 +75,8 @@ def upgrade():
             message_type=result.message_type,
             id=str(result.id),
             active=result.active,
-            template=result.template)
+            template=result.template,
+        )
         stmt = sa.sql.text(
             "UPDATE sms_message "
             "SET config_message_type = :message_type "
@@ -100,21 +94,21 @@ def upgrade():
     :alerts, :commands, :messages)
     """)
     values = dict()
-    values['id'] = as_uuid('migrated-sms-config-entries')
-    values['last_update'] = None
-    values['needs_sync'] = True
-    values['last_sync'] = None
-    values['alerts'] = json_dumps(alerts)
-    values['commands'] = json_dumps(commands)
-    values['messages'] = json_dumps(messages)
+    values["id"] = as_uuid("migrated-sms-config-entries")
+    values["last_update"] = None
+    values["needs_sync"] = True
+    values["last_sync"] = None
+    values["alerts"] = json_dumps(alerts)
+    values["commands"] = json_dumps(commands)
+    values["messages"] = json_dumps(messages)
     conn.execute(query, **values)
 
-    op.drop_column('sms_message', 'config_alert_id')
-    op.drop_column('sms_message', 'config_command_id')
-    op.drop_column('sms_message', 'config_message_id')
-    op.drop_table('sms_config_alert')
-    op.drop_table('sms_config_command')
-    op.drop_table('sms_config_message')
+    op.drop_column("sms_message", "config_alert_id")
+    op.drop_column("sms_message", "config_command_id")
+    op.drop_column("sms_message", "config_message_id")
+    op.drop_table("sms_config_alert")
+    op.drop_table("sms_config_command")
+    op.drop_table("sms_config_message")
 
 
 def downgrade():  # pragma: nocoverage

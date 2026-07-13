@@ -70,12 +70,7 @@ def disable_all_meters(node_ids: list[int] | None = None) -> None:
             from sparkmeter.models import session_scope
 
             with current_app.app_context(), session_scope():
-                node_ids = [
-                    m.code
-                    for m in Meter.query.filter_by(
-                        meter_type=Meter.TYPE_CUSTOMER
-                    ).all()
-                ]
+                node_ids = [m.code for m in Meter.query.filter_by(meter_type=Meter.TYPE_CUSTOMER).all()]
         except Exception:  # noqa: BLE001
             logger.exception("disable_all_meters: failed to load meter list")
             return

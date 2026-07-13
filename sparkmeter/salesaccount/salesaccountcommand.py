@@ -14,10 +14,10 @@ from sparkmeter.interface import IApplication
 
 logger = logging.getLogger(__name__)
 
-salesaccount = click.Group('salesaccount', help='Sales account management commands.')
+salesaccount = click.Group("salesaccount", help="Sales account management commands.")
 
 
-@salesaccount.command('list')
+@salesaccount.command("list")
 @with_appcontext
 def list_accounts():
     """List all global sales accounts."""
@@ -27,18 +27,18 @@ def list_accounts():
     app.setup_databases()
 
     fmt = "%36s | %20s | %20s"
-    logger.info(fmt % ('ID', 'NAME', 'USERS'))
-    logger.info('=' * 85)
+    logger.info(fmt % ("ID", "NAME", "USERS"))
+    logger.info("=" * 85)
 
     global_accounts = SalesAccount.query.filter_by(global_account=True, system=False)
     for account in global_accounts.order_by(SalesAccount.name, SalesAccount.id):
         usernames = sorted(u.username for u in account.users)
-        logger.info(fmt % (account.id, account.name, ', '.join(usernames)))
+        logger.info(fmt % (account.id, account.name, ", ".join(usernames)))
 
 
-@salesaccount.command('delete')
-@click.option('-i', '--id', 'sales_account_id', required=True, help='Sales account ID')
-@click.option('-y', '--assume-yes', 'force', is_flag=True, help='Skip confirmation')
+@salesaccount.command("delete")
+@click.option("-i", "--id", "sales_account_id", required=True, help="Sales account ID")
+@click.option("-y", "--assume-yes", "force", is_flag=True, help="Skip confirmation")
 @with_appcontext
 def delete(sales_account_id, force=False):
     """Delete a sales account."""
@@ -49,12 +49,12 @@ def delete(sales_account_id, force=False):
     app.setup_databases()
     sales_account = SalesAccount.get_by_id(sales_account_id)
     if sales_account is None:
-        logger.error('sales account %s does not exist', sales_account_id)
+        logger.error("sales account %s does not exist", sales_account_id)
         raise SystemExit(1)
 
     msg = "Sales account %s will be deleted, are you sure" % (sales_account.name)
     if not force and not prompt_bool(msg, default=True):
-        logger.info('sales account delete aborted')
+        logger.info("sales account delete aborted")
         raise SystemExit(1)
 
     sql.session.delete(sales_account.credit_wallet)
@@ -62,15 +62,16 @@ def delete(sales_account_id, force=False):
     sql.session.delete(sales_account)
     sql.session.commit()
 
-    logger.info('sales account %s was deleted', sales_account.name)
+    logger.info("sales account %s was deleted", sales_account.name)
     return 0
 
 
-@salesaccount.command('merge')
-@click.option('-a', '--merge-salesaccount', 'salesaccount_a_id', required=True, help='Sales account to keep')
-@click.option('-b', '--delete-salesaccount', 'salesaccount_b_id',
-              required=True, help='Sales account to delete')
-@click.option('-y', '--assume-yes', 'force', is_flag=True, help='Skip confirmation')
+@salesaccount.command("merge")
+@click.option("-a", "--merge-salesaccount", "salesaccount_a_id", required=True, help="Sales account to keep")
+@click.option(
+    "-b", "--delete-salesaccount", "salesaccount_b_id", required=True, help="Sales account to delete"
+)
+@click.option("-y", "--assume-yes", "force", is_flag=True, help="Skip confirmation")
 @with_appcontext
 def merge(salesaccount_a_id, salesaccount_b_id, force=False):
     """Merge two sales accounts."""
@@ -83,25 +84,31 @@ def merge(salesaccount_a_id, salesaccount_b_id, force=False):
     app.setup_databases()
 
     if salesaccount_a_id == salesaccount_b_id:
-        logger.error('please enter two different sales accounts')
+        logger.error("please enter two different sales accounts")
         raise SystemExit(1)
 
     salesaccount_a = SalesAccount.get_by_id(salesaccount_a_id)
     if salesaccount_a is None:
-        logger.error('sales account %s does not exist', salesaccount_a_id)
+        logger.error("sales account %s does not exist", salesaccount_a_id)
         raise SystemExit(1)
     elif not salesaccount_a.global_account:
-        logger.error('sales account %s with id (%s) is a restricted sales account',
-                     salesaccount_a.name, salesaccount_a.id)
+        logger.error(
+            "sales account %s with id (%s) is a restricted sales account",
+            salesaccount_a.name,
+            salesaccount_a.id,
+        )
         raise SystemExit(1)
 
     salesaccount_b = SalesAccount.get_by_id(salesaccount_b_id)
     if salesaccount_b is None:
-        logger.error('sales account %s does not exist', salesaccount_b_id)
+        logger.error("sales account %s does not exist", salesaccount_b_id)
         raise SystemExit(1)
     elif not salesaccount_b.global_account:
-        logger.error('sales account %s with id (%s) is a restricted sales account',
-                     salesaccount_b.name, salesaccount_b.id)
+        logger.error(
+            "sales account %s with id (%s) is a restricted sales account",
+            salesaccount_b.name,
+            salesaccount_b.id,
+        )
         raise SystemExit(1)
 
     # all wallets and users associated with sales account b
@@ -114,18 +121,20 @@ def merge(salesaccount_a_id, salesaccount_b_id, force=False):
     b_from_transactions_debt = Transaction.query.filter_by(from_wallet_id=salesaccount_b.debt_wallet.id)
     b_to_transactions_debt = Transaction.query.filter_by(to_wallet_id=salesaccount_b.debt_wallet.id)
 
-    logger.warning("%d wallets associated with sales account %s",
-                   wallets.count(), salesaccount_b.id)
-    logger.warning("%d users associated with sales account %s",
-                   account_b_users.count(), salesaccount_b.id)
-    logger.warning("%d transactions associated with sales account %s",
-                   b_from_transactions_credit.count() + b_to_transactions_credit.count()
-                   + b_from_transactions_debt.count() + b_to_transactions_debt.count(),
-                   salesaccount_b.id)
+    logger.warning("%d wallets associated with sales account %s", wallets.count(), salesaccount_b.id)
+    logger.warning("%d users associated with sales account %s", account_b_users.count(), salesaccount_b.id)
+    logger.warning(
+        "%d transactions associated with sales account %s",
+        b_from_transactions_credit.count()
+        + b_to_transactions_credit.count()
+        + b_from_transactions_debt.count()
+        + b_to_transactions_debt.count(),
+        salesaccount_b.id,
+    )
 
     msg = "Sales account %s will be deleted, are you sure" % (salesaccount_b.name)
     if not force and not prompt_bool(msg, default=True):
-        logger.info('sales account merge aborted')
+        logger.info("sales account merge aborted")
         raise SystemExit(1)
 
     # Merge Credit Wallet
@@ -148,6 +157,6 @@ def merge(salesaccount_a_id, salesaccount_b_id, force=False):
     sql.session.delete(salesaccount_b)
     sql.session.commit()
 
-    logger.info('sales account %s was deleted', salesaccount_b.name)
+    logger.info("sales account %s was deleted", salesaccount_b.name)
 
     return 0

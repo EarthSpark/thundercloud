@@ -11,8 +11,8 @@ Create Date: 2019-11-26 16:40:33.611349
 import sqlalchemy as sa
 from alembic import op
 
-revision = '0.76'
-down_revision = '0.75'
+revision = "0.76"
+down_revision = "0.75"
 
 
 def upgrade():
@@ -40,25 +40,13 @@ def upgrade():
         WHERE daily_energy_limit_value IS NULL;
         """
     )
-    op.alter_column('tariff', 'daily_energy_limit_enabled',
-                    existing_type=sa.Boolean(),
-                    nullable=False)
-    op.alter_column('tariff', 'daily_energy_limit_reset_hour',
-                    existing_type=sa.Integer(),
-                    nullable=False)
-    op.alter_column('tariff', 'daily_energy_limit_value',
-                    existing_type=sa.Float(),
-                    nullable=False)
+    op.alter_column("tariff", "daily_energy_limit_enabled", existing_type=sa.Boolean(), nullable=False)
+    op.alter_column("tariff", "daily_energy_limit_reset_hour", existing_type=sa.Integer(), nullable=False)
+    op.alter_column("tariff", "daily_energy_limit_value", existing_type=sa.Float(), nullable=False)
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.76 to 0.75."""
-    op.alter_column('tariff', 'daily_energy_limit_value',
-                    existing_type=sa.Float(),
-                    nullable=True)
-    op.alter_column('tariff', 'daily_energy_limit_reset_hour',
-                    existing_type=sa.Integer(),
-                    nullable=True)
-    op.alter_column('tariff', 'daily_energy_limit_enabled',
-                    existing_type=sa.Boolean(),
-                    nullable=True)
+    op.alter_column("tariff", "daily_energy_limit_value", existing_type=sa.Float(), nullable=True)
+    op.alter_column("tariff", "daily_energy_limit_reset_hour", existing_type=sa.Integer(), nullable=True)
+    op.alter_column("tariff", "daily_energy_limit_enabled", existing_type=sa.Boolean(), nullable=True)

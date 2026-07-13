@@ -8,6 +8,7 @@ pattern for test isolation.
 Reference:
 https://docs.sqlalchemy.org/en/20/orm/session_transaction.html
 """
+
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 
@@ -35,7 +36,7 @@ def create_test_session(db):
     # Flask-SQLAlchemy's track_modifications listener expects _model_changes
     # on the session. Initialize it on first access.
     raw = session()
-    if not hasattr(raw, '_model_changes'):
+    if not hasattr(raw, "_model_changes"):
         raw._model_changes = {}
 
     # Store the real remove for cleanup, then override to prevent

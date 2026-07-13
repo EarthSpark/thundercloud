@@ -9,14 +9,13 @@ from sparkmeter.tests.test_data_factory import MeterFactory, TotalizerMeterFacto
 
 
 class TotalizerListTest(APIView0TestCaseBase):
-
     path = "v0/totalizers"
 
     def _query(self, **kwargs):
-        return self.get(self.path + '?' + urllib.parse.urlencode(kwargs))
+        return self.get(self.path + "?" + urllib.parse.urlencode(kwargs))
 
     def test_list_all(self):
-        MeterFactory(customer__name='Customer #1')
+        MeterFactory(customer__name="Customer #1")
         TotalizerMeterFactory()
         TotalizerMeterFactory()
         self.session.commit()
@@ -24,7 +23,7 @@ class TotalizerListTest(APIView0TestCaseBase):
         self.verify_response(response)
 
     def test_error_unknown_parameter(self):
-        response = self.get(self.path + '?unknown-parameter')
+        response = self.get(self.path + "?unknown-parameter")
         self.verify_response(response)
 
     def test_meter_serial(self):
@@ -36,11 +35,11 @@ class TotalizerListTest(APIView0TestCaseBase):
         self.verify_response(response)
 
     def test_error_no_such_meter(self):
-        response = self._query(meter_serial='no-such-meter')
+        response = self._query(meter_serial="no-such-meter")
         self.verify_response(response)
 
     def test_error_no_such_totalizer(self):
-        meter = MeterFactory(customer__name='Customer #1')
+        meter = MeterFactory(customer__name="Customer #1")
         TotalizerMeterFactory()
         TotalizerMeterFactory()
         self.session.commit()

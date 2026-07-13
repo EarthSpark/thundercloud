@@ -12,15 +12,15 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '0.02'
-down_revision = '0.01'
+revision = "0.02"
+down_revision = "0.01"
 
 
-def upgrade():   # pragma: nocoverage
+def upgrade():  # pragma: nocoverage
     """Upgrade the database schema from 0.01 to 0.02."""
-    op.add_column('reading', sa.Column('acct_plan', sa.Float(), nullable=True))
+    op.add_column("reading", sa.Column("acct_plan", sa.Float(), nullable=True))
 
 
 def downgrade():  # pragma: nocoverage
     """Downgrade the database schema from 0.02 to 0.01."""
-    op.drop_column('reading', 'acct_plan')
+    op.drop_column("reading", "acct_plan")

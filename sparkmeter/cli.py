@@ -6,6 +6,7 @@
 All commands are defined in their respective domain modules.
 This module registers them with the Flask app.
 """
+
 from zope.component import getUtility
 
 from sparkmeter.interface import IApplication

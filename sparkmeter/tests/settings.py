@@ -7,21 +7,19 @@ import os
 
 # Flask
 TESTING = True
-SERVER_NAME = 'localhost'
+SERVER_NAME = "localhost"
 
 # Flask-Security
 LOGIN_DISABLED = True
 CSRF_ENABLED = False
-SECURITY_PASSWORD_SALT = 'test-salt-not-secret'
+SECURITY_PASSWORD_SALT = "test-salt-not-secret"
 
 # WTForms
 WTF_CSRF_ENABLED = False
 
 # SQLAlchemy
-SQL_DATABASE_NAME = 'test'
-SQLALCHEMY_DATABASE_URI = 'postgresql://localhost:%s/%s' % (
-    os.environ.get('PGPORT', 5432),
-    SQL_DATABASE_NAME)
+SQL_DATABASE_NAME = "test"
+SQLALCHEMY_DATABASE_URI = "postgresql://localhost:%s/%s" % (os.environ.get("PGPORT", 5432), SQL_DATABASE_NAME)
 # SQLALCHEMY_ECHO = True
 
 # Sentry
@@ -31,14 +29,14 @@ SENTRY_DSN = None
 # SENTRY_DSN = 'https://<public_key>:<secret_key>@sentry.io/<project_id>'
 
 # App defaults
-API_ENDPOINT = 'https://testsite.sparkmeter.cloud/api/v0'
-DEFAULT_PHONE_COUNTRY_CODE = u'1'
+API_ENDPOINT = "https://testsite.sparkmeter.cloud/api/v0"
+DEFAULT_PHONE_COUNTRY_CODE = "1"
 HEROKU = True
 SERIAL = "groundserial1"
-SECRET_KEY = 'secretkey'
+SECRET_KEY = "secretkey"
 
 # S3 History
-S3_HISTORY_BUCKET = 'test-history-bucket'
+S3_HISTORY_BUCKET = "test-history-bucket"
 S3_SITE = "groundserial1"
 
 # default nominal voltage

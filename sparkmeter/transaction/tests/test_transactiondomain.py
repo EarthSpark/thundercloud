@@ -14,20 +14,23 @@ from sparkmeter.exceptions import TransactionError
 from sparkmeter.meter.meterstate import MeterState
 from sparkmeter.salesaccount.salesaccountdomain import SalesAccount
 from sparkmeter.tests.base import SparkMeterTestCaseBase
-from sparkmeter.tests.test_data_factory import (EventFactory, GroundFactory, MeterFactory,
-                                                OperatorFactory, SalesAccountFactory,
-                                                TransactionFactory, TransactionSourceFactory)
+from sparkmeter.tests.test_data_factory import (
+    EventFactory,
+    GroundFactory,
+    MeterFactory,
+    OperatorFactory,
+    SalesAccountFactory,
+    TransactionFactory,
+    TransactionSourceFactory,
+)
 from sparkmeter.transaction.transactiondomain import Transaction, TransactionSource, Wallet
 
 
 class TransactionTest(SparkMeterTestCaseBase):
-
     def _place_transaction(self, operator_role, meter, amount):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(accounts=[account], roles=[operator_role], grounds=[account.ground])
         source = TransactionSourceFactory()
         self.session.commit()
 
@@ -49,9 +52,7 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_power(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(accounts=[account], roles=[operator_role], grounds=[account.ground])
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -75,9 +76,9 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_debt(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -101,9 +102,7 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_memo(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(accounts=[account], roles=[operator_role], grounds=[account.ground])
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -117,14 +116,14 @@ class TransactionTest(SparkMeterTestCaseBase):
             source=source,
             ground=meter.ground,
             session=self.session,
-            memo='This is a memo'
+            memo="This is a memo",
         )
 
         assert transaction.state == Transaction.STATE_PENDING
         assert transaction.amount == 40.0
         assert transaction.to_wallet.meter_id == meter.id
         assert transaction.from_wallet.sales_account_id == account.id
-        assert transaction.memo == 'This is a memo'
+        assert transaction.memo == "This is a memo"
 
         no_memo_tx = Transaction.create_transactions(
             from_object=account,
@@ -148,21 +147,20 @@ class TransactionTest(SparkMeterTestCaseBase):
                 source=source,
                 ground=meter.ground,
                 session=self.session,
-                memo='x' * 301
+                memo="x" * 301,
             )
-        assert 'memos may not be longer than 300 characters' in str(valerr.value)
+        assert "memos may not be longer than 300 characters" in str(valerr.value)
 
     def test_create_transactions_bonus(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         self.session.commit()
 
-        source = self.session.query(TransactionSource).filter_by(
-            name=TransactionSource.BONUS).one()
+        source = self.session.query(TransactionSource).filter_by(name=TransactionSource.BONUS).one()
         Transaction.create_transactions(
             from_object=account,
             to_object=meter,
@@ -181,9 +179,9 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_negative(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -206,9 +204,7 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_error(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=30)
         self.session.commit()
-        user = OperatorFactory(accounts=[account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(accounts=[account], roles=[operator_role], grounds=[account.ground])
         meter = MeterFactory(credit_wallet__value=200)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -226,17 +222,17 @@ class TransactionTest(SparkMeterTestCaseBase):
             )
         assert ctx.value.code == TransactionError.ERROR_NOT_ENOUGH_FUNDS
         assert ctx.value.message == (
-            u'sales åccöünt 1 does not have enough credit (30.00) '
-            u'to cover a transaction of 80.00')
+            "sales åccöünt 1 does not have enough credit (30.00) to cover a transaction of 80.00"
+        )
         assert account.credit_wallet.value == 30
         assert meter.credit_wallet.value == 200
 
     def test_create_transactions_debt_error(self, operator_role):
         account = SalesAccountFactory(debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, self.system_sales_account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, self.system_sales_account], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(debt_wallet__value=70)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -250,12 +246,13 @@ class TransactionTest(SparkMeterTestCaseBase):
                 user=user,
                 source=source,
                 ground=meter.ground,
-                session=self.session
+                session=self.session,
             )
         assert ctx.value.code == TransactionError.ERROR_NOT_ENOUGH_FUNDS
         assert ctx.value.message == (
-            u'test micrøgrid 1, Meter SM15R-01-00000001 does not have enough '
-            u'debt (70.00) to cover a transaction of 80.00')
+            "test micrøgrid 1, Meter SM15R-01-00000001 does not have enough "
+            "debt (70.00) to cover a transaction of 80.00"
+        )
 
         assert account.debt_wallet.value == 0
         assert meter.debt_wallet.value == 70
@@ -263,9 +260,9 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_negative_non_system_error(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -288,9 +285,9 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_negative_non_sales_error(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -313,9 +310,9 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_negative_with_markup_error(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -330,7 +327,7 @@ class TransactionTest(SparkMeterTestCaseBase):
                 source=source,
                 ground=meter.ground,
                 session=self.session,
-                markup=0.05
+                markup=0.05,
             )
         assert str(ctx.value) == "negative transactions cannot have markup"
         transactions = self.session.query(Transaction).all()
@@ -339,9 +336,9 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_create_transactions_zero_error(self, operator_role):
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, SalesAccount.get_system()],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, SalesAccount.get_system()], roles=[operator_role], grounds=[account.ground]
+        )
         meter = MeterFactory(credit_wallet__value=200, debt_wallet__value=100)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -365,9 +362,9 @@ class TransactionTest(SparkMeterTestCaseBase):
         ground = GroundFactory.get_default()
         account = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, self.system_sales_account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, self.system_sales_account], roles=[operator_role], grounds=[account.ground]
+        )
         source = self.session.query(TransactionSource).filter_by(name=TransactionSource.CASH).one()
         self.session.commit()
 
@@ -403,9 +400,9 @@ class TransactionTest(SparkMeterTestCaseBase):
         ground = GroundFactory.get_default()
         account = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
-        user = OperatorFactory(accounts=[account, self.system_sales_account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, self.system_sales_account], roles=[operator_role], grounds=[account.ground]
+        )
         source = self.session.query(TransactionSource).filter_by(name=TransactionSource.CASH).one()
         self.session.commit()
 
@@ -438,9 +435,9 @@ class TransactionTest(SparkMeterTestCaseBase):
         account = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
         ground = GroundFactory.get_default()
-        user = OperatorFactory(accounts=[account, self.system_sales_account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, self.system_sales_account], roles=[operator_role], grounds=[account.ground]
+        )
 
         source = self.session.query(TransactionSource).filter_by(name=TransactionSource.CASH).one()
         self.session.commit()
@@ -469,9 +466,9 @@ class TransactionTest(SparkMeterTestCaseBase):
         account = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
         ground = GroundFactory.get_default()
-        user = OperatorFactory(accounts=[account, self.system_sales_account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, self.system_sales_account], roles=[operator_role], grounds=[account.ground]
+        )
 
         source = self.session.query(TransactionSource).filter_by(name=TransactionSource.CASH).one()
         self.session.commit()
@@ -497,9 +494,9 @@ class TransactionTest(SparkMeterTestCaseBase):
         account = SalesAccountFactory(credit_wallet__value=1000)
         self.session.commit()
         ground = GroundFactory.get_default()
-        user = OperatorFactory(accounts=[account, self.system_sales_account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(
+            accounts=[account, self.system_sales_account], roles=[operator_role], grounds=[account.ground]
+        )
 
         source = self.session.query(TransactionSource).filter_by(name=TransactionSource.CASH).one()
         self.session.commit()
@@ -525,7 +522,7 @@ class TransactionTest(SparkMeterTestCaseBase):
         TransactionFactory(external_id="external_id")
         self.session.flush()
         t = Transaction.get_by_external_id("external_id")
-        assert t.external_id == 'external_id'
+        assert t.external_id == "external_id"
 
     def test_get_by_id_or_external_id(self):
         t1 = TransactionFactory()
@@ -554,14 +551,14 @@ class TransactionTest(SparkMeterTestCaseBase):
 
     def test_status_text(self):
         t = TransactionFactory()
-        assert t.status_text == 'Not processed'
+        assert t.status_text == "Not processed"
         t.state = Transaction.STATE_PROCESSED
-        assert t.status_text == 'Processed'
+        assert t.status_text == "Processed"
         t.state = Transaction.STATE_ERROR
-        assert t.status_text == 'Error'
+        assert t.status_text == "Error"
         t.state = Transaction.STATE_REVERSED
-        assert t.status_text == 'Reversed'
-        t.state = 'invalid'
+        assert t.status_text == "Reversed"
+        t.state = "invalid"
         with pytest.raises(NotImplementedError):
             t.status_text
 
@@ -577,12 +574,11 @@ class TransactionTest(SparkMeterTestCaseBase):
         assert t2.processed_timestamp is not None
 
     def test_process_reversal(self, mocker, send_set_config):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         t1 = self.create_transaction(state=Transaction.STATE_PROCESSED)
         t1.from_wallet.value = 100
-        t2 = self.create_transaction(origin=Transaction.ORIGIN_REVERSAL,
-                                     reference_id=t1.id)
+        t2 = self.create_transaction(origin=Transaction.ORIGIN_REVERSAL, reference_id=t1.id)
         self.session.commit()
         t2.process()
         t1 = Transaction.get_by_id(t1.id)
@@ -590,7 +586,7 @@ class TransactionTest(SparkMeterTestCaseBase):
         assert t1.reversed_timestamp is not None
         assert send_set_config.mock_calls == []
         assert event_create.mock_calls == [
-            mock.call('reversal-transaction-processed', obj=t1),
+            mock.call("reversal-transaction-processed", obj=t1),
         ]
 
     def test_process_not_pending(self):
@@ -599,17 +595,18 @@ class TransactionTest(SparkMeterTestCaseBase):
             t.process()
         assert ctx.value.code == TransactionError.ERROR_ALREADY_PROCESSED
         assert ctx.value.message == (
-            u'Error processing transaction 00000007-0000-0000-0000-000000000001: '
-            u'already processed')
+            "Error processing transaction 00000007-0000-0000-0000-000000000001: already processed"
+        )
 
     def test_process_wrong_acct_type(self):
-        t = TransactionFactory(acct_type=Choice(code=u'foobar', value='yay'))
+        t = TransactionFactory(acct_type=Choice(code="foobar", value="yay"))
         with pytest.raises(TransactionError) as ctx:
             t.process()
         assert ctx.value.code == TransactionError.ERROR_WRONG_TYPE
         assert ctx.value.message == (
-            u'Error processing transaction 00000007-0000-0000-0000-000000000001: '
-            u'unknown transaction type (foobar)')
+            "Error processing transaction 00000007-0000-0000-0000-000000000001: "
+            "unknown transaction type (foobar)"
+        )
 
     def test_process_not_enough_with_negative_permitted(self):
         t = TransactionFactory()
@@ -618,23 +615,21 @@ class TransactionTest(SparkMeterTestCaseBase):
             t.process()
         assert ctx.value.code == TransactionError.ERROR_NOT_ENOUGH_FUNDS
         assert ctx.value.message == (
-            u'Sending side does not contain enough funds (0.00) to complete transfer '
-            u'of value 100.00.')
+            "Sending side does not contain enough funds (0.00) to complete transfer of value 100.00."
+        )
 
     def test_process_already_reversed(self):
         a = TransactionFactory(state=Transaction.STATE_PROCESSED)
-        b = TransactionFactory(state=Transaction.STATE_PROCESSED,
-                               origin=Transaction.ORIGIN_REVERSAL)
+        b = TransactionFactory(state=Transaction.STATE_PROCESSED, origin=Transaction.ORIGIN_REVERSAL)
         b.reference_id = a.id
-        c = TransactionFactory(state=Transaction.STATE_PENDING,
-                               origin=Transaction.ORIGIN_REVERSAL)
+        c = TransactionFactory(state=Transaction.STATE_PENDING, origin=Transaction.ORIGIN_REVERSAL)
         c.reference_id = a.id
         self.session.commit()
         c.from_wallet.value = 100
         with pytest.raises(TransactionError) as ctx:
             c.process()
         assert ctx.value.code == TransactionError.ERROR_ALREADY_REVERSED
-        assert ctx.value.message == u'Parent transaction already reversed.'
+        assert ctx.value.message == "Parent transaction already reversed."
 
     def test_reverse(self):
         t = self.create_transaction(state=Transaction.STATE_PROCESSED)
@@ -652,27 +647,27 @@ class TransactionTest(SparkMeterTestCaseBase):
     def test_reverse_bad_user(self):
         t = TransactionFactory(state=Transaction.STATE_PROCESSED)
         with pytest.raises(TypeError):
-            t.reverse('bad-user-type')
+            t.reverse("bad-user-type")
 
     def test_reverse_not_processed(self):
         t = self.create_transaction(state=Transaction.STATE_PENDING)
         with pytest.raises(TransactionError) as ctx:
             t.reverse(t.user)
         assert ctx.value.code == TransactionError.ERROR_NOT_PROCESSED
-        assert ctx.value.message == u'Not processed'
+        assert ctx.value.message == "Not processed"
 
     def test_set_error(self):
         t = TransactionFactory()
         assert t.error is None
         assert t.state == Transaction.STATE_PENDING
-        t.set_error('Error')
-        assert t.error == 'Error'
+        t.set_error("Error")
+        assert t.error == "Error"
         assert t.state == Transaction.STATE_ERROR
         assert t.errored_timestamp is not None
         msg = "This transaction has already an error set."
         with pytest.raises(ValueError, match=msg):
-            t.set_error('Error2')
-        assert t.error == 'Error'
+            t.set_error("Error2")
+        assert t.error == "Error"
         assert t.state == Transaction.STATE_ERROR
 
     def test_get_unprocessed(self):
@@ -695,7 +690,7 @@ class TransactionTest(SparkMeterTestCaseBase):
         assert len(ts3) == 0
 
     def test_transaction_turn_on_meter(self, config, operator_role, send_set_config):
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         meter = MeterFactory(
             credit_wallet__value=-10,
             debt_wallet__value=0,
@@ -704,22 +699,24 @@ class TransactionTest(SparkMeterTestCaseBase):
         )
         self._place_transaction(operator_role, meter, 100)
         meter.system_info.update_from_set_config(
-            command='enable',
-            application_version='app-ver',
-            bootloader_version=u'abc1234',
+            command="enable",
+            application_version="app-ver",
+            bootloader_version="abc1234",
             power_limit=50.0,
         )
         self.session.commit()
 
         assert send_set_config.mock_calls == [
-            mock.call(subnet=255,
-                      current_limit=10000.0,
-                      load_limit=50.0,
-                      mac=1,
-                      command='enable',
-                      balance=90.0,
-                      low_balance=False,
-                      firmware_version=u'abc1234'),
+            mock.call(
+                subnet=255,
+                current_limit=10000.0,
+                load_limit=50.0,
+                mac=1,
+                command="enable",
+                balance=90.0,
+                low_balance=False,
+                firmware_version="abc1234",
+            ),
         ]
 
         send_set_config.reset_mock()
@@ -727,9 +724,9 @@ class TransactionTest(SparkMeterTestCaseBase):
         assert send_set_config.mock_calls == []
 
     def test_transaction_turn_off_meter(self, config, mocker, operator_role, send_set_config):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         meter = MeterFactory(
             credit_wallet__value=-50,
             debt_wallet__value=0,
@@ -737,14 +734,16 @@ class TransactionTest(SparkMeterTestCaseBase):
         )
         transaction = self._place_transaction(operator_role, meter, 100)
         assert send_set_config.mock_calls == [
-            mock.call(subnet=255,
-                      current_limit=10000.0,
-                      load_limit=50.0,
-                      mac=1,
-                      command='enable',
-                      balance=50.0,
-                      low_balance=False,
-                      firmware_version=u'abc1234'),
+            mock.call(
+                subnet=255,
+                current_limit=10000.0,
+                load_limit=50.0,
+                mac=1,
+                command="enable",
+                balance=50.0,
+                low_balance=False,
+                firmware_version="abc1234",
+            ),
         ]
         send_set_config.reset_mock()
         rt = transaction.reverse(transaction.user)
@@ -752,29 +751,29 @@ class TransactionTest(SparkMeterTestCaseBase):
         self.session.commit()
         rt.process()
         assert send_set_config.mock_calls == [
-            mock.call(subnet=255,
-                      current_limit=10000.0,
-                      load_limit=50.0,
-                      mac=1,
-                      command='disable',
-                      balance=-50.0,
-                      low_balance=True,
-                      firmware_version=u'abc1234'),
+            mock.call(
+                subnet=255,
+                current_limit=10000.0,
+                load_limit=50.0,
+                mac=1,
+                command="disable",
+                balance=-50.0,
+                low_balance=True,
+                firmware_version="abc1234",
+            ),
         ]
         assert event_create.mock_calls == [
-            mock.call('reversal-transaction-processed', obj=mock.ANY),
+            mock.call("reversal-transaction-processed", obj=mock.ANY),
         ]
 
     def test_convert_to_debt(self, operator_role, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         parameters.ALLOW_NEGATIVE_BALANCE = False
         event_create.reset_mock()
         account = SalesAccountFactory(credit_wallet__value=1000, debt_wallet__value=0)
         self.session.commit()
-        user = OperatorFactory(accounts=[account],
-                               roles=[operator_role],
-                               grounds=[account.ground])
+        user = OperatorFactory(accounts=[account], roles=[operator_role], grounds=[account.ground])
         meter = MeterFactory(credit_wallet__value=0, debt_wallet__value=0)
         source = TransactionSourceFactory()
         self.session.commit()
@@ -815,11 +814,11 @@ class TransactionTest(SparkMeterTestCaseBase):
         assert meter.debt_wallet.value == 20.0
         assert account.credit_wallet.value == 1000.0
         assert event_create.mock_calls == [
-            mock.call('reversal-transaction-processed', obj=mock.ANY),
+            mock.call("reversal-transaction-processed", obj=mock.ANY),
         ]
 
     def test_get_processed_by_day(self, config, send_set_config):
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         latency = datetime.timedelta(days=1)
         day1 = datetime.datetime(2018, 1, 13, 9, 0, 0, 0)
         day2 = datetime.datetime(2018, 1, 14, 11, 0, 0, 0)
@@ -881,12 +880,12 @@ class WalletTest(SparkMeterTestCaseBase):
         assert meter.credit_wallet.meter.id == meter.id
 
     def test_request_zero(self, mocker):
-        event_create = mocker.patch('sparkmeter.event.eventdomain.Event.create')
+        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
         event_create.return_value = EventFactory()
         meter = MeterFactory()
         self.session.commit()
         wallet = meter.credit_wallet
         wallet.request_zero()
         assert event_create.mock_calls == [
-            mock.call('customer-wallet-zero-requested', obj=wallet),
+            mock.call("customer-wallet-zero-requested", obj=wallet),
         ]

@@ -22,18 +22,17 @@ from sparkmeter.misc.datetimeutils import format_date
 from sparkmeter.user.userutils import get_current_user
 from sparkmeter.web.blueprint import AuthBlueprint
 
-dashboard = AuthBlueprint('dashboard', __name__)
+dashboard = AuthBlueprint("dashboard", __name__)
 
 
 @dashboard.route("/dashboard/")
-@roles_accepted('operator')
+@roles_accepted("operator")
 def index():
     """Dashboard index page."""
-    return render_template('dashboard-index.html')
+    return render_template("dashboard-index.html")
 
 
 class LastTwoMonthsChart(object):
-
     """I create tariff charts for the last two months."""
 
     def __init__(self, ground, chart_type):
@@ -51,10 +50,9 @@ class LastTwoMonthsChart(object):
         the raw data from postgres.
         """
         import pandas  # lazy load pandas to avoid loading it into memory when not needed
+
         user = get_current_user()
-        query = DashboardDailyTariffSummary.get_last_two_months_summary_view(
-            ground=self.ground,
-            user=user)
+        query = DashboardDailyTariffSummary.get_last_two_months_summary_view(ground=self.ground, user=user)
         c = query.compile(sql.engine)
         df = pandas.read_sql(
             sql=c.string,
@@ -80,11 +78,11 @@ class LastTwoMonthsChart(object):
         import pandas  # lazy load pandas to avoid loading it into memory when not needed
 
         # pivot the data setting the tariffs as columns
-        df = df.pivot(index='date', columns='tariff_name', values=self.chart_type)
+        df = df.pivot(index="date", columns="tariff_name", values=self.chart_type)
 
         # reindex the data using a pandas date_range. This will fill in any missing dates
         # freq=MS gives us a date range based on the start of each month.
-        idx = pandas.date_range(end=self.current_month, periods=2, freq='MS')
+        idx = pandas.date_range(end=self.current_month, periods=2, freq="MS")
         df = df.reindex(idx)
         df = df.fillna(0)
 
@@ -94,13 +92,13 @@ class LastTwoMonthsChart(object):
         import vincent  # lazy load vincent to avoid loading it into memory when not needed
 
         # hack for vincent not handling the dates properly.
-        df['dt'] = df.index
-        df['dt'] = df['dt'].apply(lambda x: format_date(x, 'MMM, y'))
-        df = df.set_index('dt')
+        df["dt"] = df.index
+        df["dt"] = df["dt"].apply(lambda x: format_date(x, "MMM, y"))
+        df = df.set_index("dt")
 
         chart = vincent.StackedBar(df)
-        chart.scales['x'].padding = 0.2
-        chart.scales['y'].domain_min = 0
+        chart.scales["x"].padding = 0.2
+        chart.scales["y"].domain_min = 0
 
         chart.legend(title="Tariffs")
         return chart
@@ -117,14 +115,13 @@ class LastTwoMonthsChart(object):
 
 
 class Last30DaysChart(object):
-
     """I create tariff charts for the last 30 days."""
 
     def __init__(self, ground, chart_type):
         """Create a new chart."""
         self.ground = ground
         self.chart_type = chart_type
-        if self.chart_type == 'last-30-days-sales-amount' or self.chart_type == 'last-30-days-sales-count':
+        if self.chart_type == "last-30-days-sales-amount" or self.chart_type == "last-30-days-sales-count":
             self.prepaid_only = True
         else:
             self.prepaid_only = False
@@ -142,6 +139,7 @@ class Last30DaysChart(object):
         the raw data from postgres.
         """
         import pandas  # lazy load pandas to avoid loading it into memory when not needed
+
         user = get_current_user()
         query = DashboardDailyTariffSummary.get_items_since_view(
             self.thirty_days_ago,
@@ -154,7 +152,7 @@ class Last30DaysChart(object):
             sql=c.string,
             con=sql.engine,
             params=c.params,
-            parse_dates=['date'],
+            parse_dates=["date"],
         )
         return df
 
@@ -176,18 +174,19 @@ class Last30DaysChart(object):
             2016-02-04  55.898438     5.846375     1.957906
         """
         import pandas  # lazy load pandas to avoid loading it into memory when not needed
+
         attrs = {
-            'last-30-days-customer-count': 'customer_count',
-            'last-30-days-consumption': 'kwh_consumed',
-            'last-30-days-sales-amount': 'transaction_amount',
-            'last-30-days-sales-count': 'transaction_count',
+            "last-30-days-customer-count": "customer_count",
+            "last-30-days-consumption": "kwh_consumed",
+            "last-30-days-sales-amount": "transaction_amount",
+            "last-30-days-sales-count": "transaction_count",
         }
 
         # pivot the data setting the tariffs as columns
-        df = df.pivot(index='date', columns='name', values=attrs[self.chart_type])
+        df = df.pivot(index="date", columns="name", values=attrs[self.chart_type])
 
         # reindex the data using a pandas date_range. This will fill in any missing dates
-        idx = pandas.date_range(start=self.thirty_days_ago, end=self.yesterday, freq='D')
+        idx = pandas.date_range(start=self.thirty_days_ago, end=self.yesterday, freq="D")
         df = df.reindex(idx)
         df = df.fillna(0)
 
@@ -197,13 +196,13 @@ class Last30DaysChart(object):
         import vincent  # lazy load vincent to avoid loading it into memory when not needed
 
         # hack for vincent not handling the dates properly.
-        df['dt'] = df.index
-        df['dt'] = df['dt'].apply(lambda x: format_date(x, 'MMM d'))
-        df = df.set_index('dt')
+        df["dt"] = df.index
+        df["dt"] = df["dt"].apply(lambda x: format_date(x, "MMM d"))
+        df = df.set_index("dt")
 
         chart = vincent.StackedBar(df)
-        chart.scales['x'].padding = 0.2
-        chart.scales['y'].domain_min = 0
+        chart.scales["x"].padding = 0.2
+        chart.scales["y"].domain_min = 0
 
         chart.legend(title="Tariffs")
         return chart
@@ -222,27 +221,27 @@ class Last30DaysChart(object):
 @dashboard.route("/dashboard/tariff-daily-summary/<chart_type>.<fmt>")
 def tariff_daily_summary(chart_type, fmt="json"):
     """Data for the tariff daily summary charts."""
-    if fmt not in ['json', 'csv']:
+    if fmt not in ["json", "csv"]:
         abort(http.client.BAD_REQUEST)
 
-    if config['HEROKU']:
-        ground_serial = request.args.get('ground_serial')
+    if config["HEROKU"]:
+        ground_serial = request.args.get("ground_serial")
     else:
-        ground_serial = config.get('SERIAL')
+        ground_serial = config.get("SERIAL")
 
     if ground_serial is None:
         ground = None
     else:
         ground = Ground.get_by_serial(ground_serial)
 
-    if chart_type in ['energy-purchase',
-                      'monthly-consumption',
-                      'daily-avg-consumption']:
+    if chart_type in ["energy-purchase", "monthly-consumption", "daily-avg-consumption"]:
         chart = LastTwoMonthsChart(ground, chart_type)
-    elif chart_type in ['last-30-days-customer-count',
-                        'last-30-days-consumption',
-                        'last-30-days-sales-amount',
-                        'last-30-days-sales-count']:
+    elif chart_type in [
+        "last-30-days-customer-count",
+        "last-30-days-consumption",
+        "last-30-days-sales-amount",
+        "last-30-days-sales-count",
+    ]:
         chart = Last30DaysChart(ground, chart_type)
     else:
         abort(http.client.BAD_REQUEST)
@@ -250,6 +249,6 @@ def tariff_daily_summary(chart_type, fmt="json"):
     chart_data = chart.process(fmt)
 
     if fmt == "json":
-        return Response(chart_data, mimetype='application/json')
+        return Response(chart_data, mimetype="application/json")
     elif fmt == "csv":
-        return Response(chart_data, mimetype='text/csv')
+        return Response(chart_data, mimetype="text/csv")

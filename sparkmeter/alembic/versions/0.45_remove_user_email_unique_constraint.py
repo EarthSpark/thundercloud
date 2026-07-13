@@ -10,13 +10,13 @@ Create Date: 2016-05-31 11:06:29.239818
 
 from alembic import op
 
-revision = '0.45'
-down_revision = '0.44'
+revision = "0.45"
+down_revision = "0.44"
 
 
 def upgrade():
     """Upgrade the database schema from 0.44 to 0.45."""
-    op.drop_constraint(u'user_email_key', 'user')
+    op.drop_constraint("user_email_key", "user")
 
 
 def downgrade():  # pragma: nocoverage

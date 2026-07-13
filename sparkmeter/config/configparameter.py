@@ -2,6 +2,7 @@
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
 """Configuration parameter."""
+
 from sparkmeter.config.configdict import config
 from sparkmeter.config.configparametertypes import Bool, Percent, Voltage
 from sparkmeter.database.alchemy import sql
@@ -9,7 +10,6 @@ from sparkmeter.misc.pythonutils import ClassInittable, unset
 
 
 class ParameterAttribute(object):
-
     """
     Parameter attribute.
 
@@ -50,7 +50,7 @@ class ParameterAttribute(object):
         This is the same as the attribute but in lower case and
         using dashes instead of underscores.
         """
-        return self.attribute.lower().replace('_', '-')
+        return self.attribute.lower().replace("_", "-")
 
     @property
     def parameter(self):
@@ -61,6 +61,7 @@ class ParameterAttribute(object):
         :returns: a configuration parameter.
         """
         from sparkmeter.config.configdomain import ConfigParameter
+
         parameter = ConfigParameter.get_by_name(self.name)
         return parameter
 
@@ -111,7 +112,6 @@ class ParameterAttribute(object):
 
 
 class ParameterObject(ClassInittable):
-
     """
     ParameterObject.
 
@@ -129,9 +129,10 @@ class ParameterObject(ClassInittable):
         default=True,
         label="Allow Negative Balance",
         tooltip="When convert to debt is selected, meters in Auto mode are "
-                "not allowed to have a negative credits balance. Instead, "
-                "charges that would result in negative balance are automatically "
-                "converted to debt.")
+        "not allowed to have a negative credits balance. Instead, "
+        "charges that would result in negative balance are automatically "
+        "converted to debt.",
+    )
 
     #: How much of debt should be paid back in each billing cycle,
     #: is a percentage of the consumption cost.
@@ -140,7 +141,8 @@ class ParameterObject(ClassInittable):
         default=0.0,
         label="On-bill debt repayment",
         tooltip="Percent of reading cost that will be automatically transferred "
-                "to repay debt, every time a reading is received from the meter.")
+        "to repay debt, every time a reading is received from the meter.",
+    )
 
     #: Broadcast signal, If True, with load shedding enabled, send out broadcast
     #: signal to disable meters, if False, do not send out broadcast signal.
@@ -149,7 +151,8 @@ class ParameterObject(ClassInittable):
         default=False,
         label="Send broadcast signal",
         tooltip="When in load shedding is enabled, send out a broadcast signal "
-                "so that all meters are turned off as soon as possible.")
+        "so that all meters are turned off as soon as possible.",
+    )
 
     #: Send set-config packets for all active meters during startup
     #: when loading shedding is enabled.
@@ -158,8 +161,9 @@ class ParameterObject(ClassInittable):
         default=True,
         label="Send set-config packets during startup",
         tooltip="This parameter drives whether all active meters would be updated with "
-                "their desired state as soon as the application starts, in order to "
-                "accelerate the propagation of load shedding.")
+        "their desired state as soon as the application starts, in order to "
+        "accelerate the propagation of load shedding.",
+    )
 
     #: Voltage traveling through power meters. Used to calculate the power limit for meters, capping the
     #: tariff.
@@ -170,9 +174,10 @@ class ParameterObject(ClassInittable):
         # evaluated at seed/access time (see ParameterAttribute.get_default),
         # not frozen at import, so the value is deterministic regardless of
         # the order in which this module is imported relative to config load.
-        default=lambda: config.get('NOMINAL_VOLTAGE', 120.0),
+        default=lambda: config.get("NOMINAL_VOLTAGE", 120.0),
         label="Nominal voltage of system",
-        tooltip="Nominal voltage of current flowing through meters.")
+        tooltip="Nominal voltage of current flowing through meters.",
+    )
 
     @classmethod
     def __class_init__(cls):

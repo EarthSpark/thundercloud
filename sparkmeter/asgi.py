@@ -25,7 +25,7 @@ from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
 
 # Ensure the webapp dir is importable when running as a script
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from contextlib import asynccontextmanager  # noqa: E402
 
@@ -110,16 +110,17 @@ def create_internal_app(public_app: FastAPI) -> FastAPI:
 # the factory at first access. Tests / introspection that just want to import
 # the module don't pay that cost.
 
+
 def __getattr__(name):  # PEP 562 module-level __getattr__
-    if name == 'public_app':
+    if name == "public_app":
         app = create_public_app()
-        globals()['public_app'] = app
+        globals()["public_app"] = app
         return app
-    if name == 'internal_app':
-        public = globals().get('public_app') or create_public_app()
-        globals()['public_app'] = public
+    if name == "internal_app":
+        public = globals().get("public_app") or create_public_app()
+        globals()["public_app"] = public
         app = create_internal_app(public)
-        globals()['internal_app'] = app
+        globals()["internal_app"] = app
         return app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
@@ -133,14 +134,14 @@ async def _serve_both() -> None:
     internal = create_internal_app(public)
 
     public_cfg = Config()
-    public_cfg.bind = [os.environ.get('PUBLIC_BIND', '0.0.0.0:5000')]
-    public_cfg.accesslog = '-'
-    public_cfg.errorlog = '-'
+    public_cfg.bind = [os.environ.get("PUBLIC_BIND", "0.0.0.0:5000")]
+    public_cfg.accesslog = "-"
+    public_cfg.errorlog = "-"
 
     internal_cfg = Config()
-    internal_cfg.bind = [os.environ.get('INTERNAL_BIND', '0.0.0.0:5001')]
-    internal_cfg.accesslog = '-'
-    internal_cfg.errorlog = '-'
+    internal_cfg.bind = [os.environ.get("INTERNAL_BIND", "0.0.0.0:5001")]
+    internal_cfg.accesslog = "-"
+    internal_cfg.errorlog = "-"
 
     shutdown = asyncio.Event()
 
@@ -161,5 +162,5 @@ def main() -> None:
     asyncio.run(_serve_both())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

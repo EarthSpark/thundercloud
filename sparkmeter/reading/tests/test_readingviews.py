@@ -6,17 +6,21 @@ import datetime
 from freezegun import freeze_time
 
 from sparkmeter.tests.base import WebViewTestCaseBase
-from sparkmeter.tests.test_data_factory import (GroundFactory, MeterFactory, OperatorFactory,
-                                                ReadingFactory, TotalizerMeterFactory)
+from sparkmeter.tests.test_data_factory import (
+    GroundFactory,
+    MeterFactory,
+    OperatorFactory,
+    ReadingFactory,
+    TotalizerMeterFactory,
+)
 
 
 class ReadingViewTest(WebViewTestCaseBase):
-
     @freeze_time("2014-01-01")
     def test_latest_readings_page_ground(self, client, config):
         path = "/readings/latest"
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.get(path)
         self.verify_response(response)
 
@@ -24,7 +28,7 @@ class ReadingViewTest(WebViewTestCaseBase):
     def test_latest_readings_page_cloud(self, client, config):
         path = "/readings/latest"
 
-        config['HEROKU'] = True
+        config["HEROKU"] = True
         response = client.get(path)
         self.verify_response(response)
 
@@ -39,7 +43,7 @@ class ReadingViewTest(WebViewTestCaseBase):
 
         # meter with empty customer name and code
         m13 = MeterFactory(serial="SM15R-01-00000013")
-        m13.customer.name = ''
+        m13.customer.name = ""
         m13.customer.code = None
         ReadingFactory(_meter=m13)
         self.session.flush()
@@ -74,37 +78,30 @@ class ReadingViewTest(WebViewTestCaseBase):
         self.session.commit()
 
         users = [
-            OperatorFactory(roles=[operator_role],
-                            username='none',
-                            grounds=[]),
-            OperatorFactory(roles=[operator_role],
-                            username='only-1',
-                            grounds=[self.ground]),
-            OperatorFactory(roles=[operator_role],
-                            username='only-2',
-                            grounds=[other]),
-            OperatorFactory(roles=[operator_role],
-                            username='all',
-                            grounds=[self.ground, other]),
+            OperatorFactory(roles=[operator_role], username="none", grounds=[]),
+            OperatorFactory(roles=[operator_role], username="only-1", grounds=[self.ground]),
+            OperatorFactory(roles=[operator_role], username="only-2", grounds=[other]),
+            OperatorFactory(roles=[operator_role], username="all", grounds=[self.ground, other]),
         ]
         self.session.commit()
 
-        for params in [dict(HEROKU=True),
-                       dict(HEROKU=False, SERIAL=self.ground.serial),
-                       dict(HEROKU=False, SERIAL=other.serial)]:
-            if params.get('SERIAL') == self.ground.serial:
-                where = 'ground1'
-            elif params.get('SERIAL') == other.serial:
-                where = 'ground2'
+        for params in [
+            dict(HEROKU=True),
+            dict(HEROKU=False, SERIAL=self.ground.serial),
+            dict(HEROKU=False, SERIAL=other.serial),
+        ]:
+            if params.get("SERIAL") == self.ground.serial:
+                where = "ground1"
+            elif params.get("SERIAL") == other.serial:
+                where = "ground2"
             else:
-                where = 'cloud'
+                where = "cloud"
             for user in users:
                 config.update(HEARTBEAT_PERIOD=15, **params)
                 client.login_as(user)
-                for page, path in [('csv', '/readings/latest.csv'),
-                                   ('json', '/readings/latest.json')]:
+                for page, path in [("csv", "/readings/latest.csv"), ("json", "/readings/latest.json")]:
                     response = client.get(path)
-                    variant = '%s-%s-%s' % (page, where, user.username)
+                    variant = "%s-%s-%s" % (page, where, user.username)
                     self.verify_response(response, variant=variant)
 
     def test_latest_readings_totalizers_present(self, client, config):
@@ -113,8 +110,8 @@ class ReadingViewTest(WebViewTestCaseBase):
         TotalizerMeterFactory(serial="SM200E-01-00000011")
         self.session.commit()
 
-        config['HEROKU'] = False
+        config["HEROKU"] = False
         response = client.get(path)
         data = response.json()
-        assert len(data['readings']) == 2
+        assert len(data["readings"]) == 2
         self.verify_response(response)
