@@ -1,0 +1,82 @@
+# Second stage of fork PR image publishing. The CI workflow builds fork
+# PRs with a read-only token and uploads the image as an artifact; this
+# workflow runs in the base repo's context and pushes that archive to
+# the registry under tags it derives from the GitHub API — never from
+# anything the fork controls. It downloads and copies the archive but
+# never checks out or executes fork code.
+name: Publish fork PR image
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+  pull-requests: read
+
+env:
+  REGISTRY: ${{ vars.REGISTRY || 'ghcr.io' }}
+
+jobs:
+  publish:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      # Same-repo PRs push directly from CI and upload no artifact.
+      - name: Check for image artifact
+        id: artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            const found = artifacts.data.artifacts.some(a => a.name === 'pr-image');
+            core.setOutput('found', found ? 'true' : 'false');
+      # Resolve the PR number from the API by head SHA, not from run
+      # contents, so a malicious PR cannot spoof another PR's tag.
+      - name: Find pull request
+        if: steps.artifact.outputs.found == 'true'
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const headSha = context.payload.workflow_run.head_sha;
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: headSha,
+            });
+            const pr = prs.data.find(p => p.head.sha === headSha && p.state === 'open');
+            if (!pr) {
+              core.setFailed(`No open PR found with head ${headSha}`);
+              return;
+            }
+            core.setOutput('number', pr.number);
+            core.setOutput('head_sha', headSha);
+      - name: Download image artifact
+        if: steps.artifact.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-image
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}
+      - name: Push image
+        if: steps.artifact.outputs.found == 'true'
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          ARCHIVE: ${{ runner.temp }}/pr-image.tar
+        run: |
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY,,}"
+          echo "${REGISTRY_TOKEN}" | skopeo login "${REGISTRY}" -u "${REGISTRY_USER}" --password-stdin
+          skopeo copy --all "oci-archive:${ARCHIVE}" "docker://${IMAGE}:pr-${PR_NUMBER}"
+          skopeo copy --all "oci-archive:${ARCHIVE}" "docker://${IMAGE}:sha-${HEAD_SHA}"
