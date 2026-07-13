@@ -221,6 +221,24 @@ class MeterTest(SparkMeterTestCaseBase):
             firmware_version="abc1234",
         )
 
+    def test_send_set_config_unconditionally_with_provider_uses_engineering_units(
+        self, config, send_set_config
+    ):
+        config["HEROKU"] = False
+        meter = MeterFactory(config__subnet=255, provider_id="sparknet-http")
+        meter.send_set_config_unconditionally()
+        self.session.commit()
+        send_set_config.assert_called_once_with(
+            load_limit=100.0,
+            subnet=255,
+            current_limit=20.0,
+            command="disable",
+            mac="1",
+            balance=0,
+            low_balance=False,
+            firmware_version="abc1234",
+        )
+
     def test_send_set_config_unconditionally_same_state(self, send_set_config):
         meter = MeterFactory(system_info__current_state=0, config__state=0)
         self.session.commit()
