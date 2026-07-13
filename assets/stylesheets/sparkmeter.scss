@@ -308,3 +308,52 @@ dd.tags {
 #override-modal a {
     color: #ffffff;
 }
+
+/* Chromium/WebView fallback for old Font Awesome 3 glyphs.
+ * Some local dev environments render the legacy font as empty squares
+ * even though the files are present. Re-map the most common TC icons
+ * to Bootstrap glyphicons, which are already shipped in this repo.
+ */
+.icon-home:before,
+.icon-user:before,
+.icon-th:before,
+.icon-book:before,
+.icon-bar-chart:before,
+.icon-dashboard:before,
+.icon-table:before,
+.icon-money:before,
+.icon-credit-card:before,
+.icon-group:before,
+.icon-key:before,
+.icon-signin:before,
+.icon-comment:before,
+.icon-download:before,
+.icon-download-alt:before,
+.icon-cog:before,
+.icon-edit:before,
+.icon-plus:before,
+.icon-align-justify:before,
+.icon-caret-down:before {
+    font-family: 'Glyphicons Halflings';
+}
+
+.icon-home:before { content: "\e021"; }
+.icon-user:before { content: "\e008"; }
+.icon-th:before { content: "\e011"; }
+.icon-book:before { content: "\e043"; }
+.icon-bar-chart:before { content: "\e185"; }
+.icon-dashboard:before { content: "\e141"; }
+.icon-table:before { content: "\e185"; }
+.icon-money:before { content: "\e148"; }
+.icon-credit-card:before { content: "\e177"; }
+.icon-group:before { content: "\e008"; }
+.icon-key:before { content: "\e033"; }
+.icon-signin:before { content: "\e161"; }
+.icon-comment:before { content: "\e111"; }
+.icon-download:before { content: "\e026"; }
+.icon-download-alt:before { content: "\e025"; }
+.icon-cog:before { content: "\e019"; }
+.icon-edit:before { content: "\e065"; }
+.icon-plus:before { content: "\2b"; }
+.icon-align-justify:before { content: "\e056"; }
+.icon-caret-down:before { content: "\e114"; }

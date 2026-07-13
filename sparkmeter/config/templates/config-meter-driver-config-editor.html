@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{%- from "_macros.html" import form_error %}
+
+{% block title %}{{ icon('config') }} {{ _('Edit driver config') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('settings') }} {{ _('Settings') }}
+    {% endcall %}
+    {% call breadcrumb(url=url_for('config.meter_driver')) %}
+        {{ icon('config') }} {{ _('Meter drivers') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('edit') }} {{ _('Edit driver config') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            {% call render_box(_('Edit driver config JSON'), box_content_class='padded') %}
+                <p>{{ _('Update the generated JSON file, then save to write it and immediately attempt driver init.') }}</p>
+                <p><strong>{{ _('Driver') }}:</strong> {{ provider_details.name if provider_details and provider_details.name else provider.name }}</p>
+                <p><strong>{{ _('File') }}:</strong> <code>{{ form.config_file_path() }}</code></p>
+
+                {% if form.required_fields() %}
+                <p><strong>{{ _('Required fields') }}:</strong></p>
+                <ul>
+                    {% for option in form.required_fields() %}
+                    <li>
+                        <strong>{{ option.label }}</strong>
+                        {% if option.description %}
+                        : {{ option.description }}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                <form class="form" role="form" method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="form-group{% if form.config_text.errors %} has-error{% endif %}">
+                        {{ form.config_text.label(class="control-label") }}
+                        {{ form.config_text(class="form-control", rows="22", style="font-family: monospace;") }}
+                        {{ form_error(form.config_text) }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.save_button(class="btn btn-primary") }}
+                        {{ form.cancel_button(class="btn btn-default") }}
+                    </div>
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}
