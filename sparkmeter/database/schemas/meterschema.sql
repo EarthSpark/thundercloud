@@ -124,6 +124,7 @@ CREATE OR REPLACE VIEW meter_view AS
     meter_billing.last_plan_payment_date          AS last_plan_payment_date,
     meter_billing.last_plan_expiration_date       AS last_plan_expiration_date,
     meter.meter_type                              AS meter_type,
+    meter.provider_id                             AS provider_id,
     meter_models.id                               AS model_id,
     meter_models.name                             AS model_name,
     plan_wallet.value                             AS plan_value,
@@ -165,6 +166,7 @@ CREATE OR REPLACE VIEW meter_view AS
     meter.serial,
     meter.code,
     meter.meter_type,
+    meter.provider_id,
     meter_config.hidden,
     meter_config.subnet,
     meter_config.state,
@@ -239,14 +241,15 @@ BEGIN
     RETURNING id
       INTO address_id;
 
-    INSERT INTO meter (id, code, serial, meter_type, address_id, ground_id, model_id)
+    INSERT INTO meter (id, code, serial, meter_type, address_id, ground_id, model_id, provider_id)
     VALUES (NEW.id,
             NEW.code,
             UPPER(NEW.serial),
             COALESCE(NEW.meter_type, 'customer'),
             address_id,
             NEW.ground_id,
-            NEW.model_id);
+            NEW.model_id,
+            NEW.provider_id);
 
     if NEW.meter_type = 'customer' THEN
       INSERT INTO meter_billing (meter_id, tariff_id, last_plan_payment_date, last_plan_expiration_date,
@@ -360,6 +363,9 @@ BEGIN
       END IF;
       IF NEW.model_id IS DISTINCT FROM OLD.model_id THEN
         RAISE EXCEPTION 'updating meter_view.model_id is currently not supported';
+      END IF;
+      IF NEW.provider_id IS DISTINCT FROM OLD.provider_id THEN
+        UPDATE meter SET provider_id = NEW.provider_id WHERE id = NEW.id;
       END IF;
       IF NEW.active IS DISTINCT FROM OLD.active THEN
         UPDATE meter_config SET hidden = NOT NEW.active
