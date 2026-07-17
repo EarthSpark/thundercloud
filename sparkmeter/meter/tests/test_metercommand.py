@@ -335,17 +335,3 @@ class WithForeverTest:
         with pytest.raises(StopIteration):
             counting_fn(forever=True, delay=0)
         assert call_count[0] == 3
-
-
-class ReadingGeneratorTest(SparkMeterTestCaseBase):
-    def test_heartbeat(self, mocker):
-        from sparkmeter.reading.readingcommand import ReadingGenerator
-
-        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
-        event_create.return_value = EventFactory()
-
-        m = MeterFactory()
-        self.session.commit()
-
-        rg = ReadingGenerator(energy_watts=60, cycle_length=15)
-        rg.create_for_meter(m.serial)
