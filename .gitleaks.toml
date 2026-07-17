@@ -1,7 +1,7 @@
 # gitleaks config used by the pre-commit `gitleaks` hook and CI.
-# Extends gitleaks' built-in rules (provider tokens, private keys, ...)
-# and adds a rule for bare 128-bit AES keys (32 hex chars), with an
-# allowlist for the only places 32-hex legitimately appears here.
+# Extends gitleaks' built-in rules and adds a 128-bit AES-key rule
+# (bare 32-hex). The allowlist is GLOBAL (applies to our rule AND the
+# built-in rules) and covers the non-secret fixtures this repo uses.
 
 [extend]
 useDefault = true
@@ -11,8 +11,19 @@ id = "aes-128-hex"
 description = "Possible 128-bit AES key (32 hex characters)"
 regex = '''\b[0-9a-fA-F]{32}\b'''
 
-  [rules.allowlist]
-  # Dependency lockfile is full of 32-hex package digests.
-  paths = ['''(^|/)uv\.lock$''']
-  # Standard public AES test vector (00 11 22 ... ff) — not a secret.
-  stopwords = ['''00112233445566778899aabbccddeeff''']
+[allowlist]
+description = "Known non-secret fixtures caught by our rule or gitleaks defaults."
+# Dependency lockfile is full of 32-hex package digests.
+paths = ['''(^|/)uv\.lock$''']
+# Matched against the flagged secret, case-insensitively where noted.
+regexes = [
+  # Standard public AES test vector (00 11 22 ... ff).
+  '''(?i)00112233445566778899aabbccddeeff''',
+  # Repeating-block dummy key used across command tests.
+  '''1234567812345678123456781234567[0-9]''',
+  # Low dummy keys used in metering/reconcile tests.
+  '''00000009000000000000000000000001''',
+  '''00000009000000000000000000000002''',
+  # UUIDs (e.g. api_*_id fields) are ids, not secrets.
+  '''(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}''',
+]
