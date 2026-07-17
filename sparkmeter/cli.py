@@ -20,7 +20,6 @@ def register_cli_commands(app):
     from sparkmeter.ground.groundcommand import create_ground
     from sparkmeter.meter.metercommand import meter
     from sparkmeter.metering.cli import metering
-    from sparkmeter.reading.readingcommand import reading
     from sparkmeter.salesaccount.salesaccountcommand import salesaccount
     from sparkmeter.servercommand import server, shell
     from sparkmeter.system.systemcommand import status, system
@@ -34,7 +33,6 @@ def register_cli_commands(app):
     app.cli.add_command(event)
     app.cli.add_command(meter)
     app.cli.add_command(metering)
-    app.cli.add_command(reading)
     app.cli.add_command(salesaccount)
     app.cli.add_command(server)
     app.cli.add_command(system)
