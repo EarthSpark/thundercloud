@@ -33,7 +33,7 @@ from sparkmeter.user.userdomain import Role
 logger = logging.getLogger(__name__)
 
 
-def add_reading(data, update_meter_state=True, apply_meter_scalars=True):
+def add_reading(data, update_meter_state=True):
     """
     Save a raw reading to the database and process it.
 
@@ -41,34 +41,29 @@ def add_reading(data, update_meter_state=True, apply_meter_scalars=True):
     :type data: dict
     :param update_meter_state: enable sending of config packets
     :type update_meter_state: bool
-    :param apply_meter_scalars: apply legacy meter IC scalars before persisting
-    :type apply_meter_scalars: bool
     :return: reading id
     """
     with session_scope() as session:
-        reading, meter = save_raw_reading(data, session, apply_meter_scalars=apply_meter_scalars)
+        reading, meter = save_raw_reading(data, session)
     with session_scope() as session:
         reading_id = process_reading(reading, meter, session, update_meter_state)
     return reading_id
 
 
-def save_raw_reading(data, session, apply_meter_scalars=True):
+def save_raw_reading(data, session):
     """
     Save a raw reading to the database.
 
     This method is exposed to make existing unit testing possible and should
     otherwise not be used directly.
 
-    A raw reading is the the direct output of a slipstreamj response, it will
-    need to be scaled appropriately and mapped to the database. This method
-    commits the data to the database.
+    `data` is a dict of reading field values. This method commits the data to
+    the database.
 
-    :param data: incoming slipstreamj data
+    :param data: reading field values
     :type data: dict
     :param session: The database session to use
     :type Session:
-    :param apply_meter_scalars: apply legacy meter IC scalars before persisting
-    :type apply_meter_scalars: bool
     :return: (reading, meter)
     """
     # First check if there are any existing readings with the same heartbeat
@@ -84,8 +79,6 @@ def save_raw_reading(data, session, apply_meter_scalars=True):
         )
 
     meter = session.query(Meter).filter_by(code=data["meter"]).one()
-    if apply_meter_scalars:
-        data = meter.apply_scalars(data)
     snapshot = Snapshot.get_or_create_meter_snapshot(code=str(data["meter"]), session=session)
     session.add(snapshot)
     reading = Reading(
