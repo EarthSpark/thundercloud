@@ -1312,30 +1312,6 @@ class Meter(BaseDomain):
         )
         return True
 
-    def apply_scalars(self, data):
-        """Apply the scalars from the metering IC."""
-        scalars = self.scalars
-        scalar_map = {
-            "frequency": scalars.frequency_scalar,
-            "energy": scalars.energy_scalar,
-            "power_factor_avg": scalars.power_factor_scalar,
-            "voltage_min": scalars.voltage_scalar,
-            "voltage_max": scalars.voltage_scalar,
-            "voltage_avg": scalars.voltage_scalar,
-            "current_min": scalars.current_scalar,
-            "current_max": scalars.current_scalar,
-            "current_avg": scalars.current_scalar,
-            "true_power_inst": scalars.power_scalar,
-            "true_power_avg": scalars.power_scalar,
-            "apparent_power_avg": scalars.power_scalar,
-            "user_power_limit": scalars.power_scalar,
-        }
-
-        for field, scalar in list(scalar_map.items()):
-            if field in data:
-                data[field] *= scalar
-        return data
-
     @property
     def product_code(self):
         """
