@@ -1,0 +1,18 @@
+# gitleaks config used by the pre-commit `gitleaks` hook and CI.
+# Extends gitleaks' built-in rules (provider tokens, private keys, ...)
+# and adds a rule for bare 128-bit AES keys (32 hex chars), with an
+# allowlist for the only places 32-hex legitimately appears here.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "aes-128-hex"
+description = "Possible 128-bit AES key (32 hex characters)"
+regex = '''\b[0-9a-fA-F]{32}\b'''
+
+  [rules.allowlist]
+  # Dependency lockfile is full of 32-hex package digests.
+  paths = ['''(^|/)uv\.lock$''']
+  # Standard public AES test vector (00 11 22 ... ff) — not a secret.
+  stopwords = ['''00112233445566778899aabbccddeeff''']
