@@ -79,7 +79,7 @@ root = parse(open(sys.argv[2]))
 fixes = []
 modules = {}
 
-for module in sorted(root.findall('.//class')):
+for module in sorted(root.findall('.//class'), key=lambda m: m.attrib['filename']):
     filename = module.attrib['filename']
     if filename.endswith('__init__.py'):
         continue
@@ -113,11 +113,11 @@ for filename in exceptions:
         continue
 
 for error in sorted(_errors):
-    print 'ERROR:', error
+    print('ERROR:', error)
 
 if fixes:
-    print "FIXES:"
+    print("FIXES:")
     for fix in sorted(fixes):
-        print fix
+        print(fix)
 
 sys.exit(len(_errors))
