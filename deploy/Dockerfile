@@ -87,7 +87,14 @@ COPY README.md README.md
 COPY .git .git
 COPY sparkmeter sparkmeter
 
-RUN uv sync --locked --no-dev
+# Supply the version explicitly when the build context has no usable .git —
+# e.g. a git worktree, whose .git is a file pointing outside the context, so
+# hatch-vcs/setuptools-scm cannot derive the version. Empty (the default)
+# leaves hatch-vcs to read .git as usual. sparkmeter is the only source build
+# in this step, so the global (non-dist-scoped) variable is unambiguous here.
+ARG SETUPTOOLS_SCM_PRETEND_VERSION=""
+RUN SETUPTOOLS_SCM_PRETEND_VERSION="$SETUPTOOLS_SCM_PRETEND_VERSION" \
+    uv sync --locked --no-dev
 
 RUN apk del .build-deps
 
