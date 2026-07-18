@@ -179,6 +179,8 @@ COPY --chown=spark:spark setup.cfg setup.cfg
 # regeneration run.
 COPY --chown=spark:spark test-data test-data
 
+COPY --chown=spark:spark scripts/validatecoverage scripts/validatecoverage
+
 # The project itself is already installed in the venv inherited from
 # the production stage (which inherited from builder). This sync just
 # adds the `dev` dependency group on top — `--no-install-project`
