@@ -66,6 +66,10 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to post/update the coverage report comment on the PR.
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,10 +77,31 @@ jobs:
           # to derive the version; the default shallow checkout doesn't
           # include enough history for that.
           fetch-depth: 0
-      - name: Build test image
-        run: docker compose --profile test build --no-cache test
-      - name: Run tests
-        run: docker compose --profile test run --rm test
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Run tests and diff-cover
+        run: bash scripts/run_coverage.sh
+      # Render coverage + test results as a single sticky PR comment. Runs even
+      # when diff-cover fails the gate above, so the report is always posted; the
+      # coverage.xml and junit.xml it reads are written before diff-cover runs.
+      - name: Coverage report comment
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: MishaKav/pytest-coverage-comment@v1.10.0
+        with:
+          pytest-coverage-path: pytest-coverage.txt
+          junitxml-path: junit.xml
+          title: Coverage report
+      # Post diff-cover's own report as a second sticky comment. This is the one
+      # that explains a red check: it shows the changed-line coverage and the
+      # specific uncovered lines that fell below the threshold. run_coverage.sh
+      # writes diff-cover-report.md before the gate exits.
+      - name: Diff coverage comment
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: marocchino/sticky-pull-request-comment@v3.0.5
+        with:
+          header: diff-coverage
+          path: diff-cover-report.md
+          ignore_empty: true
 
   test-js:
     runs-on: ubuntu-latest
