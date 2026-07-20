@@ -13,7 +13,6 @@ in cloud mode).
 
 import asyncio
 import logging
-import os
 import uuid
 from collections.abc import AsyncIterator
 from concurrent.futures import TimeoutError as FutureTimeoutError
@@ -32,16 +31,6 @@ _GATEWAY_RECOVERY_POLL_SECONDS = 5.0
 
 class _ProviderRemovedDuringRecovery(RuntimeError):
     """Raised when the configured driver disappears during gateway recovery."""
-
-
-def _metering_enabled() -> bool:
-    """Whether metering-provider startup should run for this process."""
-    try:
-        from sparkmeter.config.configdict import config
-
-        return not bool(config.get("OFFLINE", False))
-    except Exception:  # noqa: BLE001
-        return os.environ.get("SM_OFFLINE", "").lower() not in {"1", "true", "yes", "on"}
 
 
 def _initialize_configured_providers_with_app_context(flask_app, timeout):
@@ -140,7 +129,7 @@ async def ensure_metering_runtime(
         app.state.metering = None
         return False
 
-    if not _metering_enabled():
+    if config.is_offline():
         logger.info("metering provider disabled in offline mode; skipping startup")
         app.state.metering = None
         return False
@@ -312,7 +301,7 @@ async def metering_lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
         return
 
-    if not _metering_enabled():
+    if config.is_offline():
         logger.info("metering provider disabled in offline mode; skipping startup")
         app.state.metering = None
         yield
