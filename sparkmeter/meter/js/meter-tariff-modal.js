@@ -13,9 +13,9 @@ var MODAL_ID = 'meter-tariff-modal';
 var MODAL_SELECTOR = '#' + MODAL_ID;
 var FORM_SELECTOR = 'form#tariff-modal-form';
 
-// QuerySelectField(allow_blank=True) renders its blank option with this value.
-// Restoring the select to '' instead would leave selectedIndex at -1 and render
-// the select empty.
+// QuerySelectField(allow_blank=True) renders its blank option with this value,
+// so this is what "no tariff chosen" means to the select. Restoring the select
+// to '' instead would match no option and render it empty.
 var BLANK_VALUE = '__None';
 
 // The tariff form partial emits one editor modal per collection field. Bootstrap
@@ -51,9 +51,10 @@ MeterTariffModal.prototype = {
         }
 
         this.addNewValue = this.params.attr('data-add-new-value');
-        this.previousValue = this.select.val() || BLANK_VALUE;
+        this.previousValue = this.select.val();
         this.requestSeq = 0;
         this.pendingRequestId = null;
+        this.editorModals = $();
 
         this.ensureSelectOptions();
         this.ensureModal();
@@ -204,8 +205,9 @@ MeterTariffModal.prototype = {
         this.discardEditorModals();
         this.modal.find('.modal-body').html(fragment.contents());
         // Move the collection editors out of the tariff modal so Bootstrap can
-        // stack them instead of nesting them.
-        this.modal.find(EDITOR_MODAL_SELECTOR).appendTo('body');
+        // stack them instead of nesting them. Hold on to them: the ids come
+        // from a shared partial, so nothing else identifies them as ours.
+        this.editorModals = this.modal.find(EDITOR_MODAL_SELECTOR).appendTo('body');
         this.setupModalWidgets();
         // Wire up the type toggles and the collection editors; TariffForm's
         // delegated handlers are namespaced and rebound, so re-rendering the
@@ -215,7 +217,8 @@ MeterTariffModal.prototype = {
     },
 
     discardEditorModals: function() {
-        $('body').children(EDITOR_MODAL_SELECTOR).remove();
+        this.editorModals.remove();
+        this.editorModals = $();
     },
 
     setupModalWidgets: function() {
@@ -227,7 +230,7 @@ MeterTariffModal.prototype = {
             labelOff: "<i class='icon-remove'></i>",
             handleWidth: 30
         });
-        $(EDITOR_MODAL_SELECTOR).find('input.timepicker').datetimepicker({
+        this.editorModals.find('input.timepicker').datetimepicker({
             datepicker: false,
             closeOnTimeSelect: true,
             format: 'H:i',
@@ -338,7 +341,7 @@ MeterTariffModal.prototype = {
     },
 
     currentTariffValue: function() {
-        var value = this.select.val() || BLANK_VALUE;
+        var value = this.select.val();
         return value === this.addNewValue ? BLANK_VALUE : value;
     }
 };
