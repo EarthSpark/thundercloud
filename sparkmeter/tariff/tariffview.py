@@ -16,24 +16,22 @@ from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
 
 from sparkmeter.misc.htmlutils import build_link
-from sparkmeter.misc.jsonutils import json_dumps, jsonify
+from sparkmeter.misc.jsonutils import jsonify
 from sparkmeter.tariff.tariffdomain import Tariff
 from sparkmeter.tariff.tariffform import TariffForm
 from sparkmeter.tariff.tariffutils import add_tariff_from_form, update_tariff_from_form
 from sparkmeter.web.blueprint import AuthBlueprint
+from sparkmeter.web.forms import set_form_errors_header
 from sparkmeter.web.permission import verify_permission
 
 logger = logging.getLogger(__name__)
 tariff = AuthBlueprint("tariff", __name__)
 
 
-def render_modal_form(form, status=200):
+def render_modal_form(form, status=http.client.OK):
     """Render the tariff modal form with optional validation metadata."""
     body = render_template("tariff-modal-form.html", form=form)
-    response = Response(body, status=status)
-    if form.errors:
-        response.headers["X-Form-Errors"] = json_dumps(form.errors)
-    return response
+    return set_form_errors_header(Response(body, status=status), form)
 
 
 @tariff.route("/tariff/")
@@ -75,7 +73,7 @@ def add():
 @verify_permission("tariff", "add")
 def add_modal():
     """Add tariff form rendered for the meter modal workflow."""
-    form = TariffForm(request.form if request.method == "POST" else None)
+    form = TariffForm(request.form)
     if request.method == "POST":
         tariff = add_tariff_from_form(form)
         if tariff:

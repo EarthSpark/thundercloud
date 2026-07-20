@@ -49,18 +49,18 @@
 <form class="form form-horizontal tariff" id="tariff-modal-form" method="POST" action="/tariff/add-modal">
   
 <div id="tariff-form-params"
-     data-blockrates="null"
+     data-blockrates="[]"
      data-blockrates-title="&#34;Edit block rate&#34;"
-     data-tous="null"
+     data-tous="[]"
      data-tous-title="&#34;Edit time of use&#34;"
-     data-load-limits="null"
+     data-load-limits="[]"
      data-load-limits-title="&#34;Edit scheduled load limits of use&#34;">
 </div>
 
 <input id="id" name="id" type="hidden" value="">
-<input id="blockrates" name="blockrates" type="hidden" value="">
-<input id="tous" name="tous" type="hidden" value="">
-<input id="load_limits" name="load_limits" type="hidden" value="">
+<input id="blockrates" name="blockrates" type="hidden" value="[]">
+<input id="tous" name="tous" type="hidden" value="[]">
+<input id="load_limits" name="load_limits" type="hidden" value="[]">
 
 <div class="form-group" title="The name of this tariff">
   <label class="control-label col-lg-2" for="name">Name</label>
