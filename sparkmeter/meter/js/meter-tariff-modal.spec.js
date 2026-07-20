@@ -243,13 +243,16 @@ describe('MeterTariffModal', () => {
             expect($('body').children('#blockrateModal').length).toBe(1);
         });
 
-        it('leaves the tariff select alone when an editor closes', () => {
+        it('leaves an editor it did not relocate alone', () => {
             openWithFragment();
-            $('select#tariff').val(ADD_NEW);
+            // The ids come from a shared partial, so anything else on the page
+            // may carry them too.
+            $('body').append('<div class="modal" id="touModal" data-owner="page"></div>');
 
-            $('#blockrateModal').trigger($.Event('hidden.bs.modal', {target: $('#blockrateModal')[0]}));
+            $('#meter-tariff-modal-save').trigger('click');
+            ajaxDeferred.reject({status: 400, responseText: fragment()});
 
-            expect($('select#tariff').val()).toBe(ADD_NEW);
+            expect($('body').children('#touModal[data-owner="page"]').length).toBe(1);
         });
 
         it('keeps the body scroll lock while the tariff modal is still open', () => {
