@@ -263,26 +263,6 @@ describe('MeterTariffModal', () => {
 
             expect($(document.body).hasClass('modal-open')).toBe(true);
         });
-
-        it('keeps the scrollbar compensation while the tariff modal is still open', () => {
-            openWithFragment();
-            $('#blockrateModal').modal('show');
-            // Bootstrap pads <body> by the width of the scrollbar the scroll
-            // lock hides. jsdom has no layout, so set the padding directly.
-            $(document.body).css('padding-right', '15px');
-
-            // Hiding a modal resets that padding, and re-applying `modal-open`
-            // without it shifts the page sideways by the scrollbar width. The
-            // vendored Bootstrap the jest suite loads is 3.0.0, which has no
-            // scrollbar handling at all, so the reset is played out here.
-            // Bootstrap clears the padding by assigning '', which jsdom ignores.
-            $('#blockrateModal').one('hidden.bs.modal', () => {
-                document.body.style.removeProperty('padding-right');
-            });
-            $('#blockrateModal').modal('hide');
-
-            expect(document.body.style.paddingRight).toBe('15px');
-        });
     });
 
     describe('stacked modals (F5)', () => {

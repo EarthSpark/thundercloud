@@ -55,8 +55,6 @@ MeterTariffModal.prototype = {
         this.requestSeq = 0;
         this.pendingRequestId = null;
         this.editorModals = $();
-        // The body carries no scrollbar compensation until a modal is open.
-        this.scrollbarPad = '';
 
         this.ensureSelectOptions();
         this.ensureModal();
@@ -111,9 +109,6 @@ MeterTariffModal.prototype = {
         $(document).on('show.bs.modal.metertariff', '.modal', function(event) {
             self.onAnyModalShow(event.currentTarget);
         });
-        $(document).on('hide.bs.modal.metertariff', '.modal', function() {
-            self.rememberScrollbarPad();
-        });
         $(document).on('hidden.bs.modal.metertariff', '.modal', function() {
             self.onAnyModalHidden();
         });
@@ -134,21 +129,20 @@ MeterTariffModal.prototype = {
         }, 0);
     },
 
-    rememberScrollbarPad: function() {
-        // While a modal holds the scroll lock, Bootstrap pads <body> by the
-        // width of the scrollbar it just hid. Read that padding before the
-        // modal being hidden takes it back off.
-        this.scrollbarPad = document.body.style.paddingRight;
-    },
-
     onAnyModalHidden: function() {
-        // Bootstrap drops `modal-open` off <body> and clears the scrollbar
-        // compensation whenever any modal closes, which unlocks scrolling
-        // behind a modal that is still open and shifts the page sideways.
+        // Bootstrap drops `modal-open` off <body> whenever any modal closes,
+        // and adding and removing that class is its only body handling -- the
+        // vendored Bootstrap is 3.0.0, which never touches body padding from
+        // JavaScript. What the class carries lives in the stylesheet
+        // (assets/stylesheets/bootstrap/_modals.scss): the scroll lock
+        // `overflow: hidden`, and the flat `margin-right: 15px` that stands in
+        // for the scrollbar the lock hides. So losing the class while a modal
+        // is still open unlocks scrolling behind it and shifts the page 15px
+        // sideways. Putting the class back restores all of it.
         if (!$(OPEN_MODAL_SELECTOR).length) {
             return;
         }
-        $(document.body).addClass('modal-open').css('padding-right', this.scrollbarPad);
+        $(document.body).addClass('modal-open');
     },
 
     ensureSelectOptions: function() {
