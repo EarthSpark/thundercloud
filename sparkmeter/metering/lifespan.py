@@ -14,7 +14,6 @@ in cloud mode).
 import asyncio
 import logging
 import os
-import sys
 import uuid
 from collections.abc import AsyncIterator
 from concurrent.futures import TimeoutError as FutureTimeoutError
@@ -25,6 +24,7 @@ from fastapi import FastAPI
 
 from sparkmeter.metering.provider_config import configured_provider_url
 from sparkmeter.metering.runtime_client import build_command_client, build_event_client
+from sparkmeter.metering.runtime_registry import get_running_app
 
 logger = logging.getLogger(__name__)
 _GATEWAY_RECOVERY_POLL_SECONDS = 5.0
@@ -289,7 +289,7 @@ def activate_metering_runtime_in_process(
 ) -> tuple[bool, str | None]:
     """Try to activate live metering inside the already-running ASGI process."""
     try:
-        public_app = _get_running_public_app()
+        public_app = get_running_app()
         if public_app is None:
             return False, "public app is not available"
 
@@ -308,27 +308,6 @@ def activate_metering_runtime_in_process(
     except Exception as exc:  # noqa: BLE001
         logger.exception("failed to activate live metering runtime")
         return False, str(exc)
-
-
-def _get_running_public_app():
-    """Return the already-running public ASGI app without importing a fresh module."""
-    candidates = []
-
-    asgi_module = sys.modules.get("sparkmeter.asgi")
-    if asgi_module is not None:
-        candidates.append(asgi_module)
-
-    main_module = sys.modules.get("__main__")
-    main_spec_name = getattr(getattr(main_module, "__spec__", None), "name", None)
-    if main_module is not None and main_spec_name == "sparkmeter.asgi":
-        candidates.append(main_module)
-
-    for module in candidates:
-        public_app = getattr(module, "__dict__", {}).get("public_app")
-        if public_app is not None:
-            return public_app
-
-    return None
 
 
 @asynccontextmanager

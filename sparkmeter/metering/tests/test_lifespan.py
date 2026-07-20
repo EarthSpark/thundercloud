@@ -2,13 +2,13 @@
 
 import asyncio
 import contextlib
-import sys
+import logging
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from types import SimpleNamespace
 
 import pytest
 
-from sparkmeter.metering import lifespan
+from sparkmeter.metering import lifespan, runtime_registry
 
 
 class _FakeFlaskApp:
@@ -162,29 +162,10 @@ class TestObserveGatewayStatus:
 
 
 class TestInProcessActivation:
-    def test_get_running_public_app_uses_main_module_alias(self, monkeypatch):
-        app = SimpleNamespace(state=SimpleNamespace(main_loop=object()))
-        fake_main = SimpleNamespace(
-            __spec__=SimpleNamespace(name="sparkmeter.asgi"),
-            public_app=app,
-        )
-
-        monkeypatch.delitem(sys.modules, "sparkmeter.asgi", raising=False)
-        monkeypatch.setitem(sys.modules, "__main__", fake_main)
-
-        assert lifespan._get_running_public_app() is app
-
     def test_activate_metering_runtime_uses_existing_running_app(self, monkeypatch):
         loop = object()
         app = SimpleNamespace(state=SimpleNamespace(main_loop=loop))
-        fake_main = SimpleNamespace(
-            __spec__=SimpleNamespace(name="sparkmeter.asgi"),
-            public_app=app,
-        )
         seen = {}
-
-        monkeypatch.delitem(sys.modules, "sparkmeter.asgi", raising=False)
-        monkeypatch.setitem(sys.modules, "__main__", fake_main)
 
         async def fake_ensure(public_app, skip_provider_init=False):
             seen["app"] = public_app
@@ -205,7 +186,12 @@ class TestInProcessActivation:
         monkeypatch.setattr(lifespan, "ensure_metering_runtime", fake_ensure)
         monkeypatch.setattr(asyncio, "run_coroutine_threadsafe", fake_run_coroutine_threadsafe)
 
-        activated, error = lifespan.activate_metering_runtime_in_process(timeout=3.0)
+        saved = runtime_registry.get_running_app()
+        try:
+            runtime_registry.set_running_app(app)
+            activated, error = lifespan.activate_metering_runtime_in_process(timeout=3.0)
+        finally:
+            runtime_registry.set_running_app(saved)
 
         assert activated is True
         assert error is None
@@ -214,14 +200,14 @@ class TestInProcessActivation:
         assert seen["timeout"] == 3.0
 
     def test_activate_reports_missing_public_app(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_get_running_public_app", lambda: None)
+        monkeypatch.setattr(lifespan, "get_running_app", lambda: None)
         activated, error = lifespan.activate_metering_runtime_in_process()
         assert activated is False
         assert error == "public app is not available"
 
     def test_activate_reports_missing_main_loop(self, monkeypatch):
         app = SimpleNamespace(state=SimpleNamespace(main_loop=None))
-        monkeypatch.setattr(lifespan, "_get_running_public_app", lambda: app)
+        monkeypatch.setattr(lifespan, "get_running_app", lambda: app)
         activated, error = lifespan.activate_metering_runtime_in_process()
         assert activated is False
         assert error == "main event loop is not available"
@@ -886,7 +872,7 @@ class TestRecoverProviderAfterGatewayLoss:
 class TestActivateMeteringRuntimeErrors:
     def test_reports_timeout(self, monkeypatch):
         app = SimpleNamespace(state=SimpleNamespace(main_loop=object()))
-        monkeypatch.setattr(lifespan, "_get_running_public_app", lambda: app)
+        monkeypatch.setattr(lifespan, "get_running_app", lambda: app)
 
         async def fake_ensure(public_app, skip_provider_init=False):
             del public_app, skip_provider_init
@@ -913,7 +899,7 @@ class TestActivateMeteringRuntimeErrors:
 
     def test_reports_generic_error(self, monkeypatch):
         app = SimpleNamespace(state=SimpleNamespace(main_loop=object()))
-        monkeypatch.setattr(lifespan, "_get_running_public_app", lambda: app)
+        monkeypatch.setattr(lifespan, "get_running_app", lambda: app)
 
         async def fake_ensure(public_app, skip_provider_init=False):
             del public_app, skip_provider_init
@@ -937,3 +923,508 @@ class TestActivateMeteringRuntimeErrors:
 
         assert activated is False
         assert error == "boom"
+
+
+class TestIsGround:
+    def test_is_ground_reads_config_flag(self, monkeypatch):
+        # _is_ground mirrors config.is_ground() when the config loads.
+        monkeypatch.setattr("sparkmeter.config.configdict.config", SimpleNamespace(is_ground=lambda: True))
+        assert lifespan._is_ground() is True
+        monkeypatch.setattr("sparkmeter.config.configdict.config", SimpleNamespace(is_ground=lambda: False))
+        assert lifespan._is_ground() is False
+
+    def test_is_ground_falls_back_to_env(self, monkeypatch):
+        def boom():
+            raise RuntimeError("config unavailable")
+
+        monkeypatch.setattr("sparkmeter.config.configdict.config", SimpleNamespace(is_ground=boom))
+
+        # When config.is_ground() raises, the SPARKMETER_MODE env var decides.
+        monkeypatch.setenv("SPARKMETER_MODE", "ground")
+        assert lifespan._is_ground() is True
+        monkeypatch.setenv("SPARKMETER_MODE", "cloud")
+        assert lifespan._is_ground() is False
+
+
+class TestShutdownSkipsMissingTaskSlot:
+    @pytest.mark.asyncio
+    async def test_shutdown_skips_missing_task_slot(self):
+        # Only the dispatcher task slot is populated; the sse slot is None.
+        # The `if task is None: continue` guard must skip the empty slot while
+        # still cancelling the present task and closing both clients.
+        async def _long():
+            await asyncio.sleep(3600)
+
+        dispatcher = asyncio.create_task(_long())
+        await asyncio.sleep(0)
+
+        closed = []
+
+        class _Client:
+            def __init__(self, name):
+                self.name = name
+
+            async def close(self):
+                closed.append(self.name)
+
+        app = SimpleNamespace(
+            state=SimpleNamespace(
+                metering_dispatcher_task=dispatcher,
+                metering_sse_task=None,
+                metering_event_client=_Client("event"),
+                metering=_Client("command"),
+            )
+        )
+
+        await lifespan.shutdown_metering_runtime(app)
+
+        assert dispatcher.cancelled()
+        assert sorted(closed) == ["command", "event"]
+        assert app.state.metering is None
+        assert app.state.metering_sse_task is None
+
+
+class _FakeRuntimeClient:
+    """Command/event client stand-in with an async close() and transport name."""
+
+    def __init__(self, name, transport_name):
+        self.name = name
+        self.transport_name = transport_name
+        self.closed = False
+
+    async def close(self):
+        self.closed = True
+
+
+def _make_ground_app():
+    return SimpleNamespace(state=SimpleNamespace(flask_app=_FakeFlaskApp(), metering=None))
+
+
+def _install_ensure_harness(
+    monkeypatch,
+    *,
+    provider_url="http://drv",
+    signature=("id", "http://drv", "http", True),
+):
+    """Wire up ensure_metering_runtime with real create_task but stubbed coroutines.
+
+    Returns a `records` dict capturing collaborator arguments so tests can assert
+    the runtime built what it should.
+    """
+    records = {
+        "reconcile": [],
+        "register_loop": [],
+        "command_clients": [],
+        "event_clients": [],
+    }
+
+    monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
+    monkeypatch.setattr(lifespan, "_enabled_provider_signature", lambda flask_app: signature)
+    monkeypatch.setattr(
+        lifespan, "configured_provider_url", lambda *, default="", flask_app=None: provider_url
+    )
+
+    def fake_build_command(provider, client_id, provider_details=None):
+        records["command_clients"].append(
+            {"provider": provider, "client_id": client_id, "provider_details": provider_details}
+        )
+        return _FakeRuntimeClient("command", "fake-cmd")
+
+    def fake_build_event(provider, client_id, provider_details=None):
+        records["event_clients"].append(
+            {"provider": provider, "client_id": client_id, "provider_details": provider_details}
+        )
+        return _FakeRuntimeClient("event", "fake-evt")
+
+    monkeypatch.setattr(lifespan, "build_command_client", fake_build_command)
+    monkeypatch.setattr(lifespan, "build_event_client", fake_build_event)
+
+    from sparkmeter.metering import dispatch
+
+    def fake_register(loop, queue):
+        records["register_loop"].append((loop, queue))
+
+    async def fake_dispatcher(client, queue, commands_allowed=None):
+        return
+
+    monkeypatch.setattr(dispatch, "register_loop", fake_register)
+    monkeypatch.setattr(dispatch, "command_dispatcher", fake_dispatcher)
+
+    async def fake_sse(app, event_client, client_id):
+        return
+
+    monkeypatch.setattr(lifespan, "_run_sse_consumer", fake_sse)
+
+    async def fake_reconcile(app, skip_provider_init=False):
+        records["reconcile"].append(skip_provider_init)
+
+    monkeypatch.setattr(lifespan, "_run_provider_reconcile", fake_reconcile)
+
+    return records
+
+
+async def _drain_runtime_tasks(app):
+    """Cancel+await the spawned stub tasks so no pending-task warnings leak."""
+    for task in (
+        getattr(app.state, "metering_dispatcher_task", None),
+        getattr(app.state, "metering_sse_task", None),
+    ):
+        if task is not None:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+
+class TestEnsureMeteringRuntimeStartup:
+    @pytest.mark.asyncio
+    async def test_ensure_config_change_shuts_down_then_early_returns(self, monkeypatch):
+        # An existing client with a *different* signature forces a restart:
+        # shutdown_metering_runtime is awaited, then the empty provider URL
+        # early-returns False with metering cleared.
+        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+        monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
+        monkeypatch.setattr(
+            lifespan, "_enabled_provider_signature", lambda flask_app: ("new", "http://new", "http", True)
+        )
+        monkeypatch.setattr(lifespan, "configured_provider_url", lambda *, default="", flask_app=None: "")
+
+        shutdowns = []
+
+        async def fake_shutdown(app):
+            shutdowns.append(1)
+            app.state.metering = None
+
+        monkeypatch.setattr(lifespan, "shutdown_metering_runtime", fake_shutdown)
+
+        app = SimpleNamespace(
+            state=SimpleNamespace(
+                flask_app=_FakeFlaskApp(),
+                metering=object(),
+                metering_provider_signature=("old", "http://old", "http", True),
+            )
+        )
+
+        result = await lifespan.ensure_metering_runtime(app, skip_provider_init=True)
+
+        assert result is False
+        assert shutdowns == [1]
+        assert app.state.metering is None
+
+    @pytest.mark.asyncio
+    async def test_ensure_init_pass_logs_per_result_branch(self, monkeypatch, caplog):
+        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+        monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
+        monkeypatch.setattr(
+            lifespan, "_enabled_provider_signature", lambda flask_app: ("x", "y", "http", True)
+        )
+
+        results = [
+            {"success": True, "provider": {"name": "Alpha"}},
+            {"attempted": True, "reason": "conn refused", "provider": {"base_url": "http://b"}},
+            {"provider": {}},
+        ]
+        monkeypatch.setattr(
+            lifespan,
+            "_initialize_configured_providers_with_app_context",
+            lambda flask_app, timeout: results,
+        )
+        # Empty provider URL early-returns after the init-pass logging.
+        monkeypatch.setattr(lifespan, "configured_provider_url", lambda *, default="", flask_app=None: "")
+
+        app = SimpleNamespace(state=SimpleNamespace(flask_app=_FakeFlaskApp(), metering=None))
+
+        with caplog.at_level(logging.INFO):
+            result = await lifespan.ensure_metering_runtime(app)
+
+        assert result is False
+        by_message = {r.getMessage(): r.levelname for r in caplog.records}
+        # success -> INFO, name from provider["name"]
+        assert by_message["metering startup init succeeded for Alpha"] == "INFO"
+        # attempted failure -> WARNING, name falls back to base_url, reason included
+        assert by_message["metering startup init failed for http://b: conn refused"] == "WARNING"
+        # not attempted -> INFO skipped, name falls back to "meter driver", default reason
+        assert by_message["metering startup init skipped for meter driver: not configured"] == "INFO"
+
+    @pytest.mark.asyncio
+    async def test_ensure_init_pass_exception_is_swallowed(self, monkeypatch, caplog):
+        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+        monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
+        monkeypatch.setattr(
+            lifespan, "_enabled_provider_signature", lambda flask_app: ("x", "y", "http", True)
+        )
+
+        def boom(flask_app, timeout):
+            raise RuntimeError("init boom")
+
+        monkeypatch.setattr(lifespan, "_initialize_configured_providers_with_app_context", boom)
+        monkeypatch.setattr(lifespan, "configured_provider_url", lambda *, default="", flask_app=None: "")
+
+        app = SimpleNamespace(state=SimpleNamespace(flask_app=_FakeFlaskApp(), metering=None))
+
+        with caplog.at_level(logging.INFO):
+            # The init-pass exception must NOT propagate; startup continues and
+            # then early-returns on the empty provider URL.
+            result = await lifespan.ensure_metering_runtime(app)
+
+        assert result is False
+        assert "metering startup init pass failed" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_ensure_provider_resolution_falls_back_to_http(self, monkeypatch, caplog):
+        records = _install_ensure_harness(monkeypatch, provider_url="http://drv")
+
+        def boom():
+            raise RuntimeError("interface lookup down")
+
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_enabled_provider", boom)
+
+        app = _make_ground_app()
+        with caplog.at_level(logging.INFO):
+            result = await lifespan.ensure_metering_runtime(app, skip_provider_init=True)
+
+        assert result is True
+        # When provider resolution fails, the command client is built from the
+        # synthetic HTTP-fallback provider record.
+        assert records["command_clients"][0]["provider"] == {
+            "base_url": "http://drv",
+            "selected_interface": "http",
+        }
+        assert "falling back to HTTP" in caplog.text
+
+        await lifespan.shutdown_metering_runtime(app)
+
+    @pytest.mark.asyncio
+    async def test_ensure_happy_path_builds_runtime(self, monkeypatch):
+        records = _install_ensure_harness(monkeypatch)
+        provider = {
+            "id": "id",
+            "base_url": "http://drv",
+            "selected_interface": "http",
+            "enabled": True,
+        }
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_enabled_provider", lambda: provider)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_live_interface_details",
+            lambda base_url, selected_interface=None: {"iface": selected_interface},
+        )
+
+        app = _make_ground_app()
+        loop = asyncio.get_running_loop()
+
+        result = await lifespan.ensure_metering_runtime(app, skip_provider_init=True)
+
+        assert result is True
+        # register_loop received the running loop and the created command queue.
+        assert len(records["register_loop"]) == 1
+        reg_loop, reg_queue = records["register_loop"][0]
+        assert reg_loop is loop
+        assert reg_queue is app.state.metering_command_queue
+        assert isinstance(reg_queue, asyncio.Queue)
+        # app.state populated with the live runtime handles.
+        assert app.state.metering.name == "command"
+        assert app.state.metering_event_client.name == "event"
+        assert app.state.metering_client_id.startswith("webapp-")
+        assert app.state.metering_provider_signature == ("id", "http://drv", "http", True)
+        assert isinstance(app.state.metering_dispatcher_task, asyncio.Task)
+        assert isinstance(app.state.metering_sse_task, asyncio.Task)
+        assert app.state.metering_gateway_state["commands_allowed"].is_set() is True
+        # The real provider record and its interface details reached build_command_client.
+        assert records["command_clients"][0]["provider"] is provider
+        assert records["command_clients"][0]["provider_details"] == {"iface": "http"}
+
+        await lifespan.shutdown_metering_runtime(app)
+
+    @pytest.mark.asyncio
+    async def test_ensure_reconcile_success_passes_skip_flag(self, monkeypatch):
+        records = _install_ensure_harness(monkeypatch)
+        provider = {
+            "id": "id",
+            "base_url": "http://drv",
+            "selected_interface": "http",
+            "enabled": True,
+        }
+        # Init pass runs (skip_provider_init=False) and reports success for the
+        # provider whose signature matches the desired one, so the reconcile is
+        # invoked with skip_provider_init=True.
+        monkeypatch.setattr(
+            lifespan,
+            "_initialize_configured_providers_with_app_context",
+            lambda flask_app, timeout: [{"success": True, "provider": provider}],
+        )
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_enabled_provider", lambda: provider)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_live_interface_details",
+            lambda base_url, selected_interface=None: None,
+        )
+
+        app = _make_ground_app()
+        result = await lifespan.ensure_metering_runtime(app, skip_provider_init=False)
+
+        assert result is True
+        assert records["reconcile"] == [True]
+
+        await lifespan.shutdown_metering_runtime(app)
+
+    @pytest.mark.asyncio
+    async def test_ensure_reconcile_failure_aborts_and_reraises(self, monkeypatch, caplog):
+        _install_ensure_harness(monkeypatch)
+        provider = {
+            "id": "id",
+            "base_url": "http://drv",
+            "selected_interface": "http",
+            "enabled": True,
+        }
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_enabled_provider", lambda: provider)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_live_interface_details",
+            lambda base_url, selected_interface=None: None,
+        )
+
+        async def boom_reconcile(app, skip_provider_init=False):
+            raise RuntimeError("reconcile boom")
+
+        monkeypatch.setattr(lifespan, "_run_provider_reconcile", boom_reconcile)
+
+        shutdowns = []
+
+        async def fake_shutdown(app):
+            shutdowns.append(1)
+
+        monkeypatch.setattr(lifespan, "shutdown_metering_runtime", fake_shutdown)
+
+        app = _make_ground_app()
+        with caplog.at_level(logging.INFO):
+            with pytest.raises(RuntimeError, match="reconcile boom"):
+                await lifespan.ensure_metering_runtime(app, skip_provider_init=True)
+
+        assert shutdowns == [1]
+        assert "aborting startup" in caplog.text
+
+        await _drain_runtime_tasks(app)
+
+
+class TestSseConsumerCancelled:
+    @pytest.mark.asyncio
+    async def test_sse_consumer_cancelled_in_stream_propagates(self, monkeypatch):
+        app, gateway_state = _build_app()
+
+        class _CancelClient:
+            async def stream_events(self, client_id):
+                raise asyncio.CancelledError
+                yield  # pragma: no cover - makes this an async generator
+
+        async def noop_pending(app):
+            del app
+
+        monkeypatch.setattr(lifespan, "_run_pending_provider_restart", noop_pending)
+        monkeypatch.setattr("sparkmeter.metering.events.build_handlers", lambda app: [])
+
+        sleeper = _SleepController()
+        monkeypatch.setattr(asyncio, "sleep", sleeper)
+
+        with pytest.raises(asyncio.CancelledError):
+            await lifespan._run_sse_consumer(app, _CancelClient(), "cid")
+
+        # CancelledError re-raises without triggering the generic-Exception
+        # side effects: no restart flag, no backoff sleep.
+        assert gateway_state["needs_full_restart"] is False
+        assert sleeper.calls == 0
+
+
+class TestObserveGatewayStatusGuards:
+    @pytest.mark.asyncio
+    async def test_observe_gateway_status_noop_without_state(self):
+        # A gateway_status event with no gateway_state must return without
+        # touching (None-dereferencing) anything.
+        app = SimpleNamespace(state=SimpleNamespace(metering_gateway_state=None))
+        await lifespan._observe_gateway_status(app, {"type": "gateway_status", "data": {"connected": False}})
+        assert app.state.metering_gateway_state is None
+
+    @pytest.mark.asyncio
+    async def test_observe_disconnect_while_paused_is_noop(self):
+        # Already paused + a fresh disconnect event: the early return prevents a
+        # second recovery task from being spawned.
+        app, gateway_state = _build_app(gateway_connected=False, gateway_paused=True)
+        gateway_state["gateway_recovery_task"] = None
+
+        await lifespan._observe_gateway_status(app, {"type": "gateway_status", "data": {"connected": False}})
+
+        assert gateway_state["gateway_paused"] is True
+        assert gateway_state["gateway_recovery_task"] is None
+        assert gateway_state["gateway_connected"] is False
+
+
+class TestRecoverProviderGuards:
+    @pytest.mark.asyncio
+    async def test_recover_noop_without_state(self, monkeypatch):
+        waits = []
+
+        async def fake_wait(app):
+            waits.append(1)
+
+        monkeypatch.setattr(lifespan, "_wait_for_gateway_online", fake_wait)
+
+        app = SimpleNamespace(state=SimpleNamespace(metering_gateway_state=None))
+        await lifespan._recover_provider_after_gateway_loss(app)
+
+        # Missing state -> early return, the polling collaborator is never awaited.
+        assert waits == []
+
+    @pytest.mark.asyncio
+    async def test_recover_reconcile_cancelled_reraises(self, monkeypatch):
+        async def fake_wait(app):
+            del app
+
+        async def cancel_reconcile(app):
+            raise asyncio.CancelledError
+
+        sleeper = _SleepController()
+        monkeypatch.setattr(lifespan, "_wait_for_gateway_online", fake_wait)
+        monkeypatch.setattr(lifespan, "_run_provider_reconcile", cancel_reconcile)
+        monkeypatch.setattr(asyncio, "sleep", sleeper)
+
+        app, gateway_state = _build_app(gateway_connected=False, gateway_paused=True)
+        gateway_state["gateway_recovery_task"] = object()
+
+        with pytest.raises(asyncio.CancelledError):
+            await lifespan._recover_provider_after_gateway_loss(app)
+
+        # CancelledError propagates without the retry backoff sleep firing, and
+        # the finally-block still clears the recovery-task handle.
+        assert sleeper.calls == 0
+        assert gateway_state["gateway_recovery_task"] is None
+
+
+class TestWaitForGatewayOnlineCancelled:
+    @pytest.mark.asyncio
+    async def test_wait_for_gateway_online_cancelled_reraises(self, monkeypatch):
+        monkeypatch.setattr(
+            lifespan, "configured_provider_url", lambda *, default="", flask_app=None: "http://drv"
+        )
+
+        sleeper = _SleepController()
+        monkeypatch.setattr(asyncio, "sleep", sleeper)
+
+        class _AsyncClient:
+            def __init__(self, timeout=None):
+                del timeout
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *exc):
+                return False
+
+            async def get(self, url):
+                del url
+                raise asyncio.CancelledError
+
+        monkeypatch.setattr(lifespan.httpx, "AsyncClient", _AsyncClient)
+        app = SimpleNamespace(state=SimpleNamespace(flask_app=object()))
+
+        with pytest.raises(asyncio.CancelledError):
+            await lifespan._wait_for_gateway_online(app)
+
+        # CancelledError propagates without the retry sleep firing.
+        assert sleeper.calls == 0
