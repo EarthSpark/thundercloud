@@ -45,6 +45,27 @@ describe('base', function() {
             base.flash("testing", "category", 1000);
             expect($(".alerts").html()).toMatchSnapshot();
         });
+        test('should render its message as markup', function() {
+            base.flash("<b>bold</b>");
+            expect($(".alerts b").length).toBe(1);
+        });
+    });
+
+    describe('flashText', function() {
+        test('should add a div to .alerts', function() {
+            base.flashText("testing");
+            expect($(".alerts").html()).toBe(
+                '<div class="alert" style="opacity: 0;">testing</div>');
+        });
+        test('should add an alert-category class', function() {
+            base.flashText("testing", "category", 1000);
+            expect($(".alerts div").hasClass('alert-category')).toBe(true);
+        });
+        test('should render its message as text', function() {
+            base.flashText("<b>bold</b>");
+            expect($(".alerts b").length).toBe(0);
+            expect($(".alerts").text()).toBe("<b>bold</b>");
+        });
     });
 
     describe('getMetaItemProps', function() {
