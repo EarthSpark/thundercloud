@@ -55,6 +55,8 @@ MeterTariffModal.prototype = {
         this.requestSeq = 0;
         this.pendingRequestId = null;
         this.editorModals = $();
+        // The body carries no scrollbar compensation until a modal is open.
+        this.scrollbarPad = '';
 
         this.ensureSelectOptions();
         this.ensureModal();
@@ -85,12 +87,7 @@ MeterTariffModal.prototype = {
             }
         });
 
-        this.modal.on('hidden.bs.modal', function(event) {
-            // The editor modals live at the same level in <body>, but guard
-            // anyway so a nested dialog can never drive the outer modal.
-            if (event.target !== this) {
-                return;
-            }
+        this.modal.on('hidden.bs.modal', function() {
             self.abortPendingRequest();
             self.restoreTariffSelection();
         });
@@ -108,17 +105,28 @@ MeterTariffModal.prototype = {
             self.submitModal();
         });
 
-        // Bootstrap 3 keeps a single backdrop and drops `modal-open` off <body>
-        // whenever any modal closes, which breaks the still-open tariff modal.
-        $(document).on('show.bs.modal.metertariff', '.modal', this.onAnyModalShow);
-        $(document).on('hidden.bs.modal.metertariff', '.modal', this.onAnyModalHidden);
+        // Bootstrap 3 gives every modal the same z-index and unwinds the whole
+        // body scroll lock whenever any modal closes, which breaks the tariff
+        // modal while one of its editors is open on top of it.
+        $(document).on('show.bs.modal.metertariff', '.modal', function(event) {
+            self.onAnyModalShow(event.currentTarget);
+        });
+        $(document).on('hide.bs.modal.metertariff', '.modal', function() {
+            self.rememberScrollbarPad();
+        });
+        $(document).on('hidden.bs.modal.metertariff', '.modal', function() {
+            self.onAnyModalHidden();
+        });
     },
 
-    onAnyModalShow: function() {
+    onAnyModalShow: function(modal) {
         // Bootstrap adds `in` after this event, so this counts the modals that
         // are already open underneath the one being shown.
         var zIndex = BASE_MODAL_Z_INDEX + MODAL_Z_INDEX_STEP * $(OPEN_MODAL_SELECTOR).length;
-        $(this).css('z-index', zIndex);
+        $(modal).css('z-index', zIndex);
+        // The backdrop for this modal does not exist yet; Bootstrap appends it
+        // while handling the same event. `modal-stack` marks the ones already
+        // placed, so each new backdrop is the only unmarked one.
         setTimeout(function() {
             $('.modal-backdrop:not(.modal-stack)')
                 .css('z-index', zIndex - BACKDROP_Z_INDEX_OFFSET)
@@ -126,12 +134,21 @@ MeterTariffModal.prototype = {
         }, 0);
     },
 
+    rememberScrollbarPad: function() {
+        // While a modal holds the scroll lock, Bootstrap pads <body> by the
+        // width of the scrollbar it just hid. Read that padding before the
+        // modal being hidden takes it back off.
+        this.scrollbarPad = document.body.style.paddingRight;
+    },
+
     onAnyModalHidden: function() {
-        // Bootstrap drops `modal-open` off <body> whenever any modal closes,
-        // which unlocks scrolling behind a modal that is still open.
-        if ($(OPEN_MODAL_SELECTOR).length) {
-            $(document.body).addClass('modal-open');
+        // Bootstrap drops `modal-open` off <body> and clears the scrollbar
+        // compensation whenever any modal closes, which unlocks scrolling
+        // behind a modal that is still open and shifts the page sideways.
+        if (!$(OPEN_MODAL_SELECTOR).length) {
+            return;
         }
+        $(document.body).addClass('modal-open').css('padding-right', this.scrollbarPad);
     },
 
     ensureSelectOptions: function() {

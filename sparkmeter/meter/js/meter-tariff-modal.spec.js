@@ -257,12 +257,77 @@ describe('MeterTariffModal', () => {
 
         it('keeps the body scroll lock while the tariff modal is still open', () => {
             openWithFragment();
-            $('#meter-tariff-modal').addClass('in');
-            $(document.body).removeClass('modal-open');
+            $('#blockrateModal').modal('show');
 
-            $('#blockrateModal').trigger($.Event('hidden.bs.modal', {target: $('#blockrateModal')[0]}));
+            $('#blockrateModal').modal('hide');
 
             expect($(document.body).hasClass('modal-open')).toBe(true);
+        });
+
+        it('keeps the scrollbar compensation while the tariff modal is still open', () => {
+            openWithFragment();
+            $('#blockrateModal').modal('show');
+            // Bootstrap pads <body> by the width of the scrollbar the scroll
+            // lock hides. jsdom has no layout, so set the padding directly.
+            $(document.body).css('padding-right', '15px');
+
+            // Hiding a modal resets that padding, and re-applying `modal-open`
+            // without it shifts the page sideways by the scrollbar width. The
+            // vendored Bootstrap the jest suite loads is 3.0.0, which has no
+            // scrollbar handling at all, so the reset is played out here.
+            // Bootstrap clears the padding by assigning '', which jsdom ignores.
+            $('#blockrateModal').one('hidden.bs.modal', () => {
+                document.body.style.removeProperty('padding-right');
+            });
+            $('#blockrateModal').modal('hide');
+
+            expect(document.body.style.paddingRight).toBe('15px');
+        });
+    });
+
+    describe('stacked modals (F5)', () => {
+        beforeEach(() => {
+            // The backdrop does not exist yet when the module reacts to
+            // `show.bs.modal`, so it is placed from a zero-delay timeout.
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        function zIndexes(selector) {
+            return $(selector).map(function() { return this.style.zIndex; }).get();
+        }
+
+        function openEditorOnTop() {
+            openWithFragment();
+            jest.runAllTimers();
+            $('#blockrateModal').modal('show');
+            jest.runAllTimers();
+        }
+
+        it('raises an editor opened on top of the tariff modal above it', () => {
+            openEditorOnTop();
+
+            expect(zIndexes('#meter-tariff-modal')).toEqual(['1050']);
+            expect(zIndexes('#blockrateModal')).toEqual(['1070']);
+        });
+
+        it('gives each stacked modal its own backdrop just underneath it', () => {
+            openEditorOnTop();
+
+            // Document order: the tariff modal's backdrop, then the editor's.
+            expect(zIndexes('.modal-backdrop')).toEqual(['1040', '1060']);
+        });
+
+        it('leaves a backdrop that was already placed where it is', () => {
+            openEditorOnTop();
+            $('#blockrateModal').modal('hide');
+            $('#touModal').modal('show');
+            jest.runAllTimers();
+
+            expect(zIndexes('.modal-backdrop')).toEqual(['1040', '1060']);
         });
     });
 
