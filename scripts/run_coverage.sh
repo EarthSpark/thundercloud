@@ -8,11 +8,18 @@ compare_branch="${DIFF_COVER_COMPARE_BRANCH:-origin/main}"
 fail_under="${DIFF_COVER_FAIL_UNDER:-90}"
 
 # A git worktree's .git is a file, not a directory, and is unreadable inside the
-# build context, so hatch-vcs cannot derive the version. Supply a placeholder in
-# that case; a normal checkout leaves it empty and reads .git as usual.
+# build context, so hatch-vcs cannot derive the version. Build one from the
+# current commit in that case; a normal checkout leaves it empty and reads .git
+# as usual.
+#
+# The local segment (`+g<short hash>`) is not optional. `sparkmeter.__version__`
+# derives `git_version` from it and yields "" when it is absent, and the page
+# tests scrub `GIT_VERSION` out of every snapshot with `str.replace()`. Replacing
+# the empty string inserts the marker between every character of every snapshot,
+# which fails the whole page-test suite.
 version=""
 if [ -f .git ]; then
-    version="0.0.0"
+    version="0.0.0+g$(git rev-parse --short HEAD)"
 fi
 
 docker compose -f docker-compose.test.yml build \
