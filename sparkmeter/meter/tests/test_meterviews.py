@@ -244,6 +244,47 @@ class MeterViewTest(WebViewTestCaseBase):
         assert "Meter serial SM15R-01-0000007B already exists." in response.text
         self.verify_response(response)
 
+    def test_add_customer_meter_tariff_select(self, client):
+        """The select starts blank and offers the modal, which drives the form's markup."""
+        TariffFactory(name="TARIFF")
+        self.session.commit()
+
+        response = client.get("/meter/add-meter")
+
+        # QuerySelectField(allow_blank=True) renders the blank option with this
+        # value; the modal's JavaScript restores the select to it.
+        assert '<option selected value="__None">Select a tariff</option>' in response.text
+        assert 'data-add-new-value="__add_new__"' in response.text
+        assert 'data-add-new-label="&lt;Add New&gt;"' in response.text
+
+    def test_add_customer_meter_without_tariff(self, client):
+        """A customer meter needs a tariff, and says so in the field's error markup."""
+        data = {
+            "serial": "SM15R-01-0000007B",
+            "state": 0,
+        }
+
+        response = client.post("/meter/add-meter", data=data)
+
+        assert response.status_code == http.client.OK
+        assert "Please select a tariff or add a new one." in response.text
+        assert "has-error" in response.text
+        assert not list(self.ground.get_meters())
+
+    def test_add_customer_meter_with_add_new_sentinel(self, client):
+        """The add-new option is a client-side sentinel, never a submittable tariff."""
+        data = {
+            "serial": "SM15R-01-0000007B",
+            "state": 0,
+            "tariff": "__add_new__",
+        }
+
+        response = client.post("/meter/add-meter", data=data)
+
+        assert response.status_code == http.client.OK
+        assert "No tariff was created. Please select a tariff or add a new one." in response.text
+        assert not list(self.ground.get_meters())
+
     def test_add_unknown_model(self, client):
         tariff = TariffFactory()
         self.session.commit()

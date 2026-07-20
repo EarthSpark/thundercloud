@@ -10,44 +10,9 @@
 < Set-Cookie: %% COOKIE %%
 < Vary: Cookie
 <
-
-<style>
-  #meter-tariff-modal .modal-dialog {
-    width: 900px;
-    max-width: calc(100vw - 40px);
-  }
-
-  #meter-tariff-modal .control-label.col-lg-2 {
-    width: 18%;
-  }
-
-  #meter-tariff-modal .input-group.col-lg-3,
-  #meter-tariff-modal .col-md-5 {
-    width: 52%;
-  }
-
-  #meter-tariff-modal .input-group.col-lg-10,
-  #meter-tariff-modal .btn-group.col-lg-10 {
-    width: 70%;
-  }
-
-  #meter-tariff-modal .input-group .form-control {
-    min-width: 0;
-  }
-
-  @media (max-width: 991px) {
-    #meter-tariff-modal .control-label.col-lg-2,
-    #meter-tariff-modal .input-group.col-lg-3,
-    #meter-tariff-modal .input-group.col-lg-10,
-    #meter-tariff-modal .btn-group.col-lg-10,
-    #meter-tariff-modal .col-md-5 {
-      width: 100%;
-    }
-  }
-</style>
-
 <form class="form form-horizontal tariff" id="tariff-modal-form" method="POST" action="/tariff/add-modal">
   
+
 <div id="tariff-form-params"
      data-blockrates="[]"
      data-blockrates-title="&#34;Edit block rate&#34;"
