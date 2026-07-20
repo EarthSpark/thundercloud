@@ -34,16 +34,6 @@ class _ProviderRemovedDuringRecovery(RuntimeError):
     """Raised when the configured driver disappears during gateway recovery."""
 
 
-def _is_ground() -> bool:
-    """Whether this deployment should drive a meter network."""
-    try:
-        from sparkmeter.config.configdict import config
-
-        return config.is_ground()
-    except Exception:  # noqa: BLE001
-        return os.environ.get("SPARKMETER_MODE", "ground") == "ground"
-
-
 def _metering_enabled() -> bool:
     """Whether metering-provider startup should run for this process."""
     try:
@@ -144,7 +134,9 @@ async def ensure_metering_runtime(
     skip_provider_init: bool = False,
 ) -> bool:
     """Ensure live metering is active for the currently configured provider."""
-    if not _is_ground():
+    from sparkmeter.config.configdict import config
+
+    if config.is_cloud():
         app.state.metering = None
         return False
 
@@ -313,7 +305,9 @@ def activate_metering_runtime_in_process(
 @asynccontextmanager
 async def metering_lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Owns the metering-provider connection on ground; no-op on cloud."""
-    if not _is_ground():
+    from sparkmeter.config.configdict import config
+
+    if config.is_cloud():
         app.state.metering = None
         yield
         return

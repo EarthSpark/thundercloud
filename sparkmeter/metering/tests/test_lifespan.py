@@ -483,16 +483,16 @@ class TestWaitForGatewayOnline:
 
 class TestMeteringLifespan:
     @pytest.mark.asyncio
-    async def test_cloud_mode_is_noop(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: False)
+    async def test_cloud_mode_is_noop(self, config):
+        config["HEROKU"] = True
         app = SimpleNamespace(state=SimpleNamespace())
         async with lifespan.metering_lifespan(app):
             pass
         assert app.state.metering is None
 
     @pytest.mark.asyncio
-    async def test_offline_mode_is_noop(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_offline_mode_is_noop(self, monkeypatch, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: False)
         app = SimpleNamespace(state=SimpleNamespace())
         async with lifespan.metering_lifespan(app):
@@ -500,8 +500,8 @@ class TestMeteringLifespan:
         assert app.state.metering is None
 
     @pytest.mark.asyncio
-    async def test_not_started_skips_shutdown(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_not_started_skips_shutdown(self, monkeypatch, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
 
         async def fake_ensure(app):
@@ -521,8 +521,8 @@ class TestMeteringLifespan:
         assert shutdowns == []
 
     @pytest.mark.asyncio
-    async def test_started_runs_shutdown(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_started_runs_shutdown(self, monkeypatch, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
 
         async def fake_ensure(app):
@@ -544,22 +544,22 @@ class TestMeteringLifespan:
 
 class TestEnsureMeteringRuntimeEarlyReturns:
     @pytest.mark.asyncio
-    async def test_not_ground_returns_false(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: False)
+    async def test_not_ground_returns_false(self, config):
+        config["HEROKU"] = True
         app = SimpleNamespace(state=SimpleNamespace())
         assert await lifespan.ensure_metering_runtime(app) is False
         assert app.state.metering is None
 
     @pytest.mark.asyncio
-    async def test_offline_returns_false(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_offline_returns_false(self, monkeypatch, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: False)
         app = SimpleNamespace(state=SimpleNamespace())
         assert await lifespan.ensure_metering_runtime(app) is False
 
     @pytest.mark.asyncio
-    async def test_already_active_reruns_reconcile(self, monkeypatch):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_already_active_reruns_reconcile(self, monkeypatch, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
         signature = ("a", "http://x", "http", True)
         monkeypatch.setattr(lifespan, "_enabled_provider_signature", lambda flask_app: signature)
@@ -925,27 +925,6 @@ class TestActivateMeteringRuntimeErrors:
         assert error == "boom"
 
 
-class TestIsGround:
-    def test_is_ground_reads_config_flag(self, monkeypatch):
-        # _is_ground mirrors config.is_ground() when the config loads.
-        monkeypatch.setattr("sparkmeter.config.configdict.config", SimpleNamespace(is_ground=lambda: True))
-        assert lifespan._is_ground() is True
-        monkeypatch.setattr("sparkmeter.config.configdict.config", SimpleNamespace(is_ground=lambda: False))
-        assert lifespan._is_ground() is False
-
-    def test_is_ground_falls_back_to_env(self, monkeypatch):
-        def boom():
-            raise RuntimeError("config unavailable")
-
-        monkeypatch.setattr("sparkmeter.config.configdict.config", SimpleNamespace(is_ground=boom))
-
-        # When config.is_ground() raises, the SPARKMETER_MODE env var decides.
-        monkeypatch.setenv("SPARKMETER_MODE", "ground")
-        assert lifespan._is_ground() is True
-        monkeypatch.setenv("SPARKMETER_MODE", "cloud")
-        assert lifespan._is_ground() is False
-
-
 class TestShutdownSkipsMissingTaskSlot:
     @pytest.mark.asyncio
     async def test_shutdown_skips_missing_task_slot(self):
@@ -1018,7 +997,9 @@ def _install_ensure_harness(
         "event_clients": [],
     }
 
-    monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    from sparkmeter.config.configdict import config
+
+    monkeypatch.setitem(config, "HEROKU", False)
     monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
     monkeypatch.setattr(lifespan, "_enabled_provider_signature", lambda flask_app: signature)
     monkeypatch.setattr(
@@ -1078,11 +1059,11 @@ async def _drain_runtime_tasks(app):
 
 class TestEnsureMeteringRuntimeStartup:
     @pytest.mark.asyncio
-    async def test_ensure_config_change_shuts_down_then_early_returns(self, monkeypatch):
+    async def test_ensure_config_change_shuts_down_then_early_returns(self, monkeypatch, config):
         # An existing client with a *different* signature forces a restart:
         # shutdown_metering_runtime is awaited, then the empty provider URL
         # early-returns False with metering cleared.
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
         monkeypatch.setattr(
             lifespan, "_enabled_provider_signature", lambda flask_app: ("new", "http://new", "http", True)
@@ -1112,8 +1093,8 @@ class TestEnsureMeteringRuntimeStartup:
         assert app.state.metering is None
 
     @pytest.mark.asyncio
-    async def test_ensure_init_pass_logs_per_result_branch(self, monkeypatch, caplog):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_ensure_init_pass_logs_per_result_branch(self, monkeypatch, caplog, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
         monkeypatch.setattr(
             lifespan, "_enabled_provider_signature", lambda flask_app: ("x", "y", "http", True)
@@ -1147,8 +1128,8 @@ class TestEnsureMeteringRuntimeStartup:
         assert by_message["metering startup init skipped for meter driver: not configured"] == "INFO"
 
     @pytest.mark.asyncio
-    async def test_ensure_init_pass_exception_is_swallowed(self, monkeypatch, caplog):
-        monkeypatch.setattr(lifespan, "_is_ground", lambda: True)
+    async def test_ensure_init_pass_exception_is_swallowed(self, monkeypatch, caplog, config):
+        config["HEROKU"] = False
         monkeypatch.setattr(lifespan, "_metering_enabled", lambda: True)
         monkeypatch.setattr(
             lifespan, "_enabled_provider_signature", lambda flask_app: ("x", "y", "http", True)
