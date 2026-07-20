@@ -37,19 +37,6 @@
 
 {% endblock breadcrumbs %}
 
-{% macro form_tariff_error(form, field, class_=None) %}
-  {% if form.errors[field] %}
-  <div class="form-group{{ ' %s'|format(class_) if class_ }}" style="padding-left: 20px; margin-top: -10px">
-    <span class="col-lg-offset-2 help-block note">
-    <i class="icon-warning-sign"></i>
-    {% for error in form.errors[field] %}
-      {{ error }}
-    {% endfor %}
-    </span>
-  </div>
-  {% endif %}
-{% endmacro %}
-
 {% block content %}
   <div class="row">
     <div class="col-md-12">

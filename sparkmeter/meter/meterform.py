@@ -78,6 +78,11 @@ class BaseMeterForm(BaseForm):
     mode = None
     template_filename = "meter-form.html"
 
+    #: Value of the tariff select's "add a new tariff" option. The option is
+    #: added by the browser and opens the tariff modal instead of selecting a
+    #: tariff, so it is never a valid submitted value.
+    ADD_NEW_TARIFF = "__add_new__"
+
     tariff = QuerySelectField(
         _("Tariff"),
         query_factory=lambda: Tariff.query.filter().order_by("name"),
@@ -153,8 +158,14 @@ class BaseMeterForm(BaseForm):
             )
 
     def validate_tariff(self, field):
-        """Require a tariff for customer meters with a clear validation message."""
-        if self.meter_type == Meter.TYPE_CUSTOMER and field.data is None:
+        """Require a tariff with a clear validation message.
+
+        The field only exists on customer meters; ``__init__`` deletes it for
+        totalizers.
+        """
+        if field.raw_data and field.raw_data[0] == self.ADD_NEW_TARIFF:
+            raise ValidationError(_("No tariff was created. Please select a tariff or add a new one."))
+        if field.data is None:
             raise ValidationError(_("Please select a tariff or add a new one."))
 
     def save(self, view):
