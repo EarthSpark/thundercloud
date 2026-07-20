@@ -9,7 +9,7 @@
 
 < HTTP/1.1 200 OK
 < Content-Type: text/html; charset=utf-8
-< X-Form-Errors: {"serial": ["Invalid meter serial, must look like \"SMXXX-XX-XXXXXXXX\"."],"state": ["Not a valid choice."],"tariff": ["Not a valid choice"]}
+< X-Form-Errors: {"serial": ["Invalid meter serial, must look like \"SMXXX-XX-XXXXXXXX\"."],"state": ["Not a valid choice."],"tariff": ["Please select a tariff or add a new one."]}
 <
 
 <!doctype html>
@@ -30,6 +30,189 @@
         <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
         <script src="%% VENDOR_JS %%" type="text/javascript"></script>
         <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+  
+  <script type="text/javascript">
+    (function($) {
+      var ADD_NEW_VALUE = '__add_new__';
+      var MODAL_ID = '#meter-tariff-modal';
+      var MODAL_FORM_URL = '/tariff/add-modal';
+
+      function flashMessage(message, level) {
+        var alerts = $('.alerts');
+        if (!alerts.length) {
+          return;
+        }
+        alerts.append(
+          $('<div></div>')
+            .addClass('alert alert-' + (level || 'info'))
+            .text(message)
+        );
+      }
+
+      function MeterTariffModal() {
+        this.select = $('select#tariff');
+        if (!this.select.length) {
+          return;
+        }
+        this.previousValue = this.select.val() || '';
+        this.ensureSelectOptions();
+        this.ensureModal();
+        this.bindEvents();
+      }
+
+      MeterTariffModal.prototype.bindEvents = function() {
+        var self = this;
+
+        this.select.on('focusin', function() {
+          self.previousValue = self.currentTariffValue();
+        });
+
+        this.select.on('change', function() {
+          if ($(this).val() === ADD_NEW_VALUE) {
+            self.openModal();
+          } else {
+            self.previousValue = self.currentTariffValue();
+          }
+        });
+
+        $(MODAL_ID).on('hidden.bs.modal', function() {
+          self.restoreTariffSelection();
+        });
+
+        $(document).on('click', '#meter-tariff-modal-save', function(event) {
+          event.preventDefault();
+          self.submitModal();
+        });
+      };
+
+      MeterTariffModal.prototype.ensureSelectOptions = function() {
+        if (!this.select.find('option[value="' + ADD_NEW_VALUE + '"]').length) {
+          this.select.append($('<option></option>').val(ADD_NEW_VALUE).text('<Add New>'));
+        }
+      };
+
+      MeterTariffModal.prototype.ensureModal = function() {
+        if ($(MODAL_ID).length) {
+          return;
+        }
+        $('body').append(
+          '<div class="modal fade" id="meter-tariff-modal" tabindex="-1" role="dialog" aria-hidden="true">' +
+          '  <div class="modal-dialog modal-lg">' +
+          '    <div class="modal-content">' +
+          '      <div class="modal-header">' +
+          '        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>' +
+          '        <h4 class="modal-title">Add a New Tariff</h4>' +
+          '      </div>' +
+          '      <div class="modal-body"><p>Loading tariff form...</p></div>' +
+          '      <div class="modal-footer">' +
+          '        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>' +
+          '        <button type="button" class="btn btn-primary" id="meter-tariff-modal-save">Save</button>' +
+          '      </div>' +
+          '    </div>' +
+          '  </div>' +
+          '</div>'
+        );
+      };
+
+      MeterTariffModal.prototype.openModal = function() {
+        var self = this;
+        $.get(MODAL_FORM_URL)
+          .done(function(html) {
+            self.renderModal(html);
+            $(MODAL_ID).modal('show');
+          })
+          .fail(function() {
+            flashMessage('Could not load the tariff form.', 'danger');
+            self.restoreTariffSelection();
+          });
+      };
+
+      MeterTariffModal.prototype.renderModal = function(html) {
+        $(MODAL_ID).find('.modal-body').html(html);
+        this.setupModalWidgets();
+      };
+
+      MeterTariffModal.prototype.setupModalWidgets = function() {
+        $(MODAL_ID).find('select.select2').select2();
+        $(MODAL_ID).find('input.numeric').numeric();
+        $(MODAL_ID).find('.iButton').iButton();
+        $(MODAL_ID).find('.iButton-icons').iButton({
+          labelOn: "<i class='icon-ok'></i>",
+          labelOff: "<i class='icon-remove'></i>",
+          handleWidth: 30
+        });
+        $(MODAL_ID).find('input.timepicker').datetimepicker({
+          datepicker: false,
+          closeOnTimeSelect: true,
+          format: 'H:i',
+          mask: '29:00',
+          allowTimes: [
+            '00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
+            '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+            '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+            '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '00:00'
+          ]
+        });
+      };
+
+      MeterTariffModal.prototype.submitModal = function() {
+        var self = this;
+        var form = $(MODAL_ID).find('form#tariff-modal-form');
+        if (!form.length) {
+          return;
+        }
+
+        $.ajax({
+          url: form.attr('action'),
+          method: 'POST',
+          data: form.serialize()
+        }).done(function(data) {
+          self.addTariffOption(data.tariff.id, data.tariff.name);
+          self.previousValue = String(data.tariff.id);
+          self.select.val(self.previousValue);
+          $(MODAL_ID).modal('hide');
+          flashMessage(data.message || 'Tariff created.', 'success');
+        }).fail(function(xhr) {
+          if (xhr.status === 400 && xhr.responseText) {
+            self.renderModal(xhr.responseText);
+            return;
+          }
+          flashMessage('Could not save the tariff.', 'danger');
+        });
+      };
+
+      MeterTariffModal.prototype.addTariffOption = function(value, label) {
+        var option = this.select.find('option[value="' + value + '"]');
+        if (!option.length) {
+          option = $('<option></option>').val(value).text(label);
+          var addNewOption = this.select.find('option[value="' + ADD_NEW_VALUE + '"]');
+          if (addNewOption.length) {
+            addNewOption.before(option);
+          } else {
+            this.select.append(option);
+          }
+        } else {
+          option.text(label);
+        }
+      };
+
+      MeterTariffModal.prototype.restoreTariffSelection = function() {
+        if (this.select.val() !== ADD_NEW_VALUE) {
+          return;
+        }
+        this.select.val(this.previousValue || '');
+      };
+
+      MeterTariffModal.prototype.currentTariffValue = function() {
+        var value = this.select.val() || '';
+        return value === ADD_NEW_VALUE ? '' : value;
+      };
+
+      $(function() {
+        new MeterTariffModal();
+      });
+    })(jQuery);
+  </script>
 
         <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
@@ -207,6 +390,10 @@
         </div>
         <div class="box-content padded">
                             <form class="form form-horizontal" role="form" method="POST">
+                    <div class="alert alert-danger">
+                      Please correct the highlighted fields and try again.
+                    </div>
+
   <div class="form-group  has-error">
 
             <label class="control-label col-lg-2" for="serial">Serial</label>
@@ -232,11 +419,15 @@
                       <div class="input-group col-lg-10">
                         <select class="form-control tags" id="tags" multiple name="tags"></select>
                       </div>
-                    </div><div class="form-group">
+                    </div><div class="form-group has-error">
                       <label class="control-label col-lg-2" for="tariff">Tariff</label>
                       <div class="input-group col-lg-10">
-                        <select class="form-control" id="tariff" name="tariff"><option value="00000004-0000-0000-0000-000000000001">tarïff01</option></select>
+                        <select class="form-control" id="tariff" name="tariff"><option selected value="__None">Select a tariff</option><option value="00000004-0000-0000-0000-000000000001">tarïff01</option></select>
                       </div>
+                    </div>
+                    <div class="col-lg-offset-2 col-lg-10">
+                          <p class="help-block">Please select a tariff or add a new one.</p>
+
                     </div><div class="form-group">
                       <label class="control-label col-lg-2" for="active">Active</label>
                       <div class="input-group col-lg-10">
