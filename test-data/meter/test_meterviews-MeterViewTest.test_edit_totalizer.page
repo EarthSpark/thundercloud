@@ -29,6 +29,7 @@
         <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
         <script src="%% VENDOR_JS %%" type="text/javascript"></script>
         <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+  
 
         <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
@@ -212,7 +213,8 @@
             <span class="title">Edit Meter SM15R-01-10000001</span>
         </div>
         <div class="box-content padded">
-                            <form class="form form-horizontal" role="form" method="POST"><div class="form-group" title="List of tags for this meter, could mean anything, for instance a geographical location">
+                            <form class="form form-horizontal" role="form" method="POST">
+<div class="form-group" title="List of tags for this meter, could mean anything, for instance a geographical location">
                       <label class="control-label col-lg-2" for="tags">Tags</label>
                       <div class="input-group col-lg-10">
                         <select class="form-control tags" id="tags" multiple name="tags"></select>

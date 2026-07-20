@@ -55,6 +55,52 @@ class TariffViewTest(WebViewTestCaseBase):
         response = client.get(path)
         self.verify_response(response)
 
+    def test_add_modal_get(self, client):
+        # GET renders the modal form with no validation errors (tariffview lines 78, 90, 32-33, 36).
+        path = "/tariff/add-modal"
+
+        response = client.get(path)
+        assert response.status_code == http.client.OK
+        assert "X-Form-Errors" not in response.headers
+        self.verify_response(response)
+
+    def test_add_modal_post_valid(self, client, config):
+        # A valid POST creates the tariff and returns JSON (tariffview lines 79-88).
+        path = "/tariff/add-modal"
+        data = dict(
+            name="MODAL TARIFF",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
+
+        config["HEROKU"] = False
+        response = client.post(path, data=data)
+
+        assert response.status_code == http.client.OK
+        body = response.json()
+        assert body["message"] == "Tariff created."
+
+        tariffs = Tariff.get_all()
+        assert len(tariffs) == 1
+        assert body["tariff"]["name"] == "MODAL TARIFF"
+        assert body["tariff"]["id"] == str(tariffs[0].id)
+
+    def test_add_modal_post_invalid(self, client):
+        # An invalid POST re-renders the modal form with the error header (tariffview lines 89, 34-35).
+        path = "/tariff/add-modal"
+        data = dict(name="", flat_load_limit=150, flat_price=4)
+
+        response = client.post(path, data=data)
+
+        assert response.status_code == http.client.BAD_REQUEST
+        assert "X-Form-Errors" in response.headers
+        assert "Please set a name for this tariff" in response.text
+        assert not Tariff.query.scalar()
+
     def test_add_form(self, client, config):
         path = "/tariff/add"
 
