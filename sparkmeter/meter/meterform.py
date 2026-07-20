@@ -82,7 +82,8 @@ class BaseMeterForm(BaseForm):
         _("Tariff"),
         query_factory=lambda: Tariff.query.filter().order_by("name"),
         get_label="name",
-        allow_blank=False,
+        allow_blank=True,
+        blank_text=_("Select a tariff"),
     )
     customer_name = StringField(_("Name"), default="new customer")
     customer_code = StringField(_("Code"))
@@ -150,6 +151,11 @@ class BaseMeterForm(BaseForm):
                     country=country,
                 )
             )
+
+    def validate_tariff(self, field):
+        """Require a tariff for customer meters with a clear validation message."""
+        if self.meter_type == Meter.TYPE_CUSTOMER and field.data is None:
+            raise ValidationError(_("Please select a tariff or add a new one."))
 
     def save(self, view):
         """Save content of meter form to database."""

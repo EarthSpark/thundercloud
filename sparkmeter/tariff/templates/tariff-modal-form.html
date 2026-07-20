@@ -1,0 +1,54 @@
+{%- from "_macros.html" import form_errors -%}
+
+{% macro form_tariff_error(form, field, class_=None) %}
+  {% if form.errors[field] %}
+  <div class="form-group{{ ' %s'|format(class_) if class_ }}" style="padding-left: 20px; margin-top: -10px">
+    <span class="col-lg-offset-2 help-block note">
+    <i class="icon-warning-sign"></i>
+    {% for error in form.errors[field] %}
+      {{ error }}
+    {% endfor %}
+    </span>
+  </div>
+  {% endif %}
+{% endmacro %}
+
+<style>
+  #meter-tariff-modal .modal-dialog {
+    width: 900px;
+    max-width: calc(100vw - 40px);
+  }
+
+  #meter-tariff-modal .control-label.col-lg-2 {
+    width: 18%;
+  }
+
+  #meter-tariff-modal .input-group.col-lg-3,
+  #meter-tariff-modal .col-md-5 {
+    width: 52%;
+  }
+
+  #meter-tariff-modal .input-group.col-lg-10,
+  #meter-tariff-modal .btn-group.col-lg-10 {
+    width: 70%;
+  }
+
+  #meter-tariff-modal .input-group .form-control {
+    min-width: 0;
+  }
+
+  @media (max-width: 991px) {
+    #meter-tariff-modal .control-label.col-lg-2,
+    #meter-tariff-modal .input-group.col-lg-3,
+    #meter-tariff-modal .input-group.col-lg-10,
+    #meter-tariff-modal .btn-group.col-lg-10,
+    #meter-tariff-modal .col-md-5 {
+      width: 100%;
+    }
+  }
+</style>
+
+<form class="form form-horizontal tariff" id="tariff-modal-form" method="POST" action="{{ url_for('tariff.add_modal') }}">
+  {{ form_errors(form, hiddens='only') }}
+  {% include "tariff/_tariff-form-fields.html" %}
+</form>

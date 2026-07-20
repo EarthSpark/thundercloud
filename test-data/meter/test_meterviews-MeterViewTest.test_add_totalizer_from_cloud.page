@@ -29,6 +29,7 @@
         <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
         <script src="%% VENDOR_JS %%" type="text/javascript"></script>
         <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+  
 
         <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
@@ -206,6 +207,7 @@
         </div>
         <div class="box-content padded row">
                             <form class="form form-horizontal" role="form" method="POST">
+
   <div class="form-group ">
 
             <label class="control-label col-lg-2" for="serial">Serial</label>
