@@ -39,6 +39,31 @@ class MultiDict(dict):  # pragma: nocoverage
         return [self[key]]
 
 
+def set_form_errors_header(response, form):
+    """Attach a form's validation errors to a response as ``X-Form-Errors``.
+
+    This is for development, and especially so that unittests can show a nicer
+    error when there is a form error.
+
+    Every error is coerced to ``str``: validators are free to store exception
+    instances rather than messages, and those are not JSON serializable.
+
+    :param response: the response to annotate.
+    :param form: the form whose errors should be reported.
+    :return: the same response, for convenience.
+    :rtype: Response
+    """
+    if not form.errors:
+        return response
+
+    error_dict = {}
+    for name, errors in list(form.errors.items()):
+        error_dict[name] = list(map(str, errors))
+    response.headers["X-Form-Errors"] = json_dumps(error_dict)
+    logger.warning("{} errors: {} {}".format(type(form).__name__, error_dict, form.data))
+    return response
+
+
 class BaseForm(FlaskForm):
     """Base form, used by all other forms in the application."""
 
@@ -102,15 +127,7 @@ class BaseForm(FlaskForm):
         :rtype: Response
         """
         body = render_template(self.template_filename, form=self, **context)
-        response = Response(body)
-        if self.errors:
-            error_dict = {}
-            for name, errors in list(self.errors.items()):
-                error_dict[name] = list(map(str, errors))
-            response.headers["X-Form-Errors"] = json_dumps(error_dict)
-            logger.warning("{} errors: {} {}".format(type(self).__name__, error_dict, self.data))
-
-        return response
+        return set_form_errors_header(Response(body), self)
 
 
 def flatten_json(form, json, parent_key="", separator="-", skip_unknown_keys=True):  # pragma: nocoverage
