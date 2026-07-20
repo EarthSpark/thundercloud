@@ -31,8 +31,16 @@
 
 // The tariff form is a horizontal form laid out for a full-width page. Inside
 // the tariff modal its Bootstrap column widths have to be narrowed to fit the
-// dialog; `.modal-lg` supplies the dialog width itself.
+// dialog.
 #meter-tariff-modal {
+  // Bootstrap's own dialog widths are 600px from 768px up and, with `.modal-lg`,
+  // 900px from 992px up. The tariff form needs the wider dialog at every
+  // viewport, clamped so it still fits a narrow one.
+  .modal-dialog {
+    width: 900px;
+    max-width: calc(100vw - 40px);
+  }
+
   .control-label.col-lg-2 {
     width: 18%;
   }

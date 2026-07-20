@@ -144,16 +144,12 @@ MeterTariffModal.prototype = {
     },
 
     ensureModal: function() {
-        if ($(MODAL_SELECTOR).length) {
-            this.adoptModal();
-            return;
-        }
         $('body').append(
             $('<div></div>')
                 .addClass('modal fade')
                 .attr({id: MODAL_ID, tabindex: '-1', role: 'dialog', 'aria-hidden': 'true'})
                 .html(
-                    '<div class="modal-dialog modal-lg">' +
+                    '<div class="modal-dialog">' +
                     '  <div class="modal-content">' +
                     '    <div class="modal-header">' +
                     '      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>' +
@@ -168,16 +164,12 @@ MeterTariffModal.prototype = {
                     '</div>'
                 )
         );
-        this.adoptModal();
+        this.modal = $(MODAL_SELECTOR);
+        this.saveButton = this.modal.find('#meter-tariff-modal-save');
         this.modal.find('.modal-title').text(this.text('title'));
         this.modal.find('.modal-body').html($('<p></p>').text(this.text('loading')));
         this.modal.find('.modal-footer .btn-default').text(this.text('cancel'));
         this.saveButton.text(this.text('save'));
-    },
-
-    adoptModal: function() {
-        this.modal = $(MODAL_SELECTOR);
-        this.saveButton = this.modal.find('#meter-tariff-modal-save');
     },
 
     openModal: function() {
