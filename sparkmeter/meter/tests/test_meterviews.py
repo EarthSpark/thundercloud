@@ -283,6 +283,9 @@ class MeterViewTest(WebViewTestCaseBase):
 
         assert response.status_code == http.client.OK
         assert "No tariff was created. Please select a tariff or add a new one." in response.text
+        # The sentinel resolves to no tariff, so the choice lookup would
+        # otherwise stack its own message on top of the accurate one.
+        assert "Not a valid choice" not in response.text
         assert not list(self.ground.get_meters())
 
     def test_add_unknown_model(self, client):

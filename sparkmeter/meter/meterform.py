@@ -10,7 +10,7 @@ from flask_babel import lazy_gettext as _
 from markupsafe import Markup
 from werkzeug.utils import redirect
 from wtforms.fields import BooleanField, SelectField, SelectMultipleField, StringField, SubmitField, TelField
-from wtforms.validators import ValidationError
+from wtforms.validators import StopValidation, ValidationError
 from wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 
 from sparkmeter.config.configdict import config
@@ -71,6 +71,24 @@ class MeterTagsField(QuerySelectMultipleField):
             yield (pk, self.get_label(obj), self.get_label(obj) in self.data, {})
 
 
+class TariffSelectField(QuerySelectField):
+    """Tariff select that reports the modal's add-new sentinel itself.
+
+    ``QuerySelectField.pre_validate`` reports every primary key it cannot
+    resolve as "Not a valid choice", and WTForms carries on running the
+    validation chain after a ``pre_validate`` ``ValidationError``, so the
+    sentinel would collect that message on top of the accurate one. Raising
+    ``StopValidation`` instead carries the accurate message and ends the chain,
+    leaving the field with exactly one error.
+    """
+
+    def pre_validate(self, form):
+        """Reject the add-new sentinel before the choice lookup can mislabel it."""
+        if self.raw_data and self.raw_data[0] == form.ADD_NEW_TARIFF:
+            raise StopValidation(_("No tariff was created. Please select a tariff or add a new one."))
+        super(TariffSelectField, self).pre_validate(form)
+
+
 class BaseMeterForm(BaseForm):
     """Base Meter Form."""
 
@@ -83,7 +101,7 @@ class BaseMeterForm(BaseForm):
     #: tariff, so it is never a valid submitted value.
     ADD_NEW_TARIFF = "__add_new__"
 
-    tariff = QuerySelectField(
+    tariff = TariffSelectField(
         _("Tariff"),
         query_factory=lambda: Tariff.query.filter().order_by("name"),
         get_label="name",
@@ -161,10 +179,9 @@ class BaseMeterForm(BaseForm):
         """Require a tariff with a clear validation message.
 
         The field only exists on customer meters; ``__init__`` deletes it for
-        totalizers.
+        totalizers. The add-new sentinel never reaches here: the field's own
+        ``pre_validate`` reports it and stops the chain.
         """
-        if field.raw_data and field.raw_data[0] == self.ADD_NEW_TARIFF:
-            raise ValidationError(_("No tariff was created. Please select a tariff or add a new one."))
         if field.data is None:
             raise ValidationError(_("Please select a tariff or add a new one."))
 
