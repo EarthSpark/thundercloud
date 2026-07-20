@@ -24,20 +24,12 @@ from sparkmeter.metering._generated import APIClient, ClientConfig, HttpxTranspo
 logger = logging.getLogger(__name__)
 
 
-def _is_ground() -> bool:
-    """Whether this deployment should drive a meter network."""
-    try:
-        from sparkmeter.config.configdict import config
-
-        return config.is_ground()
-    except Exception:  # noqa: BLE001
-        return os.environ.get("SPARKMETER_MODE", "ground") == "ground"
-
-
 @asynccontextmanager
 async def metering_lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Owns the metering-provider connection on ground; no-op on cloud."""
-    if not _is_ground():
+    from sparkmeter.config.configdict import config
+
+    if config.is_cloud():
         app.state.metering = None
         yield
         return
