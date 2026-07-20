@@ -15,7 +15,7 @@ if [ -f .git ]; then
     version="0.0.0"
 fi
 
-docker compose --profile test build \
+docker compose -f docker-compose.test.yml build \
     --build-arg SETUPTOOLS_SCM_PRETEND_VERSION="$version" \
     test
 
@@ -24,7 +24,7 @@ docker compose --profile test build \
 # pytest-coverage.txt for the PR report comment. All three are produced in the
 # container, tarred to stdout, and unpacked on the host. pytest's output is teed
 # to stderr, not stdout, so stdout carries only the tar stream.
-docker compose --profile test run --rm test \
+docker compose -f docker-compose.test.yml run --rm test \
     sh -c 'uv run pytest -n auto --junitxml=/app/junit.xml 2>&1 | tee /app/pytest-coverage.txt 1>&2; tar -c -C /app .coverage.xml junit.xml pytest-coverage.txt' \
     | tar -x
 

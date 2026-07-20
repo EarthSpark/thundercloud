@@ -1,0 +1,48 @@
+# Test harness, not a dev environment: builds the test image from this repo
+# alone and runs the suite against a throwaway Postgres. CI
+# (scripts/run_coverage.sh) depends on this working with only this repo
+# checked out. Invoke with `docker compose -f docker-compose.test.yml ...`.
+#
+# The local dev stack (ground/cloud webapps, SymmetricDS pair, metering
+# provider) lives in the groundbolt-dev workspace metarepo, which clones this
+# repo and its siblings side by side and can therefore build across them.
+
+services:
+  # Nothing here is named worktree-globally, so two checkouts (a worktree and
+  # the main checkout, or two worktrees) can run their suites at the same time
+  # without colliding:
+  #   - No `container_name:`, so re-running the test command after a non-clean
+  #     exit doesn't collide with a leftover container of a fixed name;
+  #     compose auto-names them per-project.
+  #   - No fixed host port. A published `5442:5432` makes the second
+  #     concurrent run die with "Bind for 0.0.0.0:5442 failed: port is
+  #     already allocated". The host doesn't need a fixed port: the test
+  #     container reaches the database over the compose network, and the
+  #     ephemeral publication below still allows poking at it from the host
+  #     via `docker compose -f docker-compose.test.yml port postgres-test 5432`.
+  postgres-test:
+    image: library/postgres:18
+    environment:
+      - POSTGRES_USER=spark
+      - POSTGRES_PASSWORD=spark
+      - POSTGRES_DB=mydb
+    ports:
+      # Host port assigned by docker; container port fixed.
+      - "5432"
+    healthcheck:
+      test: ["CMD", "psql", "-U", "spark", "-d", "mydb", "-c", "SELECT 1;"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  test:
+    build:
+      context: '.'
+      dockerfile: deploy/Dockerfile
+      target: test
+    environment:
+      - DATABASE_URL=postgresql://spark:spark@postgres-test/mydb
+    depends_on:
+      - postgres-test
+    command: uv run pytest -n auto

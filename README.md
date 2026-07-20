@@ -85,7 +85,7 @@ uv run flask shell
 uv run flask status
 ```
 
-For Docker deployments, prefix commands with `docker compose exec`:
+For Docker deployments, run the same commands inside the webapp container with `docker compose exec`:
 ```bash
 docker compose exec ground uv run flask user create
 ```
@@ -100,69 +100,16 @@ This document is to help you get the development environment up and running. You
 
 ### Docker
 
+Dockerized development happens in the **groundbolt-dev workspace metarepo**, which clones this repo and its sibling component repos side by side and runs the whole system — the ground and cloud webapps, their databases, the SymmetricDS sync pair, and the `sparknet-http` metering provider — from a single compose file. See that repo's README for setup.
 
-For a fully Dockerized development environment:
-
-```bash
-$ docker compose up
-```
-
-Pass `-d` to detach. Run with `--watch` to enable Compose's develop watcher, which rebuilds the `ground` and `cloud` images on file changes (note: full image rebuild, not Flask hot-reload — slow for iterative work, useful for verifying built behavior).
-
-#### 1. Build docker services
-
-`docker compose up` builds any missing images automatically, so this step is optional. Run it when you want to force a clean rebuild (e.g. after Dockerfile or dependency changes):
-
-```bash
-$ docker compose build --no-cache
-```
-
-#### 2. Run the built docker services
-
-The default Compose profile brings up the ground-side stack:
-
-```bash
-$ docker compose up -d
-```
-
-After it settles, `docker compose ps` shows:
-
-```
-ground             # the GroundBolt webapp
-postgres-ground    # its database
-metering-provider  # the service the ground app calls for meter operations
-symds-ground       # SymmetricDS node syncing the ground database
-```
-
-The ground webapp talks to the metering provider over an OpenAPI HTTP+SSE contract, configured via `METERING_PROVIDER_URL` (default `http://localhost:8000`). The Compose file references the provider image by tag. That image must be present locally; build or pull it under that tag before bringing up the ground stack.
-
-The cloud-side stack lives behind the `cloud` Compose profile. To also bring up the cloud webapp and the cloud-side SymmetricDS node:
-
-```bash
-$ docker compose --profile cloud up -d
-```
-
-That adds:
-
-```
-cloud           # the ThunderCloud webapp
-postgres-cloud  # its database
-symds-cloud     # SymmetricDS node syncing the cloud database
-```
-
-`symds-ground` and `symds-cloud` together provide bidirectional sync between the ground and cloud databases. With only the ground profile active, `symds-ground` runs but has nothing to sync against until `--profile cloud` brings up `symds-cloud`.
-
-#### 3. Voilà! Your development environment is ready!
-
-- The GroundBolt webapp (`ground` container) is at [localhost:8765](http://localhost:8765).
-- With `--profile cloud`, the ThunderCloud webapp (`cloud` container) is at [localhost:5010](http://localhost:5010).
+This repo's `docker-compose.test.yml` is the self-contained test harness: a throwaway Postgres plus the test-image runner, needing nothing outside this repo. It's what CI runs.
 
 #### Useful commands
 
 ##### Run unit tests
 
 ```bash
-$ docker compose --profile test run --rm test
+$ docker compose -f docker-compose.test.yml run --rm test
 ```
 
 ##### Run a subset of unit tests
@@ -170,22 +117,24 @@ $ docker compose --profile test run --rm test
 Override the `test` service's command with a pytest invocation. Any pytest arguments can be passed:
 
 ```bash
-$ docker compose --profile test run --rm test uv run pytest <path/to/test>[::ClassName][::method_name]
+$ docker compose -f docker-compose.test.yml run --rm test uv run pytest <path/to/test>[::ClassName][::method_name]
 ```
 
 For example, running the tests for the AddCustomer endpoint in the API:
 
 ```bash
-docker compose --profile test run --rm test uv run pytest sparkmeter/api/tests/test_customerviews0.py::CustomerAddTest
+docker compose -f docker-compose.test.yml run --rm test uv run pytest sparkmeter/api/tests/test_customerviews0.py::CustomerAddTest
 ```
 
 ##### Create a new database migration
 
-Database schema migrations are managed via Alembic.  To get started, you must first create a migration file.
+Database schema migrations are managed via Alembic.  To get started, you must first create a migration file:
 
 ```bash
-docker compose exec ground uv run flask database new-revision "<short description of the migration>"
+uv run flask database new-revision "<short description of the migration>"
 ```
+
+(Or run the same command inside the webapp container of a running Docker stack, via `docker compose exec`.)
 
 This will generate a skeleton migration file in `sparkmeter/alembic/versions/`. From there, customize it your liking.
 
