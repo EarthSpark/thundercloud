@@ -29,7 +29,6 @@
         <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
         <script src="%% VENDOR_JS %%" type="text/javascript"></script>
         <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
-  
 
         <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
@@ -51,7 +50,7 @@
         <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
         <meta name="theme-color" content="#ffffff">
     </head>
-    <body>
+    <body data-page-name="meter-form">
 
         <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
             <!-- Brand and toggle get grouped for better mobile display -->
