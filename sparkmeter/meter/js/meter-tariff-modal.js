@@ -191,7 +191,7 @@ MeterTariffModal.prototype = {
                 self.modal.modal('show');
             })
             .fail(function() {
-                base.flash(self.text('load-error'), 'danger');
+                base.flashText(self.text('load-error'), 'danger');
                 self.restoreTariffSelection();
             });
     },
@@ -277,7 +277,7 @@ MeterTariffModal.prototype = {
             self.previousValue = String(data.tariff.id);
             self.select.val(self.previousValue);
             self.modal.modal('hide');
-            base.flash(data.message || self.text('created'), 'success');
+            base.flashText(data.message || self.text('created'), 'success');
         }).fail(function(xhr) {
             if (!self.claimResponse(requestId)) {
                 return;
@@ -288,7 +288,7 @@ MeterTariffModal.prototype = {
                 }
                 return;
             }
-            base.flash(self.text('save-error'), 'danger');
+            base.flashText(self.text('save-error'), 'danger');
         });
     },
 
@@ -320,7 +320,7 @@ MeterTariffModal.prototype = {
     sessionExpired: function() {
         this.modal.modal('hide');
         this.restoreTariffSelection();
-        base.flash(this.text('session-expired'), 'danger');
+        base.flashText(this.text('session-expired'), 'danger');
     },
 
     addTariffOption: function(value, label) {
