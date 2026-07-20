@@ -151,5 +151,9 @@ class ConfigDict(dict):
         """Get if this a cloud system."""
         return self.local_system == self.CLOUD
 
+    def is_offline(self):
+        """Get if metering-provider startup is disabled for this process."""
+        return bool(self.get("OFFLINE", False))
+
 
 config = ConfigDict()
