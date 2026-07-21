@@ -3,6 +3,14 @@
 <small>Also known as ThunderCloud (when deployed to the cloud) or GroundBolt (when deployed to the base station on the ground)</small>
 ___
 
+> [!WARNING]
+> **Developer preview — not for production use.**
+>
+> This version is a developer preview, intended for evaluation and development
+> only. It is not ready to manage a live micro-grid and must not be deployed to
+> production or used for real customer metering or billing. Expect breaking
+> changes between preview versions.
+
 A web application used by utility companies to manage their micro-grids remotely.
 
 ## Contributing
