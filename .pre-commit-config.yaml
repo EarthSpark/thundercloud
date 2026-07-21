@@ -5,9 +5,9 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
-        exclude: ^(test-data/|sparkmeter/metering/_generated/)
+        exclude: ^test-data/
     -   id: end-of-file-fixer
-        exclude: ^(test-data/|sparkmeter/metering/_generated/)
+        exclude: ^test-data/
     -   id: check-added-large-files
 
 -   repo: https://github.com/gitleaks/gitleaks
@@ -20,9 +20,9 @@ repos:
     hooks:
       - id: ruff-check
         args: ["--fix"]
-        exclude: ^(sparkmeter/metering/_generated/|test-data/)
+        exclude: ^test-data/
       - id: ruff-format
-        exclude: ^(sparkmeter/metering/_generated/|test-data/)
+        exclude: ^test-data/
 
 -   repo: local
     hooks:

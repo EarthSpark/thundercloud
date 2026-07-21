@@ -29,6 +29,13 @@
       "value": 0.0,
       "value_type": "percent"
     },
+    "metering-providers": {
+      "label": "Meter drivers",
+      "last_modified": "%% FILTERED BY UNITTEST %%",
+      "tooltip": "JSON-encoded list of configured meter drivers.",
+      "value": "[]",
+      "value_type": "string"
+    },
     "nominal-voltage": {
       "label": "Nominal voltage of system",
       "last_modified": "%% FILTERED BY UNITTEST %%",

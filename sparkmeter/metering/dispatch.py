@@ -19,27 +19,16 @@ every webapp lifespan start) to restore meter state from DB.
 
 import asyncio
 import logging
-import uuid
 from typing import Any
 
-from sparkmeter.metering._generated import APIClient
-from sparkmeter.metering._generated.models.configure_meter_command import ConfigureMeterCommand
-from sparkmeter.metering._generated.models.configure_meter_params import ConfigureMeterParams
-from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
-from sparkmeter.metering._generated.models.meter_configuration import MeterConfiguration
-from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
-from sparkmeter.metering._generated.models.register_meter_command_vendor_options import (
-    RegisterMeterCommandVendorOptions,
+from meter_driver_spec.http.models import (
+    ConfigureElectricalMeterCompatRequest,
+    ElectricalMeterConfiguration,
+    RegisterNodeRequest,
+    SetBalanceAndFlagsRequest,
 )
-from sparkmeter.metering._generated.models.register_meter_params import RegisterMeterParams
-from sparkmeter.metering._generated.models.set_balance_command import SetBalanceCommand
-from sparkmeter.metering._generated.models.set_balance_params import SetBalanceParams
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
-)
-from sparkmeter.metering._generated.models.throttle_config import ThrottleConfig
-from sparkmeter.metering._generated.models.unregister_meter_command import UnregisterMeterCommand
-from sparkmeter.metering._generated.models.unregister_meter_params import UnregisterMeterParams
+
+from sparkmeter.metering.runtime_client import behavior_to_command, to_spec_decimal
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +69,16 @@ def enqueue_command(cmd: dict[str, Any]) -> bool:
         return False
 
 
-async def command_dispatcher(client: APIClient, queue: asyncio.Queue) -> None:
+async def command_dispatcher(
+    client,
+    queue: asyncio.Queue,
+    commands_allowed: asyncio.Event | None = None,
+) -> None:
     """Drain the command queue, submitting each entry to the provider."""
     while True:
         cmd = await queue.get()
+        if commands_allowed is not None:
+            await commands_allowed.wait()
         op = cmd.get("op")
         handler = _HANDLERS.get(op)
         if handler is None:
@@ -91,105 +86,70 @@ async def command_dispatcher(client: APIClient, queue: asyncio.Queue) -> None:
             continue
 
         try:
-            body = handler(cmd)
-            await client.default.submit_command_v1_commands_post(body)
+            await handler(client, cmd)
         except Exception:  # noqa: BLE001
             logger.exception("metering dispatch: handler op=%r failed", op)
 
 
-def _correlation_id(cmd: dict[str, Any]) -> str:
-    return cmd.get("correlation_id") or "dispatch-" + uuid.uuid4().hex[:12]
-
-
 # ----------------------------------------------------------------------
-# Op handlers — build a typed Command body from the legacy dict shape.
+# Op handlers — build a spec command model and submit it (see runtime_client).
 # ----------------------------------------------------------------------
 
 
-_BEHAVIOR_FROM_STR = {
-    "none": MeterBehaviorCommand.NONE,
-    "enable": MeterBehaviorCommand.ENABLE,
-    "disable": MeterBehaviorCommand.DISABLE,
-    "reboot": MeterBehaviorCommand.REBOOT,
-    "calibrate_start": MeterBehaviorCommand.CALIBRATE_START,
-    "calibrate_finish": MeterBehaviorCommand.CALIBRATE_FINISH,
-    "enter_unprovisioned": MeterBehaviorCommand.ENTER_UNPROVISIONED,
-}
+async def _handle_register(client, cmd: dict) -> None:
+    await client.register_node(
+        RegisterNodeRequest(
+            node_id=int(cmd["node_id"]),
+            node_type=str(cmd.get("node_type", "SM5R")),
+            mac=int(cmd["mac"]) if cmd.get("mac") is not None else None,
+        )
+    )
 
 
-def _build_configure_meter(cmd: dict) -> ConfigureMeterCommand:
-    behavior_str = (cmd.get("command") or "none").lower().strip()
-    behavior = _BEHAVIOR_FROM_STR.get(behavior_str, MeterBehaviorCommand.NONE)
-    return ConfigureMeterCommand(
-        command_type=CommandTypeEnum.CONFIGURE_METER,
-        correlation_id=_correlation_id(cmd),
-        params=ConfigureMeterParams(
-            meter_id=str(cmd["node_id"]),
-            behavior=behavior,
-            configuration=MeterConfiguration(
-                power_limit_watts=float(cmd.get("power_limit", 65535)),
-                current_limit_amps=float(cmd.get("current_limit", 65535)),
-                startup_delay_seconds=int(cmd.get("startup_delay", 0)),
-                throttle=ThrottleConfig(
-                    on_seconds=int(cmd.get("throttle_on_time", 5)),
-                    off_seconds=int(cmd.get("throttle_off_time", 10)),
-                    count_limit=int(cmd.get("throttle_count_limit", 5)),
-                ),
+async def _handle_configure(client, cmd: dict) -> None:
+    command = behavior_to_command(cmd.get("command"))
+    if command is None:
+        logger.warning(
+            "metering dispatch: no spec command for behavior=%r on meter %s; configure dropped",
+            cmd.get("command"),
+            cmd.get("node_id"),
+        )
+        return
+    await client.configure_meter(
+        ConfigureElectricalMeterCompatRequest(
+            node_id=int(cmd["node_id"]),
+            command=command,
+            configuration=ElectricalMeterConfiguration(
+                power_limit=float(cmd.get("power_limit", 65535)),
+                current_limit=float(cmd.get("current_limit", 65535)),
+                startup_delay=int(cmd.get("startup_delay", 0)),
+                throttle_on_time=int(cmd.get("throttle_on_time", 5)),
+                throttle_off_time=int(cmd.get("throttle_off_time", 10)),
+                throttle_count_limit=int(cmd.get("throttle_count_limit", 5)),
             ),
+        )
+    )
+
+
+async def _handle_set_balance(client, cmd: dict) -> None:
+    await client.set_balance(
+        int(cmd["node_id"]),
+        SetBalanceAndFlagsRequest(
+            balance=to_spec_decimal(cmd.get("balance", 0)),
+            low_balance_flag=bool(cmd.get("low_balance_flag", False)),
         ),
     )
 
 
-def _build_set_balance(cmd: dict) -> SetBalanceCommand:
-    # Balance is `float | str`; pass as string to preserve precision.
-    return SetBalanceCommand(
-        command_type=CommandTypeEnum.SET_BALANCE,
-        correlation_id=_correlation_id(cmd),
-        params=SetBalanceParams(
-            balance=str(cmd.get("balance", 0)),
-            meter_id=str(cmd["node_id"]),
-            low_balance=bool(cmd.get("low_balance_flag", False)),
-        ),
-    )
-
-
-def _build_register_meter(cmd: dict) -> RegisterMeterCommand:
-    vendor_options = RegisterMeterCommandVendorOptions()
-    if cmd.get("mac") is not None:
-        vendor_options["mac"] = int(cmd["mac"])
-    return RegisterMeterCommand(
-        command_type=CommandTypeEnum.REGISTER_METER,
-        correlation_id=_correlation_id(cmd),
-        vendor_options=vendor_options if vendor_options else None,
-        params=RegisterMeterParams(
-            meter_id=str(cmd["node_id"]),
-            meter_type=str(cmd.get("node_type", "SM5R")),
-        ),
-    )
-
-
-def _build_unregister_meter(cmd: dict) -> UnregisterMeterCommand:
-    return UnregisterMeterCommand(
-        command_type=CommandTypeEnum.UNREGISTER_METER,
-        correlation_id=_correlation_id(cmd),
-        params=UnregisterMeterParams(meter_id=str(cmd["node_id"])),
-    )
-
-
-def _build_disable_all(cmd: dict) -> ConfigureMeterCommand:
-    """Fan-out broadcast as per-node configure_meter is handled at the
-    queue level by enqueuing individual commands. This handler isn't
-    used directly; `enqueue_command({"op": "disable_all", ...})` is
-    expanded by `dispatch.enqueue_disable_all` into per-node enqueues.
-    """
-    raise RuntimeError("disable_all should be expanded before reaching the handler")
+async def _handle_unregister(client, cmd: dict) -> None:
+    await client.unregister_node(int(cmd["node_id"]))
 
 
 _HANDLERS = {
-    "configure_meter": _build_configure_meter,
-    "set_balance": _build_set_balance,
-    "register_meter": _build_register_meter,
-    "unregister_meter": _build_unregister_meter,
+    "configure_meter": _handle_configure,
+    "set_balance": _handle_set_balance,
+    "register_meter": _handle_register,
+    "unregister_meter": _handle_unregister,
 }
 
 

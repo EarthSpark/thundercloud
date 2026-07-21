@@ -118,6 +118,10 @@ class BaseMeterForm(BaseForm):
         _("Meter driver"),
         choices=[],
         default="",
+        # A missing or empty selection means "no driver"; eligibility is
+        # enforced by validate_provider_id, not WTForms' choice check (which
+        # would reject a form submitted without this field at all).
+        validate_choice=False,
     )
     customer_name = StringField(_("Name"), default="new customer")
     customer_code = StringField(_("Code"))
@@ -230,11 +234,14 @@ class BaseMeterForm(BaseForm):
 
     def validate_provider_id(self, field):
         """Ensure the selected meter driver is one of the currently eligible choices."""
-        available_values = [value for value, _label in self.provider_id.choices if value]
-        if available_values and not field.data:
+        # A missing field (a form/client that doesn't submit it) or an empty
+        # selection both mean "no driver".
+        selected = field.data or ""
+        available = [value for value, _label in self.provider_id.choices if value]
+        if available and not selected:
             raise ValidationError(_("Please select a meter driver."))
-        valid_values = {value for value, _label in self.provider_id.choices}
-        if field.data not in valid_values:
+        valid = {value for value, _label in self.provider_id.choices}
+        if selected not in valid:
             raise ValidationError(_("Please select a valid meter driver."))
 
     def save(self, view):

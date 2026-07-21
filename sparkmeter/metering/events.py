@@ -1,22 +1,22 @@
 """
 Event handlers consuming the metering provider's SSE stream.
 
-The generated `stream_events_v1_events_get` yields untyped dicts.
-`dispatch_dict_event` routes each into a typed dataclass via the
-discriminator metadata, then invokes every registered handler.
+`http_sse.stream_json_events` yields each SSE frame's `data:` payload as a
+JSON dict. Per the Meter Driver Specification every frame is an envelope
+`{"type": <event name>, "data": <payload>}`. `dispatch_dict_event` parses
+the payload into the matching generated model
+(`meter_driver_spec.http.models`) and invokes every registered handler.
 
-Three handlers wired up by `lifespan.py`:
+Two handlers wired up by `lifespan.py`:
 
-- `build_reading_consumer(app)`: buffers `MeterReadingEvent` /
-  `MeterReadingPhasedEvent` and flushes them to the reading table in
-  batches.
+- `build_reading_consumer(app)`: buffers `ElectricalMeterReading` /
+  `ElectricalMeterReadingPhased` and flushes them to the reading table in
+  batches of 50 or on a flush boundary (a `heartbeat_read_hops` frame or a
+  `heartbeat_statistics` frame).
 
-- `build_log_consumer(app)`: forwards `LogEvent` into the Python
-  logging system.
-
-- `build_watchdog(app)`: observes `HeartbeatSummaryEvent`, logs
-  persistent network dropouts. The webapp no longer owns the
-  underlying provider process so the watchdog only logs.
+- `build_watchdog(app)`: observes `HeartbeatStatistics`, logs persistent
+  network dropouts, and can request a full provider reconnect when the
+  active roster unexpectedly drops to zero.
 
 Each handler is `async def handler(event: Any) -> None`.
 """
@@ -25,15 +25,13 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
-from sparkmeter.metering._generated.core.cattrs_converter import structure_from_dict
-from sparkmeter.metering._generated.models.heartbeat_summary_event import HeartbeatSummaryEvent
-from sparkmeter.metering._generated.models.log_event import LogEvent
-from sparkmeter.metering._generated.models.log_level import LogLevel
-from sparkmeter.metering._generated.models.meter_reading_event import MeterReadingEvent
-from sparkmeter.metering._generated.models.meter_reading_phased_event import MeterReadingPhasedEvent
-from sparkmeter.metering._generated.models.stream_events_v_1_events_get_200_response import (
-    StreamEventsV1EventsGet200ResponseDiscriminator,
+from meter_driver_spec.http.models import (
+    ElectricalMeterReading,
+    ElectricalMeterReadingPhased,
+    HeartbeatStatistics,
 )
+
+from sparkmeter.meter.meterstate import MeterState
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -47,59 +45,171 @@ logger = logging.getLogger(__name__)
 # Same batch-size rationale as before: 50 amortizes per-event DB
 # transaction overhead at fleet scale.
 READING_BATCH_SIZE = 50
+READING_FLUSH_INTERVAL_SECONDS = 2.0
 
-_EVENT_DISCRIMINATOR = StreamEventsV1EventsGet200ResponseDiscriminator()
+# Envelope "type" values that carry a meter reading, mapped to the model
+# their "data" payload structures into.
+_READING_EVENT_TYPES: dict[str, type] = {
+    "electrical_meter_reading": ElectricalMeterReading,
+    "electrical_meter_reading_phased": ElectricalMeterReadingPhased,
+}
+
+# Envelope "type" values that are observed but not acted on beyond logging.
+_SIDE_CHANNEL_TYPES = {
+    "gateway_status",
+    "node_registered",
+    "node_already_registered",
+    "node_unregistered",
+    "node_to_unregister_unknown",
+    "node_firmware_version_changed",
+    "invalid_electrical_meter_configuration",
+    "electrical_meter_configuration_accepted",
+    "electrical_meter_configuration_applied",
+    "electrical_meter_balance_and_flags_accepted",
+    # "sparknet_configuration_applied" is what SparkNet-Http-New's live HTTP
+    # SSE stream actually emits for this event (its own server-side naming,
+    # not something Thundercloud controls) -- kept for as long as that
+    # specific driver is in use. "driver_configuration_applied" is the
+    # vendor-neutral name from the meter-driver-spec.
+    "sparknet_configuration_applied",
+    "driver_configuration_applied",
+}
+
+# Side-channel types worth an INFO line rather than DEBUG.
+_SIDE_CHANNEL_INFO_TYPES = {
+    "electrical_meter_configuration_accepted",
+    "electrical_meter_configuration_applied",
+    "invalid_electrical_meter_configuration",
+}
+
+# A `heartbeat_read_hops` frame carries no reading but marks a flush boundary.
+_READING_FLUSH_MARKER = object()
 
 
 def build_handlers(app: "FastAPI") -> list["EventHandler"]:
     """Construct the handlers wired up by the SSE consumer task."""
     return [
         build_reading_consumer(app),
-        build_log_consumer(app),
         build_watchdog(app),
     ]
 
 
 async def dispatch_dict_event(raw: dict[str, Any], handlers: list["EventHandler"]) -> None:
-    """Structure a raw SSE dict into the right typed event and dispatch it."""
-    event_type = raw.get("event_type")
+    """Parse a raw SSE envelope into the matching event and dispatch it."""
+    event_type = raw.get("type")
     if not event_type:
-        logger.warning("metering SSE event missing event_type: %r", raw)
+        logger.warning("metering SSE event missing type: %r", raw)
         return
-    target_class = _EVENT_DISCRIMINATOR.get_mapping().get(event_type)
-    if target_class is None:
-        logger.warning("metering SSE event unknown event_type=%r", event_type)
+    data = raw.get("data") or {}
+
+    reading_cls = _READING_EVENT_TYPES.get(event_type)
+    if reading_cls is not None:
+        try:
+            event = reading_cls.model_validate(data)
+        except Exception:  # noqa: BLE001
+            logger.exception("metering SSE reading failed to parse (type=%s)", event_type)
+            return
+        await _dispatch(event, handlers, event_type)
         return
-    try:
-        event = structure_from_dict(raw, target_class)
-    except Exception:  # noqa: BLE001
-        logger.exception("metering SSE event failed to structure (event_type=%s)", event_type)
+
+    if event_type == "heartbeat_statistics":
+        try:
+            event = HeartbeatStatistics.model_validate(data)
+        except Exception:  # noqa: BLE001
+            logger.exception("metering SSE heartbeat failed to parse (type=%s)", event_type)
+            return
+        await _dispatch(event, handlers, event_type)
         return
+
+    if event_type == "heartbeat_read_hops":
+        await _dispatch(_READING_FLUSH_MARKER, handlers, event_type)
+        return
+
+    if event_type in _SIDE_CHANNEL_TYPES:
+        if event_type in _SIDE_CHANNEL_INFO_TYPES:
+            logger.info("metering provider side-channel event observed: %s", event_type)
+        else:
+            logger.debug("metering provider side-channel event observed: %s", event_type)
+        return
+
+    logger.warning("metering SSE event unknown type=%r", event_type)
+
+
+async def _dispatch(event: Any, handlers: list["EventHandler"], event_type: str) -> None:
+    """Invoke every handler with the event, isolating handler failures."""
     for handler in handlers:
         try:
             await handler(event)
         except Exception:  # noqa: BLE001
-            logger.exception("metering event handler failed (event_type=%s)", event_type)
+            logger.exception("metering event handler failed (type=%s)", event_type)
 
 
 def build_reading_consumer(app: "FastAPI") -> "EventHandler":
-    """Buffer reading events and flush them to the DB in batches."""
-    pending: list[MeterReadingEvent | MeterReadingPhasedEvent] = []
+    """Buffer reading events and flush them at batch size or heartbeat boundaries."""
+    pending: list[ElectricalMeterReading | ElectricalMeterReadingPhased] = []
+    flush_lock = asyncio.Lock()
+    flask_app = getattr(app.state, "flask_app", None) if app is not None else None
+    flush_task: asyncio.Task | None = None
 
-    async def consumer(event: Any) -> None:
-        if not isinstance(event, (MeterReadingEvent, MeterReadingPhasedEvent)):
-            return
-        pending.append(event)
-        if len(pending) >= READING_BATCH_SIZE:
+    async def flush_pending() -> None:
+        nonlocal flush_task
+        async with flush_lock:
+            if not pending:
+                flush_task = None
+                return
             batch = list(pending)
             pending.clear()
-            await _flush_readings(batch)
+            flush_task = None
+        await _flush_readings(batch, flask_app)
+
+    async def cancel_flush_task() -> None:
+        nonlocal flush_task
+        task = flush_task
+        if task is None or task.done():
+            return
+        flush_task = None
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    async def delayed_flush() -> None:
+        try:
+            await asyncio.sleep(READING_FLUSH_INTERVAL_SECONDS)
+            await flush_pending()
+        except asyncio.CancelledError:
+            raise
+
+    async def consumer(event: Any) -> None:
+        nonlocal flush_task
+        if event is _READING_FLUSH_MARKER or isinstance(event, HeartbeatStatistics):
+            await cancel_flush_task()
+            await flush_pending()
+            return
+        if not isinstance(event, (ElectricalMeterReading, ElectricalMeterReadingPhased)):
+            return
+        should_flush = False
+        should_start_timer = False
+        async with flush_lock:
+            pending.append(event)
+            should_flush = len(pending) >= READING_BATCH_SIZE
+            should_start_timer = not should_flush and (flush_task is None or flush_task.done())
+            if should_start_timer:
+                flush_task = asyncio.create_task(
+                    delayed_flush(),
+                    name="metering-reading-flush",
+                )
+        if should_flush:
+            await cancel_flush_task()
+            await flush_pending()
 
     return consumer
 
 
 async def _flush_readings(
-    batch: list[MeterReadingEvent | MeterReadingPhasedEvent],
+    batch: list[ElectricalMeterReading | ElectricalMeterReadingPhased],
+    flask_app,
 ) -> None:
     """Persist a batch of reading events to the DB.
 
@@ -107,120 +217,90 @@ async def _flush_readings(
     so the event loop stays responsive.
     """
     try:
-        await asyncio.to_thread(_write_readings_sync, batch)
+        await asyncio.to_thread(_write_readings_sync, batch, flask_app)
     except Exception:  # noqa: BLE001
         logger.exception("metering reading flush failed (batch size=%d)", len(batch))
 
 
 def _write_readings_sync(
-    batch: list[MeterReadingEvent | MeterReadingPhasedEvent],
+    batch: list[ElectricalMeterReading | ElectricalMeterReadingPhased],
+    flask_app,
 ) -> None:
-    from flask import current_app
-
     from sparkmeter.controller import add_reading
     from sparkmeter.exceptions import DatabaseLockTimeoutException, DuplicateReadingException
     from sparkmeter.misc.datetimeutils import datetime_from_timestamp_string
 
-    with current_app.app_context():
+    if flask_app is None:
+        raise RuntimeError(
+            "metering reading flush requires a Flask app context; app.state.flask_app is not set"
+        )
+
+    with flask_app.app_context():
         for event in batch:
             try:
                 if not (event.period_start and event.period_end):
                     logger.warning(
-                        "discarding reading from meter %s: missing heartbeat timestamps",
-                        event.meter_id,
+                        "discarding reading from meter %s: incomplete heartbeat window "
+                        "(period_start=%r, period_end=%r)",
+                        event.node_id,
+                        event.period_start,
+                        event.period_end,
                     )
                     continue
                 heartbeat_start = datetime_from_timestamp_string(event.period_start)
                 heartbeat_end = datetime_from_timestamp_string(event.period_end)
 
-                if isinstance(event, MeterReadingPhasedEvent):
-                    agg = event.aggregate
-                    reading_data = dict(
-                        meter=int(event.meter_id),
-                        state=event.state.value if event.state else "unknown",
-                        uptime=int(event.uptime_seconds),
-                        heartbeat_start=heartbeat_start,
-                        heartbeat_end=heartbeat_end,
-                        frequency=int(agg.frequency_hz),
-                        voltage_min=int(agg.voltage_min),
-                        voltage_max=int(agg.voltage_max),
-                        voltage_avg=int(agg.voltage_avg),
-                        current_min=int(agg.current_min_amps),
-                        current_max=int(agg.current_max_amps),
-                        current_avg=int(agg.current_avg_amps),
-                        energy=int(event.energy_wh),
-                        true_power_inst=int(agg.true_power_inst_watts),
-                        true_power_avg=int(agg.true_power_avg_watts),
-                        apparent_power_avg=int(agg.apparent_power_avg_va),
-                        power_factor_avg=int(agg.power_factor_avg),
-                        user_power_limit=int(event.user_power_limit_watts),
-                    )
-                else:
-                    reading_data = dict(
-                        meter=int(event.meter_id),
-                        state=event.state.value if event.state else "unknown",
-                        uptime=int(event.uptime_seconds),
-                        heartbeat_start=heartbeat_start,
-                        heartbeat_end=heartbeat_end,
-                        frequency=int(event.frequency_hz),
-                        voltage_min=int(event.voltage_min),
-                        voltage_max=int(event.voltage_max),
-                        voltage_avg=int(event.voltage_avg),
-                        current_min=int(event.current_min_amps),
-                        current_max=int(event.current_max_amps),
-                        current_avg=int(event.current_avg_amps),
-                        energy=int(event.energy_wh),
-                        true_power_inst=int(event.true_power_inst_watts),
-                        true_power_avg=int(event.true_power_avg_watts),
-                        apparent_power_avg=int(event.apparent_power_avg_va),
-                        power_factor_avg=int(event.power_factor_avg),
-                        user_power_limit=int(event.user_power_limit_watts),
-                    )
+                # The phased variant carries the same aggregate figures at the
+                # top level as the non-phased one (plus per-phase fields the
+                # reading table does not store), so both write identically.
+                # The spec's ElectricalMeterState ids are sparkmeter's MeterState
+                # ids (both -1..13); add_reading takes the state *name*.
+                reading_data = dict(
+                    meter=int(event.node_id),
+                    state=MeterState.get_state_name_from_id(int(event.state.value)),
+                    uptime=int(event.uptime_secs),
+                    heartbeat_start=heartbeat_start,
+                    heartbeat_end=heartbeat_end,
+                    frequency=float(event.frequency),
+                    voltage_min=float(event.voltage_min),
+                    voltage_max=float(event.voltage_max),
+                    voltage_avg=float(event.voltage_avg),
+                    current_min=float(event.current_min),
+                    current_max=float(event.current_max),
+                    current_avg=float(event.current_avg),
+                    energy=float(event.energy),
+                    true_power_inst=float(event.true_power_inst),
+                    true_power_avg=float(event.true_power_avg),
+                    apparent_power_avg=float(event.apparent_power_avg),
+                    power_factor_avg=float(event.power_factor_avg),
+                    user_power_limit=float(event.user_power_limit),
+                )
                 try:
-                    add_reading(reading_data)
+                    add_reading(reading_data, update_meter_state=False)
                 except DatabaseLockTimeoutException:
                     logger.error(
                         "discarding reading from meter %s: db lock timeout",
-                        event.meter_id,
+                        event.node_id,
                     )
-                    current_app.sentry.captureException(
-                        message=f"Meter {event.meter_id} reading lock timeout",
+                    flask_app.sentry.captureException(
+                        message=f"Meter {event.node_id} reading lock timeout",
                         tags={"action": "reading"},
                     )
                 except DuplicateReadingException:
-                    logger.warning("discarding duplicate reading from meter %s", event.meter_id)
+                    logger.warning("discarding duplicate reading from meter %s", event.node_id)
             except Exception:  # noqa: BLE001
                 logger.exception(
-                    "failed to write reading for meter_id=%s",
-                    getattr(event, "meter_id", "?"),
+                    "failed to write reading for node_id=%s",
+                    getattr(event, "node_id", "?"),
                 )
-
-
-def build_log_consumer(app: "FastAPI") -> "EventHandler":
-    """Forwards `LogEvent` into the Python logging system."""
-
-    level_map = {
-        LogLevel.TRACE: logging.DEBUG,
-        LogLevel.DEBUG: logging.DEBUG,
-        LogLevel.INFO: logging.INFO,
-        LogLevel.WARN: logging.WARNING,
-        LogLevel.ERROR: logging.ERROR,
-    }
-    provider_logger = logging.getLogger("sparkmeter.metering.provider")
-
-    async def consumer(event: Any) -> None:
-        if not isinstance(event, LogEvent):
-            return
-        provider_logger.log(level_map.get(event.level, logging.INFO), event.message)
-
-    return consumer
 
 
 def build_watchdog(app: "FastAPI") -> "EventHandler":
     """Observe heartbeat summaries; log persistent dropouts.
 
-    The webapp no longer owns the provider process; the watchdog only
-    logs. Tunables:
+    The webapp no longer owns the provider process, but it can still
+    request a reconnect when the provider unexpectedly reports an empty
+    roster after previously seeing active meters. Tunables:
         METERING_WATCHDOG_MIN_NODES   minimum registered-node count
                                        before the dropout check is
                                        meaningful (default 10)
@@ -233,18 +313,44 @@ def build_watchdog(app: "FastAPI") -> "EventHandler":
     min_nodes_for_check = int(os.environ.get("METERING_WATCHDOG_MIN_NODES", "10"))
     max_consecutive_dropouts = int(os.environ.get("METERING_WATCHDOG_MAX_DROPOUTS", "3"))
 
-    state = {"consecutive_dropouts": 0, "warned": False}
+    state = {
+        "consecutive_dropouts": 0,
+        "warned": False,
+        "saw_registered_meters": False,
+        "restart_requested": False,
+    }
 
     async def watchdog(event: Any) -> None:
-        if not isinstance(event, HeartbeatSummaryEvent):
+        if not isinstance(event, HeartbeatStatistics):
             return
 
-        if event.total_registered_meters < min_nodes_for_check:
+        registered = event.total_registered_nodes
+        attempted = event.nodes_reached_out_to_in_current_heartbeat
+        responded = event.nodes_heard_from_in_current_heartbeat
+
+        logger.info(
+            "metering heartbeat summary: registered=%d attempted=%d responded=%d",
+            registered,
+            attempted,
+            responded,
+        )
+
+        if registered > 0:
+            state["saw_registered_meters"] = True
+            state["restart_requested"] = False
+        elif state["saw_registered_meters"] and not state["restart_requested"]:
+            logger.warning("metering watchdog: provider roster dropped to zero; scheduling reconcile")
+            gateway_state = getattr(getattr(app, "state", None), "metering_gateway_state", None)
+            if gateway_state is not None:
+                gateway_state["needs_full_restart"] = True
+            state["restart_requested"] = True
+
+        if registered < min_nodes_for_check:
             state["consecutive_dropouts"] = 0
             state["warned"] = False
             return
 
-        all_dropped = event.meters_attempted > 0 and event.meters_responded == 0
+        all_dropped = attempted > 0 and responded == 0
         if all_dropped:
             state["consecutive_dropouts"] += 1
         else:

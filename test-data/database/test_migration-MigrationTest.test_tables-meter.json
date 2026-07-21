@@ -6,6 +6,7 @@
         "id": "04131900-b9e4-11e4-9c5c-00617b7c6dac",
         "meter_type": "customer",
         "model_id": "ad4e2b68-2eea-b3b7-c439-f8456b3f334f",
+        "provider_id": null,
         "serial": "SM15R-01-0000008C"
     },
     {
@@ -15,6 +16,7 @@
         "id": "162d0000-b3c3-11e4-aa48-00617b7c716d",
         "meter_type": "customer",
         "model_id": "ad4e2b68-2eea-b3b7-c439-f8456b3f334f",
+        "provider_id": null,
         "serial": "SM15R-01-0000003D"
     },
     {
@@ -24,6 +26,7 @@
         "id": "162d0000-b3c3-11e4-aa49-00617b7c716d",
         "meter_type": "customer",
         "model_id": "ad4e2b68-2eea-b3b7-c439-f8456b3f334f",
+        "provider_id": null,
         "serial": "SM15R-01-0000005B"
     }
 ]

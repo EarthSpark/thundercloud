@@ -34,6 +34,12 @@ from sparkmeter.cli import register_cli_commands  # noqa: E402
 from sparkmeter.metering.lifespan import metering_lifespan  # noqa: E402
 from sparkmeter.periodic import periodic_lifespan  # noqa: E402
 
+# When this file is launched via `python -m sparkmeter.asgi`, Python executes it
+# as `__main__`. Register the canonical module name as an alias to the running
+# module so in-process helpers don't accidentally import a second copy.
+if __name__ == "__main__":
+    sys.modules.setdefault("sparkmeter.asgi", sys.modules[__name__])
+
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
@@ -42,6 +48,7 @@ async def app_lifespan(app: FastAPI):
     metering_lifespan is wrapped on the inside so its teardown (drain
     SSE / dispatch) runs before periodic jobs are cancelled.
     """
+    app.state.main_loop = asyncio.get_running_loop()
     async with periodic_lifespan(app):
         async with metering_lifespan(app):
             yield
@@ -81,6 +88,7 @@ def create_public_app() -> FastAPI:
     # which is bound to a per-request thread-local that lifespan threads
     # never enter.
     api.state.flask_app = flask_app
+    globals()["public_app"] = api
     # Mount Flask under "/" — FastAPI's own routes take precedence; everything
     # else falls through to the WSGI app.
     api.mount("/", WSGIMiddleware(flask_app))
@@ -101,6 +109,7 @@ def create_internal_app(public_app: FastAPI) -> FastAPI:
         request.app.state.metering = getattr(public_app.state, "metering", None)
         return await call_next(request)
 
+    globals()["internal_app"] = api
     return api
 
 
@@ -132,6 +141,8 @@ async def _serve_both() -> None:
 
     public = create_public_app()
     internal = create_internal_app(public)
+    globals()["public_app"] = public
+    globals()["internal_app"] = internal
 
     public_cfg = Config()
     public_cfg.bind = [os.environ.get("PUBLIC_BIND", "0.0.0.0:5000")]

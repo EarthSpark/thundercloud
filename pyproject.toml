@@ -37,8 +37,8 @@ dependencies = [
     "requests",
     "httpx",
 
-    # Used by the generated metering-provider client at
-    # sparkmeter/metering/_generated/ (pyopenapi-gen output).
+    # Structures raw metering-provider SSE event dicts into the local
+    # dataclasses in sparkmeter/metering/legacy_event_models.py.
     "cattrs",
 
     # AWS S3 — used by the historical-data feature in sparkmeter/history/.
@@ -54,7 +54,12 @@ dependencies = [
     "fastapi",
     "hypercorn",
     "a2wsgi",
+    # gRPC contract for the optional meter-driver profile. The generated
+    # stubs come from the meter-driver-spec package (pinned to a spec tag),
+    # not from local codegen; protobuf/grpcio are their runtime.
+    "meter-driver-spec @ https://github.com/EarthSpark/meter-driver-spec/releases/download/v1.4.0/meter_driver_spec-1.4.0-py3-none-any.whl",
     "protobuf",
+    "grpcio",
     "click",
 
     # dates and times
@@ -72,6 +77,9 @@ dependencies = [
     "babel",
     "speaklater",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.version]
 source = "vcs"
@@ -104,7 +112,6 @@ dev = [
     "ruff>=0.15.21",
     "pydocstyle",
     "pre-commit",
-    "grpcio-tools",
     "pyopenapi-gen",
     "pytest-diagnose @ git+https://github.com/tescalada/pytest-diagnose.git",
     "pytest-randomly>=4.1.0",
@@ -112,7 +119,7 @@ dev = [
 
 [tool.ruff]
 line-length = 110
-extend-exclude = ["sparkmeter/metering/_generated", "test-data"]
+extend-exclude = ["test-data"]
 
 [tool.ruff.lint]
 select = ["F", "I"]
