@@ -1,6 +1,6 @@
 // -*- coding: utf-8 -*-
 // Copyright © 2013-2026 EarthSpark International Corp.
-// All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
 //
 /* global afterEach,beforeEach,describe,expect,it,jest */
 'use strict';
