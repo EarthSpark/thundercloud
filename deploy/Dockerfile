@@ -169,6 +169,12 @@ USER spark
 
 COPY --chown=spark:spark setup.cfg setup.cfg
 
+# The top level conftest.py, which registers the suite's own command line
+# options. It has to be at the top of the tree, next to setup.cfg: pytest only
+# calls pytest_addoption for initial conftests, and with no path argument the
+# rootdir is the only directory searched for one.
+COPY --chown=spark:spark conftest.py conftest.py
+
 # Test fixtures: the committed snapshot baseline that the snapshot tests
 # (verify()) compare generated output against. Without it the tests find
 # the expected files absent and write them fresh every run instead of
