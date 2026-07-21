@@ -101,6 +101,20 @@ For Docker deployments, run the same commands inside the webapp container with `
 docker compose exec ground uv run flask user create
 ```
 
+## Meter drivers
+
+Thundercloud is not tied to any one meter driver. It talks to a driver over the HTTP+SSE
+contract (and optionally gRPC) from the Thunder-Cloud 2.0 Open Source Meter Driver
+Specification, so any compliant driver works — SparkNet-Http or a third party's.
+
+Run the driver as its own service, then register it from the running ground app under
+**Global Settings > Meter Drivers > Register driver** by entering the base URL of its HTTP
+service. Registered drivers become selectable per meter on the meter form.
+
+The groundbolt-dev workspace metarepo runs `sparknet-http` as part of its stack for
+convenience during development; that is a choice of that stack, not a dependency of this
+application.
+
 ## Development
 
 > [!IMPORTANT]
