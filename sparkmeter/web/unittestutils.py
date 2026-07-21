@@ -7,8 +7,11 @@ import codecs
 import difflib
 import os
 import re
+import stat
 import sys
+import tempfile
 import urllib.parse
+import warnings
 from builtins import str
 
 import html5lib
@@ -23,6 +26,46 @@ from sparkmeter.misc.jsonutils import json_dumps, json_loads
 from sparkmeter.user.userutils import set_current_user
 
 rootdir = os.path.join(os.path.dirname(__file__), "..", "..")
+
+# When true, ContentTester.verify() rewrites a snapshot whose content differs
+# instead of failing the test, and warns naming the rewritten snapshot. Set from
+# pytest_configure() in the top level conftest.py when --regenerate-snapshots is
+# passed; each xdist worker is its own process and sets it independently.
+regenerate_snapshots = False
+
+
+class SnapshotRegenerated(UserWarning):
+    """Warning issued for each .page snapshot rewritten by --regenerate-snapshots.
+
+    A dedicated category so the warnings are greppable in a run's output and so
+    tests can select them by category rather than by message text.
+    """
+
+
+def rewrite_snapshot(path, content):
+    """Replace the snapshot at ``path`` with ``content``, atomically.
+
+    A regeneration run rewrites up to one file per content test and the
+    results are copied out of the container afterwards, so a run interrupted
+    part way through must not leave a half written .page file behind to be
+    committed as the new baseline. The content is written to a temporary file
+    in the same directory (same filesystem, so the rename is atomic), flushed
+    and closed, then moved onto the snapshot path with os.replace().
+    """
+    directory = os.path.dirname(path) or "."
+    fd, tmppath = tempfile.mkstemp(dir=directory, prefix=os.path.basename(path) + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fp:
+            fp.write(content)
+        # mkstemp creates the temporary 0600; carry over the permissions of the
+        # file being replaced so a regenerated snapshot is readable as before.
+        if os.path.exists(path):
+            os.chmod(tmppath, stat.S_IMODE(os.stat(path).st_mode))
+        os.replace(tmppath, path)
+    except BaseException:  # pragma: nocoverage
+        if os.path.exists(tmppath):
+            os.unlink(tmppath)
+        raise
 
 
 def validate_html(data, ignores=None):
@@ -139,6 +182,17 @@ class ContentTester(object):
 
         expected_content = open(expected_filename, encoding="utf-8").read()
         expected_content = expected_content.lstrip()
+        if expected_content == content:
+            return
+
+        if regenerate_snapshots:
+            rewrite_snapshot(expected_filename, content)
+            warnings.warn(
+                "Regenerated snapshot: {}".format(expected_filename),
+                SnapshotRegenerated,
+            )
+            return
+
         self._diff_lines(
             expected_content.split("\n"),
             content.split("\n"),
