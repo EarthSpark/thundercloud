@@ -31,6 +31,7 @@
         "model_id": "00000001-0000-0000-0000-000000000001",
         "model_name": "SM25R",
         "plan_value": 0.0,
+        "provider_id": null,
         "serial": "SM15R-01-00000001",
         "sparkmac_flooding_subnets": 0,
         "sparkmac_forwarding": "off",

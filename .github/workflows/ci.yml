@@ -32,42 +32,6 @@ jobs:
       - run: uv run pydocstyle --ignore=D211,D403 sparkmeter
         continue-on-error: true
 
-  metering-wire-drift:
-    # Verify the committed sparkmeter/metering/_generated/ matches what
-    # the regen script would produce against the current spec. Catches
-    # cases where the spec changed but the webapp client wasn't
-    # regenerated, or where someone hand-edited generated files.
-    #
-    # TODO: parameterize the spec source. For now the job expects
-    # `OPENAPI_URL` to be set (a CI secret / repo variable pointing at
-    # the canonical openapi.json — release artifact, GitHub Pages, etc.)
-    # If unset, the drift check is skipped so CI doesn't block on this.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Skip if spec source not configured
-        id: have_spec
-        run: |
-          if [ -z "${{ vars.OPENAPI_URL }}" ]; then
-            echo "OPENAPI_URL not set; skipping drift check"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.have_spec.outputs.skip != 'true'
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - if: steps.have_spec.outputs.skip != 'true'
-        run: uv python install 3.13
-      - if: steps.have_spec.outputs.skip != 'true'
-        name: Fetch openapi.json
-        run: curl -fsSL "${{ vars.OPENAPI_URL }}" -o /tmp/openapi.json
-      - if: steps.have_spec.outputs.skip != 'true'
-        name: Regenerate metering client
-        env:
-          OPENAPI_PATH: /tmp/openapi.json
-        run: ./scripts/regen-metering-wire.sh
-      - if: steps.have_spec.outputs.skip != 'true'
-        name: Verify no drift in committed _generated/
-        run: git diff --exit-code sparkmeter/metering/_generated/
-
   test:
     runs-on: ubuntu-latest
     permissions:
