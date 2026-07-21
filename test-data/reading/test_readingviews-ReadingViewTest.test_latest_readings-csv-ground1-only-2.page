@@ -11,5 +11,5 @@
 < Set-Cookie: %% COOKIE %%
 < Vary: Cookie
 <
-serial,customer_name,customer_code,state,frequency,voltage_avg,current_avg,true_power_inst,energy,uptime,user_power_limit,age,prr,address
+serial,customer_name,customer_code,state,frequency,voltage_avg,current_avg,true_power_avg,energy,uptime,user_power_limit,age,prr,address
 

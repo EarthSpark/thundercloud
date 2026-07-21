@@ -442,6 +442,13 @@ class MeterCreatedEvent(MeterEventSpec):
     def process(self, event):
         MeterEventSpec.process(self, event)
         meter = event.object
+        from sparkmeter.metering.api import register_meter
+
+        register_meter(
+            node_id=int(meter.code),
+            node_type=str(meter.product_code),
+            mac=int(meter.code),
+        )
         meter.send_set_config_unconditionally()
 
 

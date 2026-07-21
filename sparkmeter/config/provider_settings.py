@@ -144,11 +144,24 @@ def _fetch_requirements_payload(service_url, timeout=10.0):
 
 def _iter_candidate_requirement_schemas(spec):
     """Yield object schemas that may describe driver requirement fields."""
+
+    def _walk(schema, depth=0):
+        if depth > 6:
+            return
+        resolved = _resolve_schema(spec, schema)
+        if not isinstance(resolved, dict):
+            return
+        properties = resolved.get("properties") or {}
+        if properties:
+            yield resolved
+            # Requirement fields are frequently nested (e.g. under
+            # vendor_options), so descend into object-typed properties too.
+            for prop_schema in properties.values():
+                yield from _walk(prop_schema, depth + 1)
+
     components = (spec.get("components") or {}).get("schemas") or {}
     for schema in components.values():
-        resolved = _resolve_schema(spec, schema)
-        if isinstance(resolved, dict) and (resolved.get("properties") or {}):
-            yield resolved
+        yield from _walk(schema)
 
     for path_item in (spec.get("paths") or {}).values():
         if not isinstance(path_item, dict):
@@ -161,9 +174,7 @@ def _iter_candidate_requirement_schemas(spec):
                 .get("application/json", {})
                 .get("schema", {})
             )
-            resolved = _resolve_schema(spec, schema)
-            if isinstance(resolved, dict) and (resolved.get("properties") or {}):
-                yield resolved
+            yield from _walk(schema)
 
 
 def _best_matching_requirements_schema(spec, required_fields):
@@ -180,6 +191,15 @@ def _best_matching_requirements_schema(spec, required_fields):
     return best_schema if best_score else {}
 
 
+# Type hints for the spec's standard driver init fields, used when the
+# driver's OpenAPI does not describe a required field's schema itself.
+_STANDARD_INIT_FIELD_TYPES = {
+    "aes_key": "string",
+    "channel": "integer",
+    "heartbeat_period_duration": "integer",
+}
+
+
 def _extract_fields_from_requirements(spec, required_fields):
     """Build normalized field specs from a requirements list plus OpenAPI schema hints."""
     schema = _best_matching_requirements_schema(spec, required_fields)
@@ -187,7 +207,9 @@ def _extract_fields_from_requirements(spec, required_fields):
     schema_required = set(schema.get("required") or [])
     fields = []
     for name in required_fields:
-        resolved = _resolve_schema(spec, properties.get(name) or {})
+        resolved = dict(_resolve_schema(spec, properties.get(name) or {}))
+        if not resolved.get("type") and name in _STANDARD_INIT_FIELD_TYPES:
+            resolved["type"] = _STANDARD_INIT_FIELD_TYPES[name]
         fields.append(
             _field_spec(
                 name,
@@ -200,6 +222,11 @@ def _extract_fields_from_requirements(spec, required_fields):
 
 def _extract_driver_requirement_fields(base_url, spec, timeout=10.0):
     """Discover required driver fields from /v1/requirements, else OpenAPI."""
+    vendor_option_fields = _extract_vendor_option_fields(spec)
+    if not vendor_option_fields:
+        # The driver declares no configurable requirements, so there is
+        # nothing to enrich and no reason to probe /v1/requirements.
+        return []
     try:
         payload = _fetch_requirements_payload(base_url, timeout=timeout)
         required_fields = payload.get("required_fields") or []
@@ -210,7 +237,7 @@ def _extract_driver_requirement_fields(base_url, spec, timeout=10.0):
     except (httpx.HTTPError, ValueError, ProviderRegistrationError):
         pass
 
-    return _extract_vendor_option_fields(spec)
+    return vendor_option_fields
 
 
 def _get_parameter(name):

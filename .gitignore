@@ -2,6 +2,9 @@
 .noseids
 .DS_Store
 
+# local meter driver config fixture
+meter_driver_configs/*.json
+
 # per deployment settings
 instance/*
 
