@@ -1,6 +1,6 @@
 // -*- coding: utf-8 -*-
 // Copyright © 2013-2026 EarthSpark International Corp.
-// All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
 //
 // Lets the customer meter form create a tariff without leaving the page: the
 // tariff select carries an extra option that loads /tariff/add-modal into a
