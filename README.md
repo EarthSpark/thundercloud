@@ -1,6 +1,9 @@
 # sparkmeter
 
 <small>Also known as ThunderCloud (when deployed to the cloud) or GroundBolt (when deployed to the base station on the ground)</small>
+
+Note: This software is currently pre-release and is not yet ready for production deployments.
+
 ___
 
 > [!WARNING]
@@ -15,7 +18,7 @@ A web application used by utility companies to manage their micro-grids remotely
 
 ## Contributing
 
-We accept merge requests! Read the instructions in our [contribution guidelines](/CONTRIBUTING.md) for more details.
+We accept pull requests! Read the instructions in our [contribution guidelines](/CONTRIBUTING.md) for more details.
 
 ## Flask CLI Commands
 
