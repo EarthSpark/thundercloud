@@ -5,6 +5,10 @@ on:
     tags: ["**"]
   pull_request:
 
+concurrency:
+  group: ci-build-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   # Defaults to GitHub Container Registry. Override via the repo's
   # Actions variable `REGISTRY` to push to a private registry instead.
