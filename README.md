@@ -2,8 +2,6 @@
 
 <small>Also known as ThunderCloud (when deployed to the cloud) or GroundBolt (when deployed to the base station on the ground)</small>
 
-Note: This software is currently pre-release and is not yet ready for production deployments.
-
 ___
 
 > [!WARNING]
