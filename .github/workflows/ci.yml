@@ -68,8 +68,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Needed to post/update the coverage report comment on the PR.
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,27 +79,24 @@ jobs:
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Run tests and diff-cover
         run: bash scripts/run_coverage.sh
-      # Render coverage + test results as a single sticky PR comment. Runs even
-      # when diff-cover fails the gate above, so the report is always posted; the
-      # coverage.xml and junit.xml it reads are written before diff-cover runs.
-      - name: Coverage report comment
+      # The coverage reports are posted as PR comments by the
+      # coverage-comment workflow. It runs in the base repo's context
+      # because this job cannot comment: fork PRs get a read-only
+      # GITHUB_TOKEN, which caps the pull-requests permission no matter
+      # what is declared here. Upload runs even when the suite or the
+      # coverage gate fails, so the comment explaining a red check is
+      # still posted; whichever report files a failure suppressed are
+      # simply absent from the artifact.
+      - name: Upload coverage reports
         if: ${{ always() && github.event_name == 'pull_request' }}
-        uses: MishaKav/pytest-coverage-comment@v1.10.0
+        uses: actions/upload-artifact@v4
         with:
-          pytest-coverage-path: pytest-coverage.txt
-          junitxml-path: junit.xml
-          title: Coverage report
-      # Post diff-cover's own report as a second sticky comment. This is the one
-      # that explains a red check: it shows the changed-line coverage and the
-      # specific uncovered lines that fell below the threshold. run_coverage.sh
-      # writes diff-cover-report.md before the gate exits.
-      - name: Diff coverage comment
-        if: ${{ always() && github.event_name == 'pull_request' }}
-        uses: marocchino/sticky-pull-request-comment@v3.0.5
-        with:
-          header: diff-coverage
-          path: diff-cover-report.md
-          ignore_empty: true
+          name: coverage-report
+          path: |
+            pytest-coverage.txt
+            junit.xml
+            diff-cover-report.md
+          retention-days: 7
 
   test-js:
     runs-on: ubuntu-latest
