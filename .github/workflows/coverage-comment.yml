@@ -1,0 +1,96 @@
+# Second stage of PR coverage reporting. The CI workflow's test job runs
+# with a read-only token (fork PRs cannot get more) and uploads the
+# coverage reports as an artifact; this workflow runs in the base repo's
+# context and posts them as sticky PR comments. It resolves the PR number
+# from the GitHub API — never from anything the PR controls — and it
+# downloads report files but never checks out or executes fork code.
+name: Coverage comment
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  comment:
+    # Comment regardless of the CI run's conclusion: a red suite is exactly
+    # when the coverage/test report on the PR matters most.
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      # Non-PR runs and runs that died before the upload step leave no
+      # artifact; skip everything in that case.
+      - name: Check for coverage artifact
+        id: artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            const found = artifacts.data.artifacts.some(a => a.name === 'coverage-report');
+            core.setOutput('found', found ? 'true' : 'false');
+      # Resolve the PR number from the API by head SHA, not from run
+      # contents, so a malicious PR cannot direct the comment elsewhere.
+      - name: Find pull request
+        if: steps.artifact.outputs.found == 'true'
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const headSha = context.payload.workflow_run.head_sha;
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: headSha,
+            });
+            const pr = prs.data.find(p => p.head.sha === headSha && p.state === 'open');
+            if (!pr) {
+              core.setFailed(`No open PR found with head ${headSha}`);
+              return;
+            }
+            core.setOutput('number', pr.number);
+      - name: Download coverage artifact
+        if: steps.artifact.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # A failure can suppress individual report files before the CI job
+      # uploads (a red suite writes no diff-cover report), so each comment
+      # step is gated on its own file being present.
+      - name: Check report files
+        if: steps.artifact.outputs.found == 'true'
+        id: reports
+        run: |
+          echo "pytest=$( [ -f pytest-coverage.txt ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "diff=$( [ -f diff-cover-report.md ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+      # Render coverage + test results as a single sticky PR comment.
+      - name: Coverage report comment
+        if: steps.reports.outputs.pytest == 'true'
+        uses: MishaKav/pytest-coverage-comment@v1.10.0
+        with:
+          issue-number: ${{ steps.pr.outputs.number }}
+          pytest-coverage-path: pytest-coverage.txt
+          junitxml-path: junit.xml
+          title: Coverage report
+      # Post diff-cover's own report as a second sticky comment. This is the
+      # one that explains a red coverage gate: it shows the changed-line
+      # coverage and the specific uncovered lines that fell below the
+      # threshold.
+      - name: Diff coverage comment
+        if: steps.reports.outputs.diff == 'true'
+        uses: marocchino/sticky-pull-request-comment@v3.0.5
+        with:
+          number: ${{ steps.pr.outputs.number }}
+          header: diff-coverage
+          path: diff-cover-report.md
+          ignore_empty: true
