@@ -8,8 +8,8 @@ Should you wish to work on an open, unassigned GitHub Issue, please claim it fir
  
  * If you have not already, fork the GitHub repository
  * Clone your fork (not the base repository) locally 
- * In your local repository, creating a new branch for your contribution
- * Make the desired changes and commit to your branch. Commits should be as small as possible, while ensuring that each commit is correct independently (i.e., each commit should compile and pass tests).
+ * In your local repository, create a new branch for your contribution
+ * Make the desired changes and commit to your branch. Commits should be as small as possible, while ensuring that each commit is correct independently (e.g., each commit should compile and pass tests).
  * Push the branch back to your remote fork on GitHub
  * Submit a Pull Request to the base repository via GitHub
 

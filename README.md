@@ -1,7 +1,6 @@
 # sparkmeter
 
 <small>Also known as ThunderCloud (when deployed to the cloud) or GroundBolt (when deployed to the base station on the ground)</small>
-
 ___
 
 > [!WARNING]
