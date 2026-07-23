@@ -20,8 +20,10 @@ Test all contributions locally before submitting Pull Requests by running `./run
 Relevant coding style guidelines are outlined in [CodingStyle.md](CodingStyle.md). This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting; run `uv run ruff format .` to format and `uv run ruff check .` to lint before submitting a Pull Request. Both run in CI, and the [pre-commit](https://pre-commit.com) hooks in `.pre-commit-config.yaml` apply them automatically on commit once installed with `uv run pre-commit install`.
 
 
-## Reporting Feature Requests, Bugs and other Issues
+## Reporting Feature Requests, Bugs, Vulnerabilities and other Issues
 
 If you find a bug in ThunderCloud, please file a detailed report as a GitHub Issue. We currently do not utilize an Issue template, but please be as thorough as possible in your report. There is no such thing as too much information.
 
 Likewise, if you have a Feature Request, please file a detailed Issue, explaining the feature's functionality and use cases. New Features should be beneficial to the broader community, so be sure to consider that before filing.
+
+If you have identified a potential security vulnerability in ThunderCloud, follow [these steps](SECURITY.MD) to report it privately.
