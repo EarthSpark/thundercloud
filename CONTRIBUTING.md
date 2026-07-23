@@ -17,7 +17,7 @@ Should you wish to work on an open, unassigned GitHub Issue, please claim it fir
 
 Test all contributions locally before submitting Pull Requests by running `./run_tests.sh` from the project root or in a docker container via `docker compose -f docker-compose.test.yml run --rm test`.
 
-Relevant coding style guidelines are outlined in [CodingStyle.md](CodingStyle.md). You can use [autopep8](https://pypi.org/project/autopep8/) to automatically format your contribution. Ensure contributions are properly formatted before submitting a Pull Request.
+Relevant coding style guidelines are outlined in [CodingStyle.md](CodingStyle.md). This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting; run `uv run ruff format .` to format and `uv run ruff check .` to lint before submitting a Pull Request. Both run in CI, and the [pre-commit](https://pre-commit.com) hooks in `.pre-commit-config.yaml` apply them automatically on commit once installed with `uv run pre-commit install`.
 
 
 ## Reporting Feature Requests, Bugs and other Issues

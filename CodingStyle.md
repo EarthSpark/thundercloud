@@ -28,7 +28,12 @@ Where possible use - instead of _ (saves on keystrokes)
 Python Style:
 -------------
 
-PEP8, PEP257 and pyflakes are mandatory.
+Style is enforced by [Ruff](https://docs.astral.sh/ruff/), configured in
+`pyproject.toml`. `ruff format` handles formatting (line length 110) and
+`ruff check` runs the lint rules — pyflakes (`F`) and import sorting (`I`).
+Both are checked in CI and applied by the pre-commit hooks. Docstrings are
+additionally checked against PEP257 by `pydocstyle` (ignoring `D211` and
+`D403`); that check is advisory and does not block.
 
 ### Hanging indents ###
 
