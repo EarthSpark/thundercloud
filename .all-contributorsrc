@@ -9,7 +9,247 @@
   "imageSize": 100,
   "commit": true,
   "commitConvention": "angular",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "tescalada",
+      "name": "Tristan Escalada",
+      "avatar_url": "https://avatars.githubusercontent.com/u/355457?v=4",
+      "profile": "https://github.com/tescalada",
+      "contributions": [
+        "code",
+        "doc",
+        "infra",
+        "security",
+        "ideas",
+        "maintenance",
+        "platform",
+        "review",
+        "tool"
+      ],
+      "date": "2013-05-13"
+    },
+    {
+      "login": "arthurES",
+      "name": "arthurES",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5478635?v=4",
+      "profile": "https://github.com/arthurES",
+      "contributions": [
+        "a11y",
+        "bug",
+        "business",
+        "code",
+        "data",
+        "doc",
+        "design",
+        "example",
+        "ideas",
+        "infra",
+        "maintenance",
+        "mentoring",
+        "platform",
+        "plugin",
+        "projectManagement",
+        "question",
+        "research",
+        "review",
+        "security",
+        "tool",
+        "translation",
+        "test",
+        "tutorial",
+        "userTesting"
+      ],
+      "date": "2014-05-06"
+    },
+    {
+      "login": "jdahlin",
+      "name": "Johan Dahlin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/76610?v=4",
+      "profile": "https://github.com/jdahlin",
+      "contributions": [
+        "code",
+        "doc",
+        "infra",
+        "security",
+        "ideas",
+        "maintenance",
+        "platform",
+        "review",
+        "tool",
+        "test",
+        "design",
+        "translation"
+      ],
+      "date": "2015-02-09"
+    },
+    {
+      "login": "shawnchurchill",
+      "name": "shawnchurchill",
+      "avatar_url": "https://avatars.githubusercontent.com/u/178503568?v=4",
+      "profile": "https://github.com/shawnchurchill",
+      "contributions": [
+        "test",
+        "infra"
+      ],
+      "date": "2015-05-31"
+    },
+    {
+      "login": "hollomancer",
+      "name": "Conrad Hollomon",
+      "avatar_url": "https://avatars.githubusercontent.com/u/9288648?v=4",
+      "profile": "https://github.com/hollomancer",
+      "contributions": [
+        "code",
+        "test",
+        "doc",
+        "infra"
+      ],
+      "date": "2016-04-29"
+    },
+    {
+      "login": "xovox",
+      "name": "Duncan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20759483?v=4",
+      "profile": "https://github.com/xovox",
+      "contributions": [
+        "infra",
+        "tool",
+        "maintenance"
+      ],
+      "date": "2016-07-15"
+    },
+    {
+      "login": "MyLightIsOn",
+      "name": "Lawrence Moore",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2665198?v=4",
+      "profile": "https://thelawrencemoore.com/",
+      "contributions": [
+        "code",
+        "test",
+        "design"
+      ],
+      "date": "2016-09-08"
+    },
+    {
+      "login": "seoheunl",
+      "name": "Sally Lee",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16997987?v=4",
+      "profile": "https://github.com/seoheunl",
+      "contributions": [
+        "code",
+        "test",
+        "doc",
+        "infra"
+      ],
+      "date": "2016-09-19"
+    },
+    {
+      "login": "concordion2k",
+      "name": "Dan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4155023?v=4",
+      "profile": "https://github.com/concordion2k",
+      "contributions": [
+        "code",
+        "test",
+        "infra"
+      ],
+      "date": "2017-08-12"
+    },
+    {
+      "login": "jthacker",
+      "name": "Jon Thacker",
+      "avatar_url": "https://avatars.githubusercontent.com/u/452244?v=4",
+      "profile": "https://github.com/jthacker",
+      "contributions": [
+        "code",
+        "test",
+        "doc",
+        "infra"
+      ],
+      "date": "2018-07-01"
+    },
+    {
+      "login": "arusahni",
+      "name": "Aru Sahni",
+      "avatar_url": "https://avatars.githubusercontent.com/u/139487?v=4",
+      "profile": "http://arusahni.net/",
+      "contributions": [
+        "code",
+        "test",
+        "doc",
+        "infra",
+        "design"
+      ],
+      "date": "2018-09-19"
+    },
+    {
+      "login": "billyoung",
+      "name": "Bill Young",
+      "avatar_url": "https://avatars.githubusercontent.com/u/473429?v=4",
+      "profile": "https://github.com/billyoung",
+      "contributions": [
+        "infra"
+      ],
+      "date": "2019-04-16"
+    },
+    {
+      "login": "sheshtawy",
+      "name": "Hisham Elsheshtawy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5498393?v=4",
+      "profile": "https://github.com/sheshtawy",
+      "contributions": [
+        "code",
+        "test",
+        "doc",
+        "infra"
+      ],
+      "date": "2019-08-29"
+    },
+    {
+      "login": "mw23",
+      "name": "Martin Wagner",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4905977?v=4",
+      "profile": "https://www.linkedin.com/in/martin-r-wagner/",
+      "contributions": [
+        "code",
+        "test",
+        "infra",
+        "design"
+      ],
+      "date": "2020-07-21"
+    },
+    {
+      "login": "LyncTechLLC",
+      "name": "LyncTechLLC",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19625522?v=4",
+      "profile": "https://github.com/LyncTechLLC",
+      "contributions": [
+        "code",
+        "bug",
+        "doc",
+        "design",
+        "ideas",
+        "maintenance",
+        "plugin",
+        "security",
+        "tool",
+        "test"
+      ],
+      "date": "2026-07-13"
+    },
+    {
+      "login": "jranson",
+      "name": "James Ranson",
+      "avatar_url": "https://avatars.githubusercontent.com/u/883928?v=4",
+      "profile": "https://github.com/jranson",
+      "contributions": [
+        "doc",
+        "infra",
+        "security"
+      ],
+      "date": "2026-07-21"
+    }
+  ],
   "contributorsPerLine": 7,
   "linkToUsage": true
 }
