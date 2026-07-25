@@ -19,7 +19,6 @@ Test all contributions locally before submitting Pull Requests by running `./run
 
 Relevant coding style guidelines are outlined in [CodingStyle.md](CodingStyle.md). This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting; run `uv run ruff format .` to format and `uv run ruff check .` to lint before submitting a Pull Request. Both run in CI, and the [pre-commit](https://pre-commit.com) hooks in `.pre-commit-config.yaml` apply them automatically on commit once installed with `uv run pre-commit install`.
 
-
 ## Reporting Feature Requests, Bugs, Vulnerabilities and other Issues
 
 If you find a bug in ThunderCloud, please file a detailed report as a GitHub Issue. We currently do not utilize an Issue template, but please be as thorough as possible in your report. There is no such thing as too much information.
@@ -27,3 +26,12 @@ If you find a bug in ThunderCloud, please file a detailed report as a GitHub Iss
 Likewise, if you have a Feature Request, please file a detailed Issue, explaining the feature's functionality and use cases. New Features should be beneficial to the broader community, so be sure to consider that before filing.
 
 If you have identified a potential security vulnerability in ThunderCloud, follow [these steps](SECURITY.MD) to report it privately.
+
+## Recognizing Contributions
+
+This project uses the [All Contributors](https://allcontributors.org) bot to recognize everyone who helps out, for contributions of any kind — not just code. To add someone (or yourself) to the Contributors list in the README, comment on an issue or pull request:
+
+> @all-contributors please add @username for code, doc, test
+
+See the [emoji key](https://allcontributors.org/docs/en/emoji-key) for the full list of contribution types. The bot opens a pull request updating the README and `.all-contributorsrc`.
+
