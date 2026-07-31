@@ -1,9 +1,10 @@
 # Second stage of fork PR image publishing. The CI workflow builds fork
-# PRs with a read-only token and uploads the image as an artifact; this
-# workflow runs in the base repo's context and pushes that archive to
-# the registry under tags it derives from the GitHub API — never from
-# anything the fork controls. It downloads and copies the archive but
-# never checks out or executes fork code.
+# PRs with a read-only token and uploads one image archive per platform
+# as an artifact; this workflow runs in the base repo's context, pushes
+# those archives and merges them into a multi-platform image under tags
+# it derives from the GitHub API — never from anything the fork
+# controls. It downloads and copies the archives but never checks out or
+# executes fork code.
 name: Publish fork PR image
 
 on:
@@ -36,7 +37,7 @@ jobs:
               repo: context.repo.repo,
               run_id: context.payload.workflow_run.id,
             });
-            const found = artifacts.data.artifacts.some(a => a.name === 'pr-image');
+            const found = artifacts.data.artifacts.some(a => a.name.startsWith('pr-image-'));
             core.setOutput('found', found ? 'true' : 'false');
       # Resolve the PR number from the API by head SHA, not from run
       # contents, so a malicious PR cannot spoof another PR's tag.
@@ -59,24 +60,65 @@ jobs:
             }
             core.setOutput('number', pr.number);
             core.setOutput('head_sha', headSha);
-      - name: Download image artifact
+      - name: Download image artifacts
         if: steps.artifact.outputs.found == 'true'
         uses: actions/download-artifact@v4
         with:
-          name: pr-image
+          pattern: pr-image-*
+          merge-multiple: true
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: ${{ runner.temp }}
-      - name: Push image
+          path: ${{ runner.temp }}/archives
+      - name: Install crane
+        if: steps.artifact.outputs.found == 'true'
+        env:
+          CRANE_VERSION: v0.21.7
+          BASE_URL: https://github.com/google/go-containerregistry/releases/download
+        run: |
+          set -euo pipefail
+          archive=go-containerregistry_Linux_x86_64.tar.gz
+          curl -fsSL -o "${archive}" "${BASE_URL}/${CRANE_VERSION}/${archive}"
+          curl -fsSL -o checksums.txt "${BASE_URL}/${CRANE_VERSION}/checksums.txt"
+          grep " ${archive}\$" checksums.txt | sha256sum -c -
+          tar -xzf "${archive}" crane
+          sudo install -m 0755 crane /usr/local/bin/crane
+          crane version
+      # The per-platform archives are combined into one OCI layout: the
+      # blobs are content-addressed, so they share a directory as-is, and
+      # only the index.json manifests arrays are joined. Each descriptor
+      # carries its own platform, which is what makes the merged index
+      # resolvable.
+      #
+      # The platform list comes from the downloaded filenames, so adding
+      # a platform to the CI matrix needs no change here.
+      - name: Merge and push image
         if: steps.artifact.outputs.found == 'true'
         env:
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
-          ARCHIVE: ${{ runner.temp }}/pr-image.tar
+          ARCHIVE_DIR: ${{ runner.temp }}/archives
+          LAYOUT: ${{ runner.temp }}/merged
         run: |
+          set -euo pipefail
           IMAGE="${REGISTRY}/${GITHUB_REPOSITORY,,}"
-          echo "${REGISTRY_TOKEN}" | skopeo login "${REGISTRY}" -u "${REGISTRY_USER}" --password-stdin
-          skopeo copy --all "oci-archive:${ARCHIVE}" "docker://${IMAGE}:pr-${PR_NUMBER}"
-          skopeo copy --all "oci-archive:${ARCHIVE}" "docker://${IMAGE}:sha-${HEAD_SHA}"
+          printf '%s' "${REGISTRY_TOKEN}" |
+            crane auth login "${REGISTRY}" -u "${REGISTRY_USER}" --password-stdin
+
+          mkdir -p "${LAYOUT}/blobs/sha256"
+          manifests='[]'
+          for archive in "${ARCHIVE_DIR}"/pr-image-*.tar; do
+            work="$(mktemp -d)"
+            tar -xf "${archive}" -C "${work}"
+            cp -a "${work}/blobs/sha256/." "${LAYOUT}/blobs/sha256/"
+            manifests="$(jq -c --argjson acc "${manifests}" '$acc + .manifests' "${work}/index.json")"
+          done
+          printf '{"imageLayoutVersion":"1.0.0"}\n' > "${LAYOUT}/oci-layout"
+          jq -n --argjson m "${manifests}" \
+            '{schemaVersion: 2, mediaType: "application/vnd.oci.image.index.v1+json", manifests: $m}' \
+            > "${LAYOUT}/index.json"
+
+          crane push --index "${LAYOUT}" "${IMAGE}:pr-${PR_NUMBER}"
+          crane tag "${IMAGE}:pr-${PR_NUMBER}" "sha-${HEAD_SHA}"
+          crane manifest "${IMAGE}:pr-${PR_NUMBER}" | jq -c '.manifests[].platform'
