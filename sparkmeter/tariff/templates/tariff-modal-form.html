@@ -1,0 +1,6 @@
+{%- from "_macros.html" import form_errors -%}
+
+<form class="form form-horizontal tariff" id="tariff-modal-form" method="POST" action="{{ url_for('tariff.add_modal') }}">
+  {{ form_errors(form, hiddens='only') }}
+  {% include "tariff/_tariff-form-fields.html" %}
+</form>

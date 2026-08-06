@@ -1,3 +1,4 @@
+{%- set page_name = "meter-form" -%}
 {%- if form.mode == 'edit' -%}
 {%- set title = _('Edit %(meter)s', meter=meter.title()) -%}
 {%- else -%}
@@ -47,6 +48,12 @@
             {% call render_box(title, box_content_class=box_content_class) %}
                 <form class="form form-horizontal" role="form" method="POST">
                     {{- form.hidden_tag() -}}
+                    {{ form_errors(form, hiddens='only') }}
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                      {{ _('Please correct the highlighted fields and try again.') }}
+                    </div>
+                    {% endif %}
                     {%- if form.mode == 'add' -%}
                     {{ addon_form_field(form.serial, form_type="horizontal", horizontal_columns=('lg', 2, 10)) }}
                     {%- endif -%}
@@ -58,11 +65,33 @@
                     </div>
 
                     {%- if meter_type == 'customer' -%}
-                    <div class="form-group">
+                    {#- The modal's behavior lives in meter/js/meter-tariff-modal.js; its
+                        configuration and user-facing strings are carried here. `forceescape`
+                        is required: flask-babel's LazyString defines `__html__`, so a
+                        translated string is otherwise emitted without escaping and a quote
+                        or an angle bracket in a translation would break the attribute. -#}
+                    <div id="meter-tariff-modal-params"
+                         data-modal-url="{{ url_for('tariff.add_modal') }}"
+                         data-add-new-value="{{ form.ADD_NEW_TARIFF }}"
+                         data-add-new-label="{{ _('<Add New>')|forceescape }}"
+                         data-text-title="{{ _('Add a New Tariff')|forceescape }}"
+                         data-text-loading="{{ _('Loading tariff form...')|forceescape }}"
+                         data-text-cancel="{{ _('Cancel')|forceescape }}"
+                         data-text-save="{{ _('Save')|forceescape }}"
+                         data-text-saving="{{ _('Saving...')|forceescape }}"
+                         data-text-created="{{ _('Tariff created.')|forceescape }}"
+                         data-text-load-error="{{ _('Could not load the tariff form.')|forceescape }}"
+                         data-text-save-error="{{ _('Could not save the tariff.')|forceescape }}"
+                         data-text-session-expired="{{ _('Your session has expired. Please reload the page and sign in again.')|forceescape }}">
+                    </div>
+                    <div class="form-group{% if form.tariff.errors %} has-error{% endif %}">
                       {{ form.tariff.label(class="control-label col-lg-2") }}
                       <div class="input-group col-lg-10">
                         {{ form.tariff(class="form-control") }}
                       </div>
+                    </div>
+                    <div class="col-lg-offset-2 col-lg-10">
+                      {{ form_error(form.tariff) }}
                     </div>
                     {%- endif -%}
 

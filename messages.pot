@@ -990,3 +990,39 @@ msgstr ""
 
 msgid "Saved custom settings file."
 msgstr ""
+
+msgid "<Add New>"
+msgstr ""
+
+msgid "Add a New Tariff"
+msgstr ""
+
+msgid "Loading tariff form..."
+msgstr ""
+
+msgid "Saving..."
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Tariff created."
+msgstr ""
+
+msgid "Could not load the tariff form."
+msgstr ""
+
+msgid "Could not save the tariff."
+msgstr ""
+
+msgid "Your session has expired. Please reload the page and sign in again."
+msgstr ""
+
+msgid "Select a tariff"
+msgstr ""
+
+msgid "Please select a tariff or add a new one."
+msgstr ""
+
+msgid "No tariff was created. Please select a tariff or add a new one."
+msgstr ""

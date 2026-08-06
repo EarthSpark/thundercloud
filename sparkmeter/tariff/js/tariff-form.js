@@ -11,16 +11,23 @@ function TariffForm() {
 
 exports.TariffForm = TariffForm;
 
+// Namespace for the delegated handlers below, so that re-initializing the form
+// -- which the tariff modal does every time it renders the fragment -- rebinds
+// them instead of stacking a second copy on `document`.
+var EVENTS = '.tariffform';
+
 TariffForm.prototype = {
     _init: function() {
-        $(document).on('change', 'input:radio[id^="tariff_type"]', function(event) {
+        $(document).off(EVENTS);
+
+        $(document).on('change' + EVENTS, 'input:radio[id^="tariff_type"]', function(event) {
             $("div.tariff_type").addClass("hide");
             $("div.tariff_type." + $(this).val()).removeClass("hide");
             $("input#tariff_type[value='flat']").attr('checked', $(this).val() === 'flat');
             $("input#tariff_type[value='blockrate']").attr('checked', $(this).val() === 'blockrate');
         });
 
-        $(document).on('change', 'input:radio[id^="load_limit_type"]', function(event) {
+        $(document).on('change' + EVENTS, 'input:radio[id^="load_limit_type"]', function(event) {
             $("div.load_limit_type").addClass("hide");
             $("div.load_limit_type." + $(this).val()).removeClass("hide");
             $("input#load_limit_type[value='flat']").attr('checked', $(this).val() === 'flat');
@@ -32,7 +39,7 @@ TariffForm.prototype = {
             }
         });
 
-        $(document).on('change', 'input:checkbox[id^="tou_enabled"]', function(event) {
+        $(document).on('change' + EVENTS, 'input:checkbox[id^="tou_enabled"]', function(event) {
             if (this.checked) {
                 $(".tou").removeClass("hide");
             } else {
@@ -40,7 +47,7 @@ TariffForm.prototype = {
             }
         });
 
-        $(document).on('change', 'input:checkbox[id^="plan_enabled"]', function(event) {
+        $(document).on('change' + EVENTS, 'input:checkbox[id^="plan_enabled"]', function(event) {
             if (this.checked) {
                 $(".plan-price").removeClass("hide");
                 $(".plan-fixed-fee").removeClass("hide");
@@ -50,7 +57,7 @@ TariffForm.prototype = {
             }
         });
 
-        $(document).on('change', 'input:checkbox[id^="daily_energy_limit_enabled"]', function(event) {
+        $(document).on('change' + EVENTS, 'input:checkbox[id^="daily_energy_limit_enabled"]', function(event) {
             if (this.checked) {
                 $(".daily-energy-limit-reset-hour").removeClass("hide");
                 $(".daily-energy-limit-value").removeClass("hide");
