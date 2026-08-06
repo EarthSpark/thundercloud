@@ -28,6 +28,26 @@ reading = AuthBlueprint("reading", __name__)
 ReadingViewResult = ReadingViewResult  # noqa
 
 
+def _latest_readings_heartbeat_seconds():
+    """Return the heartbeat interval the UI should use for latest readings."""
+    try:
+        from sparkmeter.config.provider_settings import (
+            get_enabled_provider,
+            load_provider_runtime_settings,
+        )
+
+        provider = get_enabled_provider()
+        payload = load_provider_runtime_settings(provider)
+        field_values = ((payload or {}).get("field_values")) or {}
+        heartbeat = field_values.get("heartbeat_period_duration")
+        if heartbeat not in (None, ""):
+            return int(heartbeat)
+    except Exception:  # noqa: BLE001
+        logger.exception("failed to resolve meter-driver heartbeat for latest readings UI")
+
+    return config["HEARTBEAT_PERIOD"] * 60
+
+
 @reading.route("/readings/latest")
 @roles_accepted("operator")
 def latest():
@@ -42,7 +62,7 @@ def latest_data_json():
     ground_serial = request.args.get("ground_serial")
     readings = _query_latest_readings(ground_serial)
     return jsonify(
-        heartbeat_seconds=config["HEARTBEAT_PERIOD"] * 60,
+        heartbeat_seconds=_latest_readings_heartbeat_seconds(),
         readings=readings,
     )
 
@@ -62,7 +82,7 @@ def latest_data_csv():
         "frequency",
         "voltage_avg",
         "current_avg",
-        "true_power_inst",
+        "true_power_avg",
         "energy",
         "uptime",
         "user_power_limit",
@@ -107,6 +127,7 @@ def _format_reading_view(result):
             frequency=result.frequency,
             heartbeat_end=result.heartbeat_end,
             state=MeterState.get_state_translation_from_id(result.reading_state),
+            true_power_avg=int(round(result.true_power_avg)),
             true_power_inst=int(round(result.true_power_inst)),
             uptime=result.uptime,
             user_power_limit=result.user_power_limit,
@@ -125,6 +146,7 @@ def _format_reading_view(result):
             frequency="",
             heartbeat_end="",
             state="",
+            true_power_avg="",
             true_power_inst="",
             uptime="",
             user_power_limit="",

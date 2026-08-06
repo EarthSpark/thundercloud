@@ -1,212 +1,436 @@
-"""Tests for the dynamic OpenAPI-driven CLI.
+"""Tests for the discovery-driven metering CLI.
 
-The CLI is built at module import time from the discriminated `Command`
-union in `_generated/`. These tests verify:
-
-- All command_type values appear as CLI subcommands.
-- Top-level scalar params translate to flat options.
-- Nested-dataclass params translate to dotted options.
-- Submission goes through `submit_command_v1_commands_post` with the
-  correct typed body.
-- `--vendor-option KEY=VALUE` populates the vendor_options wrapper.
-
-Submission and SSE-tailing are mocked so tests don't touch the network.
+The CLI builds its command tree from the selected driver's live
+`/openapi.json` at invocation time. These tests feed a fake OpenAPI
+document and capture the HTTP submission, so no network or driver is
+involved.
 """
 
+from types import SimpleNamespace
+
+import click
 import pytest
+from click.testing import CliRunner
 
 from sparkmeter.metering import cli as metering_cli
-from sparkmeter.metering._generated.models.configure_meter_command import ConfigureMeterCommand
-from sparkmeter.metering._generated.models.configure_provider_command import ConfigureProviderCommand
-from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
-from sparkmeter.metering._generated.models.ping_meter_command import PingMeterCommand
-from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
-from sparkmeter.metering._generated.models.set_balance_command import SetBalanceCommand
+
+# A minimal driver OpenAPI doc: two POST commands (one with a path param),
+# one DELETE command, and a GET stream that must NOT become a command.
+_FAKE_SPEC = {
+    "paths": {
+        "/v1/nodes/register": {
+            "post": {
+                "operationId": "registerNode",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["node_id", "node_type"],
+                                "properties": {
+                                    "node_id": {"type": "integer"},
+                                    "node_type": {"type": "string"},
+                                    "mac": {"type": "integer"},
+                                },
+                            }
+                        }
+                    }
+                },
+            }
+        },
+        "/v1/nodes/{node_id}/balance-and-flags": {
+            "post": {
+                "operationId": "setBalanceAndFlags",
+                "parameters": [{"name": "node_id", "in": "path", "required": True}],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["balance", "low_balance_flag"],
+                                "properties": {
+                                    "balance": {"type": "number"},
+                                    "low_balance_flag": {"type": "boolean"},
+                                },
+                            }
+                        }
+                    }
+                },
+            }
+        },
+        "/v1/nodes/{node_id}": {
+            "delete": {
+                "operationId": "unregisterNode",
+                "parameters": [{"name": "node_id", "in": "path", "required": True}],
+            }
+        },
+        "/v1/events": {"get": {"operationId": "subscribeEvents"}},
+    }
+}
 
 
 @pytest.fixture
-def captured(mocker):
-    """Capture every (body, exit_code) submitted via the dynamic CLI."""
+def submits(monkeypatch):
     captured: list = []
 
-    async def fake_submit_and_tail(body, correlation_id, timeout=10.0):
-        captured.append(body)
-        return 0
+    def fake_submit(base_url, method, path, body):
+        captured.append({"base_url": base_url, "method": method, "path": path, "body": body})
 
-    mocker.patch.object(metering_cli, "_submit_and_tail", fake_submit_and_tail)
+    monkeypatch.setattr(metering_cli, "_fetch_openapi", lambda base_url: _FAKE_SPEC)
+    monkeypatch.setattr(metering_cli, "_submit", fake_submit)
     return captured
 
 
-def _expected_command_names() -> set[str]:
-    from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body import (
-        SubmitCommandV1CommandsPostRequestBodyDiscriminator,
-    )
-
-    discriminator = SubmitCommandV1CommandsPostRequestBodyDiscriminator()
-    return {ct.replace("_", "-") for ct in discriminator.get_mapping()}
+def _run(*args):
+    return CliRunner().invoke(metering_cli.metering, list(args))
 
 
-class TestRegistration:
-    def test_every_spec_command_appears_as_subcommand(self):
-        registered = set(metering_cli.metering.commands.keys())
-        assert _expected_command_names().issubset(registered)
+class TestDiscovery:
+    def test_post_operation_is_a_command(self, submits):
+        result = _run("--driver", "http://drv", "register-node", "--node-id", "1", "--node-type", "SM5R")
+        assert result.exit_code == 0, result.output
+
+    def test_get_operations_are_not_commands(self, submits):
+        # GET /v1/events must not become a command.
+        result = _run("--driver", "http://drv", "subscribe-events")
+        assert result.exit_code != 0
+
+    def test_command_absent_from_driver_is_unknown(self, submits):
+        result = _run("--driver", "http://drv", "ping-meter", "--meter-id", "1")
+        assert result.exit_code != 0
+
+    def test_driver_help_lists_discovered_commands(self, submits):
+        # With a driver selected, --help enumerates the discovered subcommands.
+        result = _run("--driver", "http://drv", "--help")
+        assert result.exit_code == 0, result.output
+        assert "register-node" in result.output
+        assert "unregister-node" in result.output
 
 
-class TestRegisterMeter:
-    def test_required_params_only(self, cli, captured):
-        result = cli(
-            "metering",
-            "register-meter",
-            "--meter-id",
-            "42",
-            "--meter-type",
+class TestRegisterNode:
+    def test_body_assembled_from_options(self, submits):
+        result = _run(
+            "--driver",
+            "http://drv",
+            "register-node",
+            "--node-id",
+            "100",
+            "--node-type",
             "SM5R",
+            "--mac",
+            "43981",
         )
-        assert result.exit_code == 0
-        assert len(captured) == 1
-        body = captured[0]
-        assert isinstance(body, RegisterMeterCommand)
-        assert body.params.meter_id == "42"
-        assert body.params.meter_type == "SM5R"
+        assert result.exit_code == 0, result.output
+        assert len(submits) == 1
+        call = submits[0]
+        assert call["method"] == "post"
+        assert call["path"] == "/v1/nodes/register"
+        assert call["body"] == {"node_id": 100, "node_type": "SM5R", "mac": 43981}
 
-    def test_with_vendor_option(self, cli, captured):
-        result = cli(
-            "metering",
-            "register-meter",
-            "--meter-id",
-            "42",
-            "--meter-type",
-            "SM5R",
-            "--vendor-option",
-            "mac=43981",
-        )
-        assert result.exit_code == 0
-        body = captured[0]
-        assert body.vendor_options is not None
-        assert body.vendor_options["mac"] == 43981
-
-    def test_correlation_id_passed_through(self, cli, captured):
-        result = cli(
-            "metering",
-            "register-meter",
-            "--meter-id",
-            "42",
-            "--meter-type",
-            "SM5R",
-            "--correlation-id",
-            "fixed-id",
-        )
-        assert result.exit_code == 0
-        assert captured[0].correlation_id == "fixed-id"
+    def test_required_option_missing_errors(self, submits):
+        result = _run("--driver", "http://drv", "register-node", "--node-id", "100")
+        assert result.exit_code != 0
+        assert submits == []
 
 
-class TestSetBalance:
-    def test_balance_passes_through_as_string(self, cli, captured):
-        result = cli(
-            "metering",
-            "set-balance",
-            "--meter-id",
+class TestSetBalanceAndFlags:
+    def test_path_param_substituted_and_body_built(self, submits):
+        result = _run(
+            "--driver",
+            "http://drv",
+            "set-balance-and-flags",
+            "--node-id",
             "9",
             "--balance",
             "12.5",
+            "--low-balance-flag",
         )
+        assert result.exit_code == 0, result.output
+        call = submits[0]
+        assert call["method"] == "post"
+        assert call["path"] == "/v1/nodes/9/balance-and-flags"
+        assert call["body"] == {"balance": 12.5, "low_balance_flag": True}
+
+
+class TestUnregisterNode:
+    def test_delete_with_path_param_no_body(self, submits):
+        result = _run("--driver", "http://drv", "unregister-node", "--node-id", "55")
+        assert result.exit_code == 0, result.output
+        call = submits[0]
+        assert call["method"] == "delete"
+        assert call["path"] == "/v1/nodes/55"
+        assert call["body"] == {}
+
+
+class TestNoDriver:
+    def test_no_driver_lists_no_commands(self, submits):
+        # Without --driver there is nothing to discover.
+        result = _run("--help")
         assert result.exit_code == 0
-        body = captured[0]
-        assert isinstance(body, SetBalanceCommand)
-        assert body.params.meter_id == "9"
-        assert body.params.balance == "12.5"
+        assert "register-node" not in result.output
+
+    def test_subcommand_without_driver_is_unknown(self, submits):
+        # get_command returns None when no spec is available.
+        result = _run("register-node")
+        assert result.exit_code != 0
+
+    def test_fetch_failure_is_reported(self, monkeypatch):
+        def boom(base_url):
+            raise RuntimeError("connection refused")
+
+        monkeypatch.setattr(metering_cli, "_fetch_openapi", boom)
+        result = _run("--driver", "http://drv", "register-node")
+        assert result.exit_code != 0
+        assert "could not fetch" in result.output
 
 
-class TestPingMeter:
-    def test_basic(self, cli, captured):
-        result = cli("metering", "ping-meter", "--meter-id", "42")
-        assert result.exit_code == 0
-        body = captured[0]
-        assert isinstance(body, PingMeterCommand)
-        assert body.params.meter_id == "42"
+# ---------------------------------------------------------------------------
+# OpenAPI schema resolution helpers
+# ---------------------------------------------------------------------------
 
 
-class TestConfigureMeter:
-    def test_with_nested_throttle_options(self, cli, captured):
-        result = cli(
-            "metering",
-            "configure-meter",
-            "--meter-id",
-            "42",
-            "--behavior",
-            "enable",
-            "--configuration.power-limit-watts",
-            "1500",
-            "--configuration.current-limit-amps",
-            "10",
-            "--configuration.startup-delay-seconds",
-            "2",
-            "--configuration.throttle.on-seconds",
-            "5",
-            "--configuration.throttle.off-seconds",
-            "10",
-            "--configuration.throttle.count-limit",
-            "5",
+class TestSchemaHelpers:
+    def test_resolve_ref_walks_pointer(self):
+        spec = {"components": {"schemas": {"Foo": {"type": "object"}}}}
+        assert metering_cli._resolve_ref(spec, "#/components/schemas/Foo") == {"type": "object"}
+
+    def test_resolve_schema_non_dict_returns_empty(self):
+        assert metering_cli._resolve_schema({}, "not-a-dict") == {}
+
+    def test_resolve_schema_follows_ref(self):
+        spec = {"components": {"schemas": {"Foo": {"type": "string"}}}}
+        assert metering_cli._resolve_schema(spec, {"$ref": "#/components/schemas/Foo"}) == {"type": "string"}
+
+    def test_resolve_schema_merges_all_of(self):
+        schema = {
+            "allOf": [
+                {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]},
+                {"properties": {"b": {"type": "integer"}}},
+            ],
+            "properties": {"c": {"type": "string"}},
+            "required": ["c"],
+        }
+        merged = metering_cli._resolve_schema({}, schema)
+        assert set(merged["properties"]) == {"a", "b", "c"}
+        assert set(merged["required"]) == {"a", "c"}
+
+    def test_leaf_options_flattens_nested_objects(self):
+        schema = {
+            "type": "object",
+            "required": ["configuration"],
+            "properties": {
+                "configuration": {
+                    "type": "object",
+                    "properties": {"power_limit": {"type": "number"}},
+                }
+            },
+        }
+        leaves = metering_cli._leaf_options({}, schema)
+        assert [(path, required) for path, _prop, required in leaves] == [
+            (("configuration", "power_limit"), False)
+        ]
+
+    def test_iter_command_operations_skips_non_dict_and_get(self):
+        spec = {
+            "paths": {
+                "/x": "not-a-dict",
+                "/y": {"get": {"operationId": "readY"}},
+                "/z": {"post": {"operationId": "makeZ"}},
+            }
+        }
+        names = [name for name, *_ in metering_cli._iter_command_operations(spec)]
+        assert names == ["make-z"]
+
+    def test_assemble_body_nests_dotted_paths(self):
+        leaf_options = [(("configuration", "power_limit"), {}, False)]
+        kwargs = {metering_cli._option_dest(("configuration", "power_limit")): 1500}
+        assert metering_cli._assemble_body(leaf_options, kwargs) == {"configuration": {"power_limit": 1500}}
+
+
+class TestClickKwargs:
+    def test_enum_becomes_choice(self):
+        kwargs = metering_cli._click_kwargs({"enum": ["on", "off"]}, required=True)
+        assert isinstance(kwargs["type"], click.Choice)
+
+    def test_integer_and_number_and_string(self):
+        assert metering_cli._click_kwargs({"type": "integer"}, False)["type"] is click.INT
+        assert metering_cli._click_kwargs({"type": "number"}, False)["type"] is click.FLOAT
+        assert metering_cli._click_kwargs({"type": "string"}, False)["type"] is click.STRING
+
+    def test_boolean_becomes_flag(self):
+        kwargs = metering_cli._click_kwargs({"type": "boolean"}, False)
+        assert kwargs["is_flag"] is True
+        assert kwargs["default"] is False
+
+    def test_array_is_multiple(self):
+        kwargs = metering_cli._click_kwargs({"type": "array"}, False)
+        assert kwargs["multiple"] is True
+        assert kwargs["type"] is click.STRING
+
+
+# ---------------------------------------------------------------------------
+# Driver resolution + HTTP transport
+# ---------------------------------------------------------------------------
+
+
+class TestResolveDriverUrl:
+    def test_url_passes_through(self):
+        assert metering_cli._resolve_driver_url(None, "http://drv:18080/") == "http://drv:18080"
+
+    def test_id_resolved_in_app_context(self, monkeypatch):
+        monkeypatch.setattr("flask.has_app_context", lambda: True)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_provider",
+            lambda driver: {"base_url": "http://resolved:18080/"},
         )
-        assert result.exit_code == 0
-        body = captured[0]
-        assert isinstance(body, ConfigureMeterCommand)
-        assert body.params.meter_id == "42"
-        assert body.params.behavior is MeterBehaviorCommand.ENABLE
-        assert body.params.configuration.power_limit_watts == pytest.approx(1500.0)
-        assert body.params.configuration.current_limit_amps == pytest.approx(10.0)
-        assert body.params.configuration.startup_delay_seconds == 2
-        assert body.params.configuration.throttle.on_seconds == 5
-        assert body.params.configuration.throttle.off_seconds == 10
-        assert body.params.configuration.throttle.count_limit == 5
+        assert metering_cli._resolve_driver_url(None, "abc") == "http://resolved:18080"
 
+    def test_unknown_id_raises(self, monkeypatch):
+        monkeypatch.setattr("flask.has_app_context", lambda: True)
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_provider", lambda driver: None)
+        with pytest.raises(click.BadParameter):
+            metering_cli._resolve_driver_url(None, "abc")
 
-class TestConfigureProvider:
-    def test_minimal(self, cli, captured):
-        result = cli(
-            "metering",
-            "configure-provider",
-            "--heartbeat-seconds",
-            "900",
+    def test_missing_base_url_raises(self, monkeypatch):
+        monkeypatch.setattr("flask.has_app_context", lambda: True)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_provider", lambda driver: {"base_url": ""}
         )
-        assert result.exit_code == 0
-        body = captured[0]
-        assert isinstance(body, ConfigureProviderCommand)
-        assert body.params.heartbeat_seconds == 900
+        with pytest.raises(click.BadParameter):
+            metering_cli._resolve_driver_url(None, "abc")
 
-    def test_with_vendor_options(self, cli, captured):
-        result = cli(
-            "metering",
-            "configure-provider",
-            "--heartbeat-seconds",
-            "900",
-            "--vendor-option",
-            "channel=25",
-            "--vendor-option",
-            "aes_key=00112233445566778899aabbccddeeff",
+    def test_no_context_and_no_app_raises(self, monkeypatch):
+        monkeypatch.setattr("flask.has_app_context", lambda: False)
+        ctx = SimpleNamespace(obj=None, parent=None)
+        with pytest.raises(click.BadParameter):
+            metering_cli._resolve_driver_url(ctx, "abc")
+
+    def test_id_resolved_via_ctx_app_when_no_app_context(self, monkeypatch):
+        import contextlib
+
+        from flask.cli import ScriptInfo
+
+        # No ambient app context: the driver id is resolved inside the app
+        # loaded from the ScriptInfo on ctx.obj.
+        monkeypatch.setattr("flask.has_app_context", lambda: False)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_provider",
+            lambda driver: {"base_url": "http://resolved:18080/"},
         )
-        assert result.exit_code == 0
-        body = captured[0]
-        assert body.vendor_options["channel"] == 25
-        assert body.vendor_options["aes_key"] == "00112233445566778899aabbccddeeff"
+
+        entered = []
+
+        @contextlib.contextmanager
+        def fake_app_context():
+            entered.append(True)
+            yield
+
+        fake_app = SimpleNamespace(app_context=fake_app_context)
+        script_info = ScriptInfo(create_app=lambda: fake_app, set_debug_flag=False)
+        ctx = SimpleNamespace(obj=script_info, parent=None)
+
+        assert metering_cli._resolve_driver_url(ctx, "abc") == "http://resolved:18080"
+        assert entered == [True]  # the app context was actually entered
 
 
-class TestVendorOptionParsing:
-    @pytest.mark.parametrize(
-        "raw,key,expected",
-        [
-            ("channel=25", "channel", 25),
-            ("flag=true", "flag", True),
-            ("name=hello", "name", "hello"),
-            ("negative=-5", "negative", -5),
-        ],
-    )
-    def test_parses_typed_values(self, raw, key, expected):
-        out = metering_cli._parse_vendor_options((raw,))
-        assert out[key] == expected
+class TestFlaskAppFromCtx:
+    def test_finds_scriptinfo_and_loads_app(self):
+        from flask.cli import ScriptInfo
 
-    def test_invalid_format_raises(self):
-        from click import BadParameter
+        fake_app = SimpleNamespace()
+        script_info = ScriptInfo(create_app=lambda: fake_app, set_debug_flag=False)
+        ctx = SimpleNamespace(obj=script_info, parent=None)
+        assert metering_cli._flask_app_from_ctx(ctx) is fake_app
 
-        with pytest.raises(BadParameter):
-            metering_cli._parse_vendor_options(("no-equals-sign",))
+    def test_returns_none_when_no_scriptinfo(self):
+        ctx = SimpleNamespace(obj="not-script-info", parent=SimpleNamespace(obj=None, parent=None))
+        assert metering_cli._flask_app_from_ctx(ctx) is None
+
+    def test_returns_none_when_flask_cli_unimportable(self, monkeypatch):
+        import sys
+
+        # A None entry in sys.modules makes `from flask.cli import ScriptInfo`
+        # raise ImportError, exercising the import-guard fallback.
+        monkeypatch.setitem(sys.modules, "flask.cli", None)
+        ctx = SimpleNamespace(obj="anything", parent=None)
+        assert metering_cli._flask_app_from_ctx(ctx) is None
+
+
+class _FakeHttpxResponse:
+    def __init__(self, status_code=200, text="", payload=None, is_error=False):
+        self.status_code = status_code
+        self.text = text
+        self.is_error = is_error
+        self._payload = payload
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._payload
+
+
+class _FakeHttpxClient:
+    def __init__(self, response, **kwargs):
+        self._response = response
+        self.kwargs = kwargs
+        self.request_args = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def get(self, path):
+        self.request_args = ("GET", path)
+        return self._response
+
+    def request(self, method, path, json=None):
+        self.request_args = (method, path, json)
+        return self._response
+
+
+class TestTransport:
+    def test_fetch_openapi_reads_document(self, monkeypatch):
+        response = _FakeHttpxResponse(payload={"paths": {}})
+        holder = {}
+
+        def factory(**kwargs):
+            holder["client"] = _FakeHttpxClient(response, **kwargs)
+            return holder["client"]
+
+        monkeypatch.setattr(metering_cli.httpx, "Client", factory)
+        assert metering_cli._fetch_openapi("http://drv") == {"paths": {}}
+        # It fetches the OpenAPI document from the spec endpoint, not some other path.
+        assert holder["client"].request_args == ("GET", "/openapi.json")
+
+    def test_submit_echoes_status_and_body(self, monkeypatch, capsys):
+        response = _FakeHttpxResponse(status_code=200, text="created", is_error=False)
+        holder = {}
+
+        def factory(**kwargs):
+            holder["client"] = _FakeHttpxClient(response, **kwargs)
+            return holder["client"]
+
+        monkeypatch.setattr(metering_cli.httpx, "Client", factory)
+        metering_cli._submit("http://drv", "post", "/v1/x", {"a": 1})
+        out = capsys.readouterr().out
+        assert "POST /v1/x -> 200" in out
+        assert "created" in out
+        # The method is upper-cased and the body is sent as JSON.
+        assert holder["client"].request_args == ("POST", "/v1/x", {"a": 1})
+
+    def test_submit_raises_on_error_status(self, monkeypatch):
+        response = _FakeHttpxResponse(status_code=500, text="", is_error=True)
+        holder = {}
+
+        def factory(**kwargs):
+            holder["client"] = _FakeHttpxClient(response, **kwargs)
+            return holder["client"]
+
+        monkeypatch.setattr(metering_cli.httpx, "Client", factory)
+        with pytest.raises(SystemExit):
+            metering_cli._submit("http://drv", "post", "/v1/x", {})
+        # An empty body is sent as json=None, and the request still went out.
+        assert holder["client"].request_args == ("POST", "/v1/x", None)

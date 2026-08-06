@@ -742,6 +742,9 @@ class Meter(BaseDomain):
     #: The ground this meter belongs to
     ground_id = Column(UUIDType(binary=False), ForeignKey("ground.id"), nullable=False)
 
+    #: Selected meter driver id from the registered driver list
+    provider_id = Column(String, nullable=True)
+
     model_id = Column(UUIDType(binary=False), ForeignKey("meter_models.id"))
 
     # Relationships
@@ -1273,6 +1276,7 @@ class Meter(BaseDomain):
         command = "disable"
         balance = 0
         low_balance = False
+        provider_uses_engineering_units = bool(getattr(self, "provider_id", None))
 
         if self.is_customer_meter():
             tariff_load_limit = self.tariff.get_current_load_limit()
@@ -1280,7 +1284,9 @@ class Meter(BaseDomain):
             nominal_voltage = nominal_voltage or parameters.NOMINAL_VOLTAGE
 
             continuous_power = self.continuous_current_limit * nominal_voltage
-            power_limit = old_div(min(continuous_power, tariff_load_limit), self.scalars.power_scalar)
+            power_limit = min(continuous_power, tariff_load_limit)
+            if not provider_uses_engineering_units:
+                power_limit = old_div(power_limit, self.scalars.power_scalar)
             if self.state_value == MeterConfig.STATE_ON and not override_meter_state:
                 command = "enable"
             else:
@@ -1289,7 +1295,10 @@ class Meter(BaseDomain):
             low_balance = self.has_low_balance()
 
         # don't allow a current_limit greater than the max possible value
-        current_limit = min(old_div(self.model.inrush_limit, self.scalars.current_scalar), 65535)
+        current_limit = self.model.inrush_limit
+        if not provider_uses_engineering_units:
+            current_limit = old_div(current_limit, self.scalars.current_scalar)
+        current_limit = min(current_limit, 65535)
 
         send_set_config(
             mac=self.code,
@@ -1302,30 +1311,6 @@ class Meter(BaseDomain):
             firmware_version=self.system_info.firmware,
         )
         return True
-
-    def apply_scalars(self, data):
-        """Apply the scalars from the metering IC."""
-        scalars = self.scalars
-        scalar_map = {
-            "frequency": scalars.frequency_scalar,
-            "energy": scalars.energy_scalar,
-            "power_factor_avg": scalars.power_factor_scalar,
-            "voltage_min": scalars.voltage_scalar,
-            "voltage_max": scalars.voltage_scalar,
-            "voltage_avg": scalars.voltage_scalar,
-            "current_min": scalars.current_scalar,
-            "current_max": scalars.current_scalar,
-            "current_avg": scalars.current_scalar,
-            "true_power_inst": scalars.power_scalar,
-            "true_power_avg": scalars.power_scalar,
-            "apparent_power_avg": scalars.power_scalar,
-            "user_power_limit": scalars.power_scalar,
-        }
-
-        for field, scalar in list(scalar_map.items()):
-            if field in data:
-                data[field] *= scalar
-        return data
 
     @property
     def product_code(self):
@@ -1599,6 +1584,9 @@ class MeterView(BaseView):
 
     #: Ground serial (ground.serial)
     ground_serial = Column(String, nullable=False)
+
+    #: Selected meter driver id (meter.provider_id)
+    provider_id = Column(String, nullable=True)
 
     model_id = Column(UUIDType(binary=False), ForeignKey("meter_models.id"), nullable=False)
 

@@ -204,37 +204,3 @@ def get_heartbeat_reading(mac):
         click.echo(f"no readings recorded for meter {mac}", err=True)
         raise SystemExit(1)
     pprint.pprint({c.name: getattr(reading, c.name) for c in reading.__table__.columns})
-
-
-@meter.command("ping")
-@click.option("-m", "--mac", default=None, help="MAC of meter to ping")
-@with_appcontext
-def ping(mac=None):
-    """Send a per-meter ping via the metering provider.
-
-    If `--mac` is omitted, pings every customer meter.
-    """
-    import asyncio
-
-    from sparkmeter.meter.meterdomain import Meter
-    from sparkmeter.metering.tools.cli_client import run_per_meter_command, submit_ping
-
-    if mac is not None:
-        meter_ids = [str(mac)]
-    else:
-        meter_ids = [str(m.code) for m in Meter.query.all()]
-
-    asyncio.run(run_per_meter_command(submit_ping, meter_ids))
-
-
-@meter.command("get-neighborlists")
-@with_appcontext
-def get_neighborlists():
-    """Query each meter for its view of its radio neighbors."""
-    import asyncio
-
-    from sparkmeter.meter.meterdomain import Meter
-    from sparkmeter.metering.tools.cli_client import run_per_meter_command, submit_query_neighbors
-
-    meter_ids = [str(m.code) for m in Meter.query.all()]
-    asyncio.run(run_per_meter_command(submit_query_neighbors, meter_ids))

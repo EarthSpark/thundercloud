@@ -4,7 +4,7 @@
 """Configuration parameter."""
 
 from sparkmeter.config.configdict import config
-from sparkmeter.config.configparametertypes import Bool, Percent, Voltage
+from sparkmeter.config.configparametertypes import Bool, Percent, String, Voltage
 from sparkmeter.database.alchemy import sql
 from sparkmeter.misc.pythonutils import ClassInittable, unset
 
@@ -177,6 +177,10 @@ class ParameterObject(ClassInittable):
         default=lambda: config.get("NOMINAL_VOLTAGE", 120.0),
         label="Nominal voltage of system",
         tooltip="Nominal voltage of current flowing through meters.",
+    )
+
+    METERING_PROVIDERS = ParameterAttribute(
+        String, default="[]", label="Meter drivers", tooltip="JSON-encoded list of configured meter drivers."
     )
 
     @classmethod

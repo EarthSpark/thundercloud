@@ -14,6 +14,12 @@ from wtforms.validators import StopValidation, ValidationError
 from wtforms_sqlalchemy.fields import QuerySelectField, QuerySelectMultipleField
 
 from sparkmeter.config.configdict import config
+from sparkmeter.config.provider_settings import (
+    DriverConfigError,
+    get_saved_providers,
+    load_provider_runtime_settings,
+    validate_provider_config_payload,
+)
 from sparkmeter.exceptions import MeterError
 from sparkmeter.ground.grounddomain import Ground
 from sparkmeter.meter.meterdomain import Meter, MeterTag, MeterView
@@ -108,6 +114,15 @@ class BaseMeterForm(BaseForm):
         allow_blank=True,
         blank_text=_("Select a tariff"),
     )
+    provider_id = SelectField(
+        _("Meter driver"),
+        choices=[],
+        default="",
+        # A missing or empty selection means "no driver"; eligibility is
+        # enforced by validate_provider_id, not WTForms' choice check (which
+        # would reject a form submitted without this field at all).
+        validate_choice=False,
+    )
     customer_name = StringField(_("Name"), default="new customer")
     customer_code = StringField(_("Code"))
     customer_country_code = CountryCodeField(_("Country code"), default=config["DEFAULT_PHONE_COUNTRY_CODE"])
@@ -150,6 +165,7 @@ class BaseMeterForm(BaseForm):
         self.meter_type = meter_type
         self.customer = getattr(obj, "customer", None)
         self.view = obj
+        self.provider_id.choices = self._provider_choices()
 
         if meter_type == Meter.TYPE_TOTALIZER:
             del self["customer_name"]
@@ -158,6 +174,37 @@ class BaseMeterForm(BaseForm):
             del self["customer_national_number"]
             del self["state"]
             del self["tariff"]
+
+    def _provider_choices(self):
+        """Return eligible meter-driver choices for the form."""
+        choices = [("", _("Select a meter driver"))]
+        providers = []
+        for provider in get_saved_providers():
+            if not provider.get("enabled"):
+                continue
+            payload = load_provider_runtime_settings(provider)
+            if not payload:
+                continue
+            try:
+                validate_provider_config_payload(payload)
+            except DriverConfigError:
+                continue
+            init_status = (payload.get("init_status") or {}) if isinstance(payload, dict) else {}
+            if not bool(init_status.get("has_successful_init")):
+                continue
+            providers.append(provider)
+
+        providers.sort(key=lambda provider: str(provider.get("name") or "").lower())
+        choices.extend(
+            [
+                (
+                    str(provider.get("id") or ""),
+                    str(provider.get("name") or provider.get("base_url") or "Meter driver"),
+                )
+                for provider in providers
+            ]
+        )
+        return choices
 
     def validate_customer_national_number(self, field):
         """Validate the national number part of the form."""
@@ -184,6 +231,18 @@ class BaseMeterForm(BaseForm):
         """
         if field.data is None:
             raise ValidationError(_("Please select a tariff or add a new one."))
+
+    def validate_provider_id(self, field):
+        """Ensure the selected meter driver is one of the currently eligible choices."""
+        # A missing field (a form/client that doesn't submit it) or an empty
+        # selection both mean "no driver".
+        selected = field.data or ""
+        available = [value for value, _label in self.provider_id.choices if value]
+        if available and not selected:
+            raise ValidationError(_("Please select a meter driver."))
+        valid = {value for value, _label in self.provider_id.choices}
+        if selected not in valid:
+            raise ValidationError(_("Please select a valid meter driver."))
 
     def save(self, view):
         """Save content of meter form to database."""

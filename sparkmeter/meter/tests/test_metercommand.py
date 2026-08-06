@@ -307,82 +307,6 @@ class MeterCommandTest(SparkMeterTestCaseBase):
         result = cli("meter", "get-heartbeat", "-m", str(m.code))
         assert "'meter': '%d'" % m.code in result.output
 
-    def test_ping(self, cli, mocker, capfd):
-        """`meter ping -m <mac>` submits a `ping_meter` to the metering provider."""
-        submitted = []
-
-        async def fake_submit_ping(client, meter_id, correlation_id):
-            submitted.append((meter_id, correlation_id))
-
-        async def fake_run_per_meter_command(submitter, meter_ids):
-            for mid in meter_ids:
-                await submitter(mocker.MagicMock(), mid, "corr-" + mid)
-
-        mocker.patch("sparkmeter.metering.tools.cli_client.submit_ping", fake_submit_ping)
-        mocker.patch(
-            "sparkmeter.metering.tools.cli_client.run_per_meter_command",
-            fake_run_per_meter_command,
-        )
-
-        m = MeterFactory()
-        self.session.commit()
-        result = cli("meter", "ping", "-m", str(m.code))
-        assert result.exit_code == 0
-        assert submitted == [(str(m.code), f"corr-{m.code}")]
-
-    def test_ping_all(self, cli, mocker):
-        """`meter ping` (no mac) submits a `ping_meter` for every meter."""
-        submitted = []
-
-        async def fake_submit_ping(client, meter_id, correlation_id):
-            submitted.append(meter_id)
-
-        async def fake_run_per_meter_command(submitter, meter_ids):
-            for mid in meter_ids:
-                await submitter(mocker.MagicMock(), mid, "corr-" + mid)
-
-        mocker.patch("sparkmeter.metering.tools.cli_client.submit_ping", fake_submit_ping)
-        mocker.patch(
-            "sparkmeter.metering.tools.cli_client.run_per_meter_command",
-            fake_run_per_meter_command,
-        )
-
-        MeterFactory()
-        MeterFactory()
-        self.session.commit()
-        result = cli("meter", "ping")
-        assert result.exit_code == 0
-        assert len(submitted) == 2
-
-
-class NeighborListCommandTest(SparkMeterTestCaseBase):
-    def test_get_neighborlists(self, cli, mocker, capfd):
-        """`meter get-neighborlists` submits `query_meter_neighbors` for every meter."""
-        submitted = []
-
-        async def fake_submit_neighbors(client, meter_id, correlation_id):
-            submitted.append(meter_id)
-
-        async def fake_run_per_meter_command(submitter, meter_ids):
-            for mid in meter_ids:
-                await submitter(mocker.MagicMock(), mid, "corr-" + mid)
-
-        mocker.patch(
-            "sparkmeter.metering.tools.cli_client.submit_query_neighbors",
-            fake_submit_neighbors,
-        )
-        mocker.patch(
-            "sparkmeter.metering.tools.cli_client.run_per_meter_command",
-            fake_run_per_meter_command,
-        )
-
-        MeterFactory(code=1)
-        MeterFactory(code=2)
-        self.session.commit()
-        result = cli("meter", "get-neighborlists")
-        assert result.exit_code == 0
-        assert sorted(submitted) == ["1", "2"]
-
 
 class WithForeverTest:
     def test_runs_once_without_forever(self):
@@ -411,17 +335,3 @@ class WithForeverTest:
         with pytest.raises(StopIteration):
             counting_fn(forever=True, delay=0)
         assert call_count[0] == 3
-
-
-class ReadingGeneratorTest(SparkMeterTestCaseBase):
-    def test_heartbeat(self, mocker):
-        from sparkmeter.reading.readingcommand import ReadingGenerator
-
-        event_create = mocker.patch("sparkmeter.event.eventdomain.Event.create")
-        event_create.return_value = EventFactory()
-
-        m = MeterFactory()
-        self.session.commit()
-
-        rg = ReadingGenerator(energy_watts=60, cycle_length=15)
-        rg.create_for_meter(m.serial)

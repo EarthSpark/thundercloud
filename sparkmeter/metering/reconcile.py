@@ -18,37 +18,26 @@ reconcile.
 
 import asyncio
 import logging
-import uuid
-from decimal import Decimal
+import re
 from typing import TYPE_CHECKING, Any, Optional
 
-from sparkmeter.metering._generated.models.configure_meter_command import ConfigureMeterCommand
-from sparkmeter.metering._generated.models.configure_meter_params import ConfigureMeterParams
-from sparkmeter.metering._generated.models.configure_provider_command import ConfigureProviderCommand
-from sparkmeter.metering._generated.models.configure_provider_command_vendor_options import (
-    ConfigureProviderCommandVendorOptions,
+from meter_driver_spec.http.models import (
+    ConfigureElectricalMeterCompatRequest,
+    ElectricalMeterConfiguration,
+    RegisterNodeRequest,
+    SetBalanceAndFlagsRequest,
 )
-from sparkmeter.metering._generated.models.configure_provider_params import ConfigureProviderParams
-from sparkmeter.metering._generated.models.meter_behavior_command import MeterBehaviorCommand
-from sparkmeter.metering._generated.models.meter_configuration import MeterConfiguration
-from sparkmeter.metering._generated.models.register_meter_command import RegisterMeterCommand
-from sparkmeter.metering._generated.models.register_meter_command_vendor_options import (
-    RegisterMeterCommandVendorOptions,
-)
-from sparkmeter.metering._generated.models.register_meter_params import RegisterMeterParams
-from sparkmeter.metering._generated.models.set_balance_command import SetBalanceCommand
-from sparkmeter.metering._generated.models.set_balance_params import SetBalanceParams
-from sparkmeter.metering._generated.models.submit_command_v_1_commands_post_request_body_command_type_enum import (
-    SubmitCommandV1CommandsPostRequestBodyCommandTypeEnum as CommandTypeEnum,
-)
-from sparkmeter.metering._generated.models.throttle_config import ThrottleConfig
+from past.utils import old_div
+
+from sparkmeter.metering.runtime_client import behavior_to_command, to_spec_decimal
 
 if TYPE_CHECKING:
     from flask import Flask
 
-    from sparkmeter.metering._generated import APIClient
+    from sparkmeter.metering.runtime_client import MeteringCommandClient
 
 logger = logging.getLogger(__name__)
+_AES_KEY_HEX_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
 _KNOWN_METER_TYPES = {
@@ -72,7 +61,12 @@ _KNOWN_METER_TYPES = {
 }
 
 
-async def reconcile_all(client: "APIClient", flask_app: "Flask") -> None:
+async def reconcile_all(
+    client: "MeteringCommandClient",
+    flask_app: "Flask",
+    *,
+    skip_provider_init: bool = False,
+) -> None:
     """Read all meters from DB and register them with the provider.
 
     `flask_app` is passed in explicitly because the DB loaders below run
@@ -80,27 +74,54 @@ async def reconcile_all(client: "APIClient", flask_app: "Flask") -> None:
     proxy is bound to a per-request thread-local that those worker
     threads never enter. The loaders push an explicit app context using
     this Flask instance.
+
+    `skip_provider_init` is used when the caller has already issued the
+    vendor-specific provider init for this runtime transition and only
+    needs the per-meter reconcile sequence.
     """
     logger.info("metering reconcile: starting")
 
-    provider_cmd = await asyncio.to_thread(_load_provider_command, flask_app)
-    if provider_cmd is not None:
-        await client.default.submit_command_v1_commands_post(provider_cmd)
+    if not skip_provider_init:
+        driver_init_payload = await asyncio.to_thread(_load_driver_init_payload, flask_app)
+        if driver_init_payload is not None:
+            await client.init_driver(driver_init_payload)
 
     meters_data = await asyncio.to_thread(_load_meters, flask_app)
     logger.info("metering reconcile: registering %d meters", len(meters_data))
 
     for m in meters_data:
         try:
-            await client.default.submit_command_v1_commands_post(_build_register(m))
+            logger.info(
+                "metering reconcile: registering meter_id=%s type=%s",
+                m.get("meter_id"),
+                m.get("meter_type"),
+            )
+            await client.register_node(_build_register(m))
 
             cfg = _build_configure(m)
             if cfg is not None:
-                await client.default.submit_command_v1_commands_post(cfg)
+                logger.info(
+                    "metering reconcile: configuring meter_id=%s behavior=%s power_limit=%s current_limit=%s",
+                    m.get("meter_id"),
+                    cfg.command.value,
+                    cfg.configuration.power_limit,
+                    cfg.configuration.current_limit,
+                )
+                await client.configure_meter(cfg)
+            else:
+                logger.warning(
+                    "metering reconcile: skipping configure for meter_id=%s because no config payload was derived",
+                    m.get("meter_id"),
+                )
 
             balance = _build_balance(m)
             if balance is not None:
-                await client.default.submit_command_v1_commands_post(balance)
+                logger.info(
+                    "metering reconcile: setting balance for meter_id=%s low_balance=%s",
+                    m.get("meter_id"),
+                    balance.low_balance_flag,
+                )
+                await client.set_balance(int(m["meter_id"]), balance)
         except Exception:  # noqa: BLE001
             logger.exception("metering reconcile: failed for meter_id=%s", m.get("meter_id", "?"))
 
@@ -112,10 +133,12 @@ async def reconcile_all(client: "APIClient", flask_app: "Flask") -> None:
 # ----------------------------------------------------------------------
 
 
-def _load_provider_command(flask_app: "Flask") -> Optional[ConfigureProviderCommand]:
+def _load_driver_init_payload(flask_app: "Flask") -> dict[str, Any] | None:
     try:
-        from sparkmeter.config.configdict import config
-        from sparkmeter.config.configparameter import parameters
+        from sparkmeter.config.provider_settings import (
+            get_enabled_provider,
+            load_provider_runtime_settings,
+        )
     except ImportError:
         return None
 
@@ -124,32 +147,39 @@ def _load_provider_command(flask_app: "Flask") -> Optional[ConfigureProviderComm
     # runs inside `asyncio.to_thread`, which spawns a fresh OS thread
     # with no Flask context.
     with flask_app.app_context():
-        heartbeat = config.get("HEARTBEAT_PERIOD")
-        if heartbeat is None:
+        enabled_provider = get_enabled_provider()
+        driver_config = load_provider_runtime_settings(enabled_provider)
+        driver_field_values = ((driver_config or {}).get("field_values")) or {}
+        aes_key_hex = driver_field_values.get("aes_key")
+        if not aes_key_hex:
             return None
 
-        vendor_options = ConfigureProviderCommandVendorOptions()
-        channel = getattr(parameters, "RADIO_CHANNEL", None)
-        aes_key_hex = getattr(parameters, "RADIO_AES_KEY", None)
+        heartbeat = driver_field_values.get("heartbeat_period_duration")
+        if heartbeat in (None, ""):
+            return None
+
+        payload: dict[str, Any] = {
+            "heartbeat_period_duration": int(heartbeat),
+            "aes_key": str(aes_key_hex).strip(),
+        }
+        channel = driver_field_values.get("channel")
         if channel is not None:
             try:
-                vendor_options["channel"] = int(channel)
+                payload["channel"] = int(channel)
             except (TypeError, ValueError):
-                pass
-        if aes_key_hex:
-            try:
-                vendor_options["aes_key"] = str(aes_key_hex)
-            except (TypeError, ValueError):
-                logger.warning("metering reconcile: invalid RADIO_AES_KEY, skipping")
+                logger.warning(
+                    "metering reconcile: skipping invalid channel %r; expected integer",
+                    channel,
+                )
+        aes_key = payload["aes_key"]
+        if not _AES_KEY_HEX_RE.fullmatch(aes_key):
+            logger.warning(
+                "metering reconcile: skipping invalid driver AES key %r; expected 32 hex characters",
+                aes_key_hex,
+            )
+            return None
 
-        return ConfigureProviderCommand(
-            command_type=CommandTypeEnum.CONFIGURE_PROVIDER,
-            correlation_id="reconcile-" + uuid.uuid4().hex[:12],
-            vendor_options=vendor_options if vendor_options else None,
-            # HEARTBEAT_PERIOD is in minutes in the existing config; the
-            # provider takes seconds.
-            params=ConfigureProviderParams(heartbeat_seconds=int(heartbeat) * 60),
-        )
+        return payload
 
 
 def _load_meters(flask_app: "Flask") -> list[dict[str, Any]]:
@@ -185,58 +215,46 @@ def _load_meters(flask_app: "Flask") -> list[dict[str, Any]]:
 # ----------------------------------------------------------------------
 
 
-def _build_register(m: dict) -> RegisterMeterCommand:
-    vendor_options = RegisterMeterCommandVendorOptions()
-    if m.get("mac") is not None:
-        vendor_options["mac"] = int(m["mac"])
-    return RegisterMeterCommand(
-        command_type=CommandTypeEnum.REGISTER_METER,
-        correlation_id="reconcile-register-" + uuid.uuid4().hex[:12],
-        vendor_options=vendor_options if vendor_options else None,
-        params=RegisterMeterParams(
-            meter_id=str(m["meter_id"]),
-            meter_type=str(m.get("meter_type") or "SM5R"),
-        ),
+def _build_register(m: dict) -> RegisterNodeRequest:
+    return RegisterNodeRequest(
+        node_id=int(m["meter_id"]),
+        node_type=str(m.get("meter_type") or "SM5R"),
+        mac=int(m["mac"]) if m.get("mac") is not None else None,
     )
 
 
-def _build_configure(m: dict) -> Optional[ConfigureMeterCommand]:
+def _build_configure(m: dict) -> Optional[ConfigureElectricalMeterCompatRequest]:
     config = m.get("config")
     if config is None:
         return None
-    behavior = MeterBehaviorCommand.ENABLE if m.get("is_active") else MeterBehaviorCommand.DISABLE
-    return ConfigureMeterCommand(
-        command_type=CommandTypeEnum.CONFIGURE_METER,
-        correlation_id="reconcile-configure-" + uuid.uuid4().hex[:12],
-        params=ConfigureMeterParams(
-            meter_id=str(m["meter_id"]),
-            behavior=behavior,
-            configuration=MeterConfiguration(
-                power_limit_watts=float(config.get("power_limit") or 65535),
-                current_limit_amps=float(config.get("current_limit") or 65535),
-                startup_delay_seconds=int(config.get("startup_delay") or 0),
-                throttle=ThrottleConfig(
-                    on_seconds=int(config.get("throttle_on_time") or 5),
-                    off_seconds=int(config.get("throttle_off_time") or 10),
-                    count_limit=int(config.get("throttle_count_limit") or 5),
-                ),
-            ),
+    behavior_name = str(config.get("behavior") or "").strip().lower()
+    if not behavior_name:
+        behavior_name = "enable" if m.get("is_active") else "disable"
+    behavior = "enable" if behavior_name == "enable" else "disable"
+    command = behavior_to_command(behavior)
+    if command is None:
+        return None
+    return ConfigureElectricalMeterCompatRequest(
+        node_id=int(m["meter_id"]),
+        command=command,
+        configuration=ElectricalMeterConfiguration(
+            power_limit=float(config.get("power_limit") or 65535),
+            current_limit=float(config.get("current_limit") or 65535),
+            startup_delay=int(config.get("startup_delay") or 0),
+            throttle_on_time=int(config.get("throttle_on_time") or 5),
+            throttle_off_time=int(config.get("throttle_off_time") or 10),
+            throttle_count_limit=int(config.get("throttle_count_limit") or 5),
         ),
     )
 
 
-def _build_balance(m: dict) -> Optional[SetBalanceCommand]:
+def _build_balance(m: dict) -> Optional[SetBalanceAndFlagsRequest]:
     balance = m.get("balance")
     if balance is None:
         return None
-    return SetBalanceCommand(
-        command_type=CommandTypeEnum.SET_BALANCE,
-        correlation_id="reconcile-balance-" + uuid.uuid4().hex[:12],
-        params=SetBalanceParams(
-            balance=str(Decimal(str(balance))),
-            meter_id=str(m["meter_id"]),
-            low_balance=bool(m.get("low_balance")),
-        ),
+    return SetBalanceAndFlagsRequest(
+        balance=to_spec_decimal(balance),
+        low_balance_flag=bool(m.get("low_balance")),
     )
 
 
@@ -273,13 +291,43 @@ def _config_of(meter) -> dict | None:
     cfg = getattr(meter, "config", None)
     if cfg is None:
         return None
+    if not meter.is_customer_meter():
+        return None
+
+    try:
+        from sparkmeter.config.configparameter import parameters
+        from sparkmeter.meter.meterdomain import MeterConfig
+    except ImportError:
+        return None
+
+    try:
+        override_meter_state = meter.ground.private.override_meter_state
+        nominal_voltage = parameters.NOMINAL_VOLTAGE
+        tariff_load_limit = meter.tariff.get_current_load_limit()
+        continuous_power = meter.continuous_current_limit * nominal_voltage
+        provider_uses_engineering_units = bool(getattr(meter, "provider_id", None))
+        power_limit = min(continuous_power, tariff_load_limit)
+        if not provider_uses_engineering_units:
+            power_limit = old_div(power_limit, meter.scalars.power_scalar)
+        current_limit = meter.model.inrush_limit
+        if not provider_uses_engineering_units:
+            current_limit = old_div(current_limit, meter.scalars.current_scalar)
+        current_limit = min(current_limit, 65535)
+        behavior = (
+            "enable" if meter.state_value == MeterConfig.STATE_ON and not override_meter_state else "disable"
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("metering reconcile: failed to derive config for meter %s", meter.code)
+        return None
+
     return {
-        "power_limit": getattr(cfg, "power_limit", None),
-        "current_limit": getattr(cfg, "current_limit", None),
-        "startup_delay": getattr(cfg, "startup_delay", None),
-        "throttle_on_time": getattr(cfg, "throttle_on_time", None),
-        "throttle_off_time": getattr(cfg, "throttle_off_time", None),
-        "throttle_count_limit": getattr(cfg, "throttle_count_limit", None),
+        "behavior": behavior,
+        "power_limit": float(power_limit),
+        "current_limit": float(current_limit),
+        "startup_delay": int(getattr(cfg, "startup_delay", None) or 0),
+        "throttle_on_time": int(getattr(cfg, "throttle_on_time", None) or 5),
+        "throttle_off_time": int(getattr(cfg, "throttle_off_time", None) or 10),
+        "throttle_count_limit": int(getattr(cfg, "throttle_count_limit", None) or 5),
     }
 
 

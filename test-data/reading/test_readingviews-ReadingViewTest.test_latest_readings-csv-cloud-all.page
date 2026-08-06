@@ -11,7 +11,7 @@
 < Set-Cookie: %% COOKIE %%
 < Vary: Cookie
 <
-serial,customer_name,customer_code,state,frequency,voltage_avg,current_avg,true_power_inst,energy,uptime,user_power_limit,age,prr,address
+serial,customer_name,customer_code,state,frequency,voltage_avg,current_avg,true_power_avg,energy,uptime,user_power_limit,age,prr,address
 SM15R-01-00000001,strëet,customer code 1,,,,,,,,,,,strëet street2 city state
 SM15R-02-00000001,strëet,customer code 2,,,,,,,,,,,strëet street2 city state
 SM15R-01-00000013,,,,,,,,,,,,,strëet street2 city state

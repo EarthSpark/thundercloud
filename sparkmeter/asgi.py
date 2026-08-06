@@ -32,7 +32,17 @@ from contextlib import asynccontextmanager  # noqa: E402
 from sparkmeter.app import SparkmeterApplication  # noqa: E402
 from sparkmeter.cli import register_cli_commands  # noqa: E402
 from sparkmeter.metering.lifespan import metering_lifespan  # noqa: E402
+from sparkmeter.metering.runtime_registry import (  # noqa: E402
+    get_running_app,
+    set_running_app,
+)
 from sparkmeter.periodic import periodic_lifespan  # noqa: E402
+
+# When this file is launched via `python -m sparkmeter.asgi`, Python executes it
+# as `__main__`. Register the canonical module name as an alias to the running
+# module so in-process helpers don't accidentally import a second copy.
+if __name__ == "__main__":
+    sys.modules.setdefault("sparkmeter.asgi", sys.modules[__name__])
 
 
 @asynccontextmanager
@@ -42,6 +52,7 @@ async def app_lifespan(app: FastAPI):
     metering_lifespan is wrapped on the inside so its teardown (drain
     SSE / dispatch) runs before periodic jobs are cancelled.
     """
+    app.state.main_loop = asyncio.get_running_loop()
     async with periodic_lifespan(app):
         async with metering_lifespan(app):
             yield
@@ -81,6 +92,9 @@ def create_public_app() -> FastAPI:
     # which is bound to a per-request thread-local that lifespan threads
     # never enter.
     api.state.flask_app = flask_app
+    # Publish to the registry so the sync→async metering bridge can reach the
+    # running app without reflecting over sys.modules.
+    set_running_app(api)
     # Mount Flask under "/" — FastAPI's own routes take precedence; everything
     # else falls through to the WSGI app.
     api.mount("/", WSGIMiddleware(flask_app))
@@ -109,19 +123,26 @@ def create_internal_app(public_app: FastAPI) -> FastAPI:
 # a live DB connection). ASGI servers reference these by attribute, which fires
 # the factory at first access. Tests / introspection that just want to import
 # the module don't pay that cost.
+#
+# The public app's single cache is the registry (`get_running_app`); the
+# internal app has no cross-module consumer, so it caches here in a private
+# module-level variable. Neither writes a string-keyed module global.
+_internal_app = None
+
+
+def _ensure_public_app():
+    app = get_running_app()
+    return app if app is not None else create_public_app()
 
 
 def __getattr__(name):  # PEP 562 module-level __getattr__
+    global _internal_app
     if name == "public_app":
-        app = create_public_app()
-        globals()["public_app"] = app
-        return app
+        return _ensure_public_app()
     if name == "internal_app":
-        public = globals().get("public_app") or create_public_app()
-        globals()["public_app"] = public
-        app = create_internal_app(public)
-        globals()["internal_app"] = app
-        return app
+        if _internal_app is None:
+            _internal_app = create_internal_app(_ensure_public_app())
+        return _internal_app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
