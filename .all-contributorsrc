@@ -253,8 +253,19 @@
         "security"
       ],
       "date": "2026-07-21"
+    },
+    {
+      "login": "sampscl",
+      "name": "Clay Sampson",
+      "avatar_url": "https://avatars.githubusercontent.com/u/358749?v=4",
+      "profile": "https://github.com/sampscl",
+      "contributions": [
+        "infra",
+        "maintenance"
+      ]
     }
   ],
   "contributorsPerLine": 7,
-  "linkToUsage": true
+  "linkToUsage": true,
+  "commitType": "docs"
 }
