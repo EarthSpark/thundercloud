@@ -224,6 +224,17 @@
       "date": "2023-06-30"
     },
     {
+      "login": "sampscl",
+      "name": "Clay Sampson",
+      "avatar_url": "https://avatars.githubusercontent.com/u/358749?v=4",
+      "profile": "https://github.com/sampscl",
+      "contributions": [
+        "infra",
+        "maintenance"
+      ],
+      "date": "2024-04-16"
+    },
+    {
       "login": "LyncTechLLC",
       "name": "LyncTechLLC",
       "avatar_url": "https://avatars.githubusercontent.com/u/19625522?v=4",
@@ -253,16 +264,6 @@
         "security"
       ],
       "date": "2026-07-21"
-    },
-    {
-      "login": "sampscl",
-      "name": "Clay Sampson",
-      "avatar_url": "https://avatars.githubusercontent.com/u/358749?v=4",
-      "profile": "https://github.com/sampscl",
-      "contributions": [
-        "infra",
-        "maintenance"
-      ]
     }
   ],
   "contributorsPerLine": 7,
