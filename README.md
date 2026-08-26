@@ -103,15 +103,20 @@ docker compose exec ground uv run flask user create
 
 ## Development
 
-This document is to help you get the development environment up and running. You can choose between two options, hit either of the links below for more details:
+> [!IMPORTANT]
+> **The development environment lives in the [groundbolt-dev workspace](https://github.com/EarthSpark/groundbolt-dev), not in this repo.** Start there: its README walks you through cloning this repo alongside its sibling components and bringing up the whole system with Docker Compose.
 
-1. [Docker](#docker)
-2. [Local](#local)
+This webapp is one component of a larger system. On its own it has no database, no metering provider to talk to, and no ground↔cloud sync. The [groundbolt-dev workspace](https://github.com/EarthSpark/groundbolt-dev) runs all of those — the ground and cloud webapps, their Postgres databases, the SymmetricDS sync pair, and the `sparknet-http` metering provider — from a single compose file, which is why development setup happens there rather than here.
+
+What stays in this repo:
+
+1. [Docker](#docker) — the self-contained unit-test harness (`docker-compose.test.yml`) and webapp-specific commands.
+2. [Local](#local) — running just the webapp process directly on your machine, without Docker. Only useful for narrow webapp-only iteration; most people don't need this.
 
 
 ### Docker
 
-Dockerized development happens in the **groundbolt-dev workspace metarepo**, which clones this repo and its sibling component repos side by side and runs the whole system — the ground and cloud webapps, their databases, the SymmetricDS sync pair, and the `sparknet-http` metering provider — from a single compose file. See that repo's README for setup.
+Dockerized development happens in the **[groundbolt-dev workspace](https://github.com/EarthSpark/groundbolt-dev)**, which clones this repo and its sibling component repos side by side and runs the whole system — the ground and cloud webapps, their databases, the SymmetricDS sync pair, and the `sparknet-http` metering provider — from a single compose file. See that repo's README for setup.
 
 This repo's `docker-compose.test.yml` is the self-contained test harness: a throwaway Postgres plus the test-image runner, needing nothing outside this repo. It's what CI runs.
 
@@ -171,8 +176,10 @@ $ docker compose logs -f
 
 ### Local
 
+> [!NOTE]
+> This is **not** the standard development setup — that's the [groundbolt-dev workspace](https://github.com/EarthSpark/groundbolt-dev). The steps below run only the webapp process, directly on your machine: no metering provider, no cloud side, no sync. Use this only if you specifically want to iterate on webapp code without Docker (you'll need a local PostgreSQL — see [OS Requirements](#os-requirements)).
 
-To setup a development environment locally, you need to follow the steps below:
+To set up the webapp by itself locally, follow the steps below:
 
 #### 1. Setup the project and install the dependencies
 
