@@ -1,6 +1,6 @@
 # sparkmeter
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-17-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-18-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <small>Also known as ThunderCloud (when deployed to the cloud) or GroundBolt (when deployed to the base station on the ground)</small>
@@ -283,6 +283,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/e
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dberliner"><img src="https://avatars.githubusercontent.com/u/3488019?v=4?s=100" width="100px;" alt="Daniel Berliner"/><br /><sub><b>Daniel Berliner</b></sub></a><br /><a href="https://github.com/EarthSpark/thundercloud/commits?author=dberliner" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/sampscl"><img src="https://avatars.githubusercontent.com/u/358749?v=4?s=100" width="100px;" alt="Clay Sampson"/><br /><sub><b>Clay Sampson</b></sub></a><br /><a href="#infra-sampscl" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-sampscl" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/LyncTechLLC"><img src="https://avatars.githubusercontent.com/u/19625522?v=4?s=100" width="100px;" alt="LyncTechLLC"/><br /><sub><b>LyncTechLLC</b></sub></a><br /><a href="https://github.com/EarthSpark/thundercloud/commits?author=LyncTechLLC" title="Code">💻</a> <a href="https://github.com/EarthSpark/thundercloud/issues?q=author%3ALyncTechLLC" title="Bug reports">🐛</a> <a href="https://github.com/EarthSpark/thundercloud/commits?author=LyncTechLLC" title="Documentation">📖</a> <a href="#design-LyncTechLLC" title="Design">🎨</a> <a href="#ideas-LyncTechLLC" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-LyncTechLLC" title="Maintenance">🚧</a> <a href="#plugin-LyncTechLLC" title="Plugin/utility libraries">🔌</a> <a href="#security-LyncTechLLC" title="Security">🛡️</a> <a href="#tool-LyncTechLLC" title="Tools">🔧</a> <a href="https://github.com/EarthSpark/thundercloud/commits?author=LyncTechLLC" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jranson"><img src="https://avatars.githubusercontent.com/u/883928?v=4?s=100" width="100px;" alt="James Ranson"/><br /><sub><b>James Ranson</b></sub></a><br /><a href="https://github.com/EarthSpark/thundercloud/commits?author=jranson" title="Documentation">📖</a> <a href="#infra-jranson" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#security-jranson" title="Security">🛡️</a></td>
     </tr>
