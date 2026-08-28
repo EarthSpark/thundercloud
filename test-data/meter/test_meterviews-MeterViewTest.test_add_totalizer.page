@@ -50,7 +50,7 @@
         <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
         <meta name="theme-color" content="#ffffff">
     </head>
-    <body>
+    <body data-page-name="meter-form">
 
         <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
             <!-- Brand and toggle get grouped for better mobile display -->
@@ -206,6 +206,7 @@
         </div>
         <div class="box-content padded">
                             <form class="form form-horizontal" role="form" method="POST">
+
   <div class="form-group ">
 
             <label class="control-label col-lg-2" for="serial">Serial</label>

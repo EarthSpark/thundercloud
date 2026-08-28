@@ -10,6 +10,11 @@ base.registerPageLoader('meter-chart', function() {
     new MeterChart.MeterChart();
 });
 
+base.registerPageLoader('meter-form', function() {
+    var MeterTariffModal = require('meter/js/meter-tariff-modal.js');
+    new MeterTariffModal.MeterTariffModal();
+});
+
 base.registerPageLoader('meter-view', function() {
     var MeterView = require('meter/js/meter-view.js');
     new MeterView.MeterView();

@@ -16,9 +16,7 @@ function format_currency(number) {
 }
 exports.format_currency = format_currency;
 
-function flash(msg, category, delay) {
-    var flash = $('<div></div>');
-    flash.html(msg);
+function showAlert(flash, category, delay) {
     flash.addClass('alert');
     flash.hide();
     if (category) {
@@ -30,7 +28,18 @@ function flash(msg, category, delay) {
         flash.delay(delay).fadeOut('slow');
     }
 }
+
+function flash(msg, category, delay) {
+    showAlert($('<div></div>').html(msg), category, delay);
+}
 exports.flash = flash;
+
+// Same alert as flash(), for a message that is not markup -- notably one that
+// came back from the server, which must not be able to inject elements.
+function flashText(msg, category, delay) {
+    showAlert($('<div></div>').text(msg), category, delay);
+}
+exports.flashText = flashText;
 
 var _pageLoaders = {};
 

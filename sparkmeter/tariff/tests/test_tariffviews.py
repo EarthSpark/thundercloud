@@ -13,10 +13,10 @@ from sparkmeter.constants import MAX_SIGNED_INT
 from sparkmeter.event.eventdomain import Event
 from sparkmeter.meter.meterdomain import MeterConfig
 from sparkmeter.misc.htmlutils import build_link
-from sparkmeter.misc.jsonutils import json_dumps
+from sparkmeter.misc.jsonutils import json_dumps, json_loads
 from sparkmeter.tariff.tariffdomain import Tariff
 from sparkmeter.tests.base import WebViewTestCaseBase
-from sparkmeter.tests.test_data_factory import MeterFactory, TariffFactory
+from sparkmeter.tests.test_data_factory import MeterFactory, TariffFactory, VendorFactory
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -54,6 +54,124 @@ class TariffViewTest(WebViewTestCaseBase):
 
         response = client.get(path)
         self.verify_response(response)
+
+    def test_add_modal_get(self, client):
+        path = "/tariff/add-modal"
+
+        response = client.get(path)
+        assert response.status_code == http.client.OK
+        assert "X-Form-Errors" not in response.headers
+        self.verify_response(response)
+
+    def test_add_modal_get_renders_empty_collections(self, client):
+        """A freshly opened modal must match /tariff/add, which posts back cleanly.
+
+        With no formdata the JSON fields keep ``None``, which renders as
+        ``null``/``""`` instead of ``[]`` and cannot be posted back.
+        """
+        response = client.get("/tariff/add-modal")
+        standalone = client.get("/tariff/add")
+
+        for attribute in ('data-blockrates="[]"', 'data-tous="[]"', 'data-load-limits="[]"'):
+            assert attribute in response.text
+            assert attribute in standalone.text
+
+    def test_add_modal_untouched_post_is_parseable(self, client):
+        """Submitting an untouched modal must not post unparseable collections."""
+        data = dict(name="", blockrates="[]", tous="[]", load_limits="[]")
+
+        response = client.post("/tariff/add-modal", data=data)
+
+        assert response.status_code == http.client.BAD_REQUEST
+        errors = json_loads(response.headers["X-Form-Errors"])
+        assert "blockrates" not in errors
+        assert "tous" not in errors
+        assert "load_limits" not in errors
+
+    def test_add_modal_forbidden_without_permission(self, client, vendor_role):
+        """The modal endpoint is behind the same tariff:add permission as /tariff/add."""
+        client.login_as(VendorFactory(roles=[vendor_role]))
+
+        assert client.get("/tariff/add-modal").status_code == http.client.NOT_FOUND
+        assert client.post("/tariff/add-modal", data={}).status_code == http.client.NOT_FOUND
+
+    def test_add_modal_post_valid(self, client, config):
+        path = "/tariff/add-modal"
+        data = dict(
+            name="MODAL TARIFF",
+            flat_load_limit=150,
+            plan_price=0,
+            cycle_start_day_of_month=1,
+            tariff_type="flat",
+            flat_price=4,
+            tous="",
+        )
+
+        config["HEROKU"] = False
+        response = client.post(path, data=data)
+
+        assert response.status_code == http.client.OK
+        body = response.json()
+        assert body["message"] == "Tariff created."
+
+        tariffs = Tariff.get_all()
+        assert len(tariffs) == 1
+        assert body["tariff"]["name"] == "MODAL TARIFF"
+        assert body["tariff"]["id"] == str(tariffs[0].id)
+
+    def test_add_modal_post_invalid(self, client):
+        path = "/tariff/add-modal"
+        data = dict(name="", flat_load_limit=150, flat_price=4)
+
+        response = client.post(path, data=data)
+
+        assert response.status_code == http.client.BAD_REQUEST
+        errors = json_loads(response.headers["X-Form-Errors"])
+        assert errors["name"] == ["Please set a name for this tariff"]
+        assert "Please set a name for this tariff" in response.text
+        assert not Tariff.query.scalar()
+
+    @pytest.mark.parametrize(
+        "field, data, message",
+        [
+            (
+                "blockrates",
+                dict(
+                    tariff_type=Tariff.TYPE_BLOCKRATE,
+                    blockrates=json_dumps([{"lower": "1", "upper": "20", "value": "1"}]),
+                ),
+                "Block rates contain at least one gap, between 0 and 65535",
+            ),
+            (
+                "tous",
+                dict(
+                    tou_enabled=True,
+                    tous=json_dumps([{"start": "00:00", "end": "12:00", "value": -100}]),
+                ),
+                "The TOU period modifier must be a positive number.",
+            ),
+            (
+                "load_limits",
+                dict(load_limit_type=Tariff.LOAD_LIMIT_TYPE_SCHEDULED, load_limits=json_dumps([])),
+                "Please add some Load limit periods.",
+            ),
+        ],
+    )
+    def test_add_modal_post_collection_error(self, client, field, data, message):
+        """These validators store the raw exception, which is not JSON serializable.
+
+        Reporting them used to raise a TypeError out of the error header and
+        turn the response into a 500.
+        """
+        path = "/tariff/add-modal"
+        data = dict(data, name="TARIFF", flat_load_limit=150, flat_price=4)
+
+        response = client.post(path, data=data)
+
+        assert response.status_code == http.client.BAD_REQUEST
+        errors = json_loads(response.headers["X-Form-Errors"])
+        assert errors[field] == [message]
+        assert not Tariff.query.scalar()
 
     def test_add_form(self, client, config):
         path = "/tariff/add"

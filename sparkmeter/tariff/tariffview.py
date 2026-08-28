@@ -9,20 +9,29 @@ import logging
 from flask.globals import request
 from flask.helpers import flash, url_for
 from flask.templating import render_template
+from flask.wrappers import Response
 from flask_babel import lazy_gettext as _
 from markupsafe import Markup
 from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
 
 from sparkmeter.misc.htmlutils import build_link
+from sparkmeter.misc.jsonutils import jsonify
 from sparkmeter.tariff.tariffdomain import Tariff
 from sparkmeter.tariff.tariffform import TariffForm
 from sparkmeter.tariff.tariffutils import add_tariff_from_form, update_tariff_from_form
 from sparkmeter.web.blueprint import AuthBlueprint
+from sparkmeter.web.forms import set_form_errors_header
 from sparkmeter.web.permission import verify_permission
 
 logger = logging.getLogger(__name__)
 tariff = AuthBlueprint("tariff", __name__)
+
+
+def render_modal_form(form, status=http.client.OK):
+    """Render the tariff modal form with optional validation metadata."""
+    body = render_template("tariff-modal-form.html", form=form)
+    return set_form_errors_header(Response(body, status=status), form)
 
 
 @tariff.route("/tariff/")
@@ -58,6 +67,25 @@ def add():
     else:
         form.validate()  # prepopulate the empty form with validation errors
     return form.render(mode="add")
+
+
+@tariff.route("/tariff/add-modal", methods=["GET", "POST"])
+@verify_permission("tariff", "add")
+def add_modal():
+    """Add tariff form rendered for the meter modal workflow."""
+    form = TariffForm(request.form)
+    if request.method == "POST":
+        tariff = add_tariff_from_form(form)
+        if tariff:
+            return jsonify(
+                message=_("Tariff created."),
+                tariff={
+                    "id": tariff.id,
+                    "name": tariff.name,
+                },
+            )
+        return render_modal_form(form, status=http.client.BAD_REQUEST)
+    return render_modal_form(form)
 
 
 @tariff.route("/tariff/<uuid:tariff_id>/edit", methods=["GET", "POST"])

@@ -9,7 +9,7 @@
 
 < HTTP/1.1 200 OK
 < Content-Type: text/html; charset=utf-8
-< X-Form-Errors: {"serial": ["Invalid meter serial, must look like \"SMXXX-XX-XXXXXXXX\"."],"state": ["Not a valid choice."],"tariff": ["Not a valid choice"]}
+< X-Form-Errors: {"serial": ["Invalid meter serial, must look like \"SMXXX-XX-XXXXXXXX\"."],"state": ["Not a valid choice."],"tariff": ["Please select a tariff or add a new one."]}
 <
 
 <!doctype html>
@@ -51,7 +51,7 @@
         <meta name="msapplication-TileImage" content="/static/logo/mstile-144x144.png">
         <meta name="theme-color" content="#ffffff">
     </head>
-    <body>
+    <body data-page-name="meter-form">
 
         <nav class="navbar navbar-default navbar-inverse navbar-static-top" role="navigation">
             <!-- Brand and toggle get grouped for better mobile display -->
@@ -207,6 +207,10 @@
         </div>
         <div class="box-content padded">
                             <form class="form form-horizontal" role="form" method="POST">
+                    <div class="alert alert-danger">
+                      Please correct the highlighted fields and try again.
+                    </div>
+
   <div class="form-group  has-error">
 
             <label class="control-label col-lg-2" for="serial">Serial</label>
@@ -232,11 +236,29 @@
                       <div class="input-group col-lg-10">
                         <select class="form-control tags" id="tags" multiple name="tags"></select>
                       </div>
-                    </div><div class="form-group">
+                    </div><div id="meter-tariff-modal-params"
+                         data-modal-url="/tariff/add-modal"
+                         data-add-new-value="__add_new__"
+                         data-add-new-label="&lt;Add New&gt;"
+                         data-text-title="Add a New Tariff"
+                         data-text-loading="Loading tariff form..."
+                         data-text-cancel="Cancel"
+                         data-text-save="Save"
+                         data-text-saving="Saving..."
+                         data-text-created="Tariff created."
+                         data-text-load-error="Could not load the tariff form."
+                         data-text-save-error="Could not save the tariff."
+                         data-text-session-expired="Your session has expired. Please reload the page and sign in again.">
+                    </div>
+                    <div class="form-group has-error">
                       <label class="control-label col-lg-2" for="tariff">Tariff</label>
                       <div class="input-group col-lg-10">
-                        <select class="form-control" id="tariff" name="tariff"><option value="00000004-0000-0000-0000-000000000001">tarïff01</option></select>
+                        <select class="form-control" id="tariff" name="tariff"><option selected value="__None">Select a tariff</option><option value="00000004-0000-0000-0000-000000000001">tarïff01</option></select>
                       </div>
+                    </div>
+                    <div class="col-lg-offset-2 col-lg-10">
+                          <p class="help-block">Please select a tariff or add a new one.</p>
+
                     </div><div class="form-group">
                       <label class="control-label col-lg-2" for="active">Active</label>
                       <div class="input-group col-lg-10">

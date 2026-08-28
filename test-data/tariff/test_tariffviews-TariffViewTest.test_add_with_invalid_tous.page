@@ -197,14 +197,6 @@
 
             <div class="container padded">
                 <div class="row">
-  <div id="tariff-form-params"
-       data-blockrates="[]"
-       data-blockrates-title="&#34;Edit block rate&#34;"
-       data-tous="[{&#34;end&#34;: &#34;00:00&#34;, &#34;id&#34;: &#34;612aaccf-a86f-486e-82b4-3abd136f34ef&#34;, &#34;start&#34;: &#34;00:00&#34;, &#34;value&#34;: -100}]"
-       data-tous-title="&#34;Edit time of use&#34;"
-       data-load-limits="[]"
-       data-load-limits-title="&#34;Edit scheduled load limits of use&#34;">
-  </div>
   <div class="row">
     <div class="col-md-12">
     <div class="box">
@@ -213,44 +205,62 @@
         </div>
         <div class="box-content padded">
                   <form class="form form-horizontal tariff" method="POST">
-        <input id="blockrates" name="blockrates" type="hidden" value="[]">
-<input id="tous" name="tous" type="hidden" value="[{&#39;end&#39;: &#39;00:00&#39;, &#39;id&#39;: &#39;612aaccf-a86f-486e-82b4-3abd136f34ef&#39;, &#39;start&#39;: &#39;00:00&#39;, &#39;value&#39;: -100}]">
-<input id="load_limits" name="load_limits" type="hidden" value="[]">        <div class="form-group" title="The name of this tariff">
-          <label class="control-label col-lg-2" for="name">Name</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control" id="name" name="name" required type="text" value="TARIFF TOU">
-          </div>
-        </div>
-        
 
-        <div class="form-group cycle-start-day-of-month"
-             title="The plan duration and start day defines the duration of the billing cycle, and what day of month the billing cycle will reset for this tariff. The block rate calculation resets on this day, as well as the monthly plan if a plan is enabled.">
-          <label class="control-label col-lg-2" for="plan_duration_and_start_day">Plan Duration and Start Day</label>
-          <div class="input-group col-lg-3">
-            <select class="form-control numeric no-negative" id="plan_duration_and_start_day" name="plan_duration_and_start_day"><option value="1d1">1 day</option><option selected value="1m1">1 month, starting day 1</option><option value="1m2">1 month, starting day 2</option><option value="1m3">1 month, starting day 3</option><option value="1m4">1 month, starting day 4</option><option value="1m5">1 month, starting day 5</option><option value="1m6">1 month, starting day 6</option><option value="1m7">1 month, starting day 7</option><option value="1m8">1 month, starting day 8</option><option value="1m9">1 month, starting day 9</option><option value="1m10">1 month, starting day 10</option><option value="1m11">1 month, starting day 11</option><option value="1m12">1 month, starting day 12</option><option value="1m13">1 month, starting day 13</option><option value="1m14">1 month, starting day 14</option><option value="1m15">1 month, starting day 15</option><option value="1m16">1 month, starting day 16</option><option value="1m17">1 month, starting day 17</option><option value="1m18">1 month, starting day 18</option><option value="1m19">1 month, starting day 19</option><option value="1m20">1 month, starting day 20</option><option value="1m21">1 month, starting day 21</option><option value="1m22">1 month, starting day 22</option><option value="1m23">1 month, starting day 23</option><option value="1m24">1 month, starting day 24</option><option value="1m25">1 month, starting day 25</option><option value="1m26">1 month, starting day 26</option><option value="1m27">1 month, starting day 27</option><option value="1m28">1 month, starting day 28</option></select>
-          </div>
-        </div>
-                <div class="form-group">
-          <label class="control-label col-lg-2" for="load_limit_type">Load Limit Type</label>
-          <div id="radio-group load_limit_type" class="btn-group col-lg-10" data-toggle="buttons">
-            <label class="btn btn-primary active">
-              <input type="radio" name="load_limit_type" id="load_limit_type" value="flat" checked>Flat
-            </label>
-            <label class="btn btn-primary">
-              <input type="radio" name="load_limit_type" id="load_limit_type" value="scheduled">Scheduled
-            </label>
-          </div>
-        </div>
-                <div class="form-group load_limit_type flat">
-          <label class="control-label col-lg-2" for="flat_load_limit">Load Limit</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control numeric no-negative" id="flat_load_limit" max="4800" min="1" name="flat_load_limit" type="number" value="150">
-            <span class="input-group-addon">in watts</span>
-          </div>
-        </div>
-                <div class="form-group load_limit_type scheduled hide">
-          <label class="control-label col-lg-2">Load Limit Periods</label>
-          <div class="col-md-5" data-box="tariff-load-limits">
+<div id="tariff-form-params"
+     data-blockrates="[]"
+     data-blockrates-title="&#34;Edit block rate&#34;"
+     data-tous="[{&#34;end&#34;: &#34;00:00&#34;, &#34;id&#34;: &#34;612aaccf-a86f-486e-82b4-3abd136f34ef&#34;, &#34;start&#34;: &#34;00:00&#34;, &#34;value&#34;: -100}]"
+     data-tous-title="&#34;Edit time of use&#34;"
+     data-load-limits="[]"
+     data-load-limits-title="&#34;Edit scheduled load limits of use&#34;">
+</div>
+
+<input id="blockrates" name="blockrates" type="hidden" value="[]">
+<input id="tous" name="tous" type="hidden" value="[{&#39;end&#39;: &#39;00:00&#39;, &#39;id&#39;: &#39;612aaccf-a86f-486e-82b4-3abd136f34ef&#39;, &#39;start&#39;: &#39;00:00&#39;, &#39;value&#39;: -100}]">
+<input id="load_limits" name="load_limits" type="hidden" value="[]">
+
+<div class="form-group" title="The name of this tariff">
+  <label class="control-label col-lg-2" for="name">Name</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control" id="name" name="name" required type="text" value="TARIFF TOU">
+  </div>
+</div>
+
+
+<div class="form-group cycle-start-day-of-month"
+     title="The plan duration and start day defines the duration of the billing cycle, and what day of month the billing cycle will reset for this tariff. The block rate calculation resets on this day, as well as the monthly plan if a plan is enabled.">
+  <label class="control-label col-lg-2" for="plan_duration_and_start_day">Plan Duration and Start Day</label>
+  <div class="input-group col-lg-3">
+    <select class="form-control numeric no-negative" id="plan_duration_and_start_day" name="plan_duration_and_start_day"><option value="1d1">1 day</option><option selected value="1m1">1 month, starting day 1</option><option value="1m2">1 month, starting day 2</option><option value="1m3">1 month, starting day 3</option><option value="1m4">1 month, starting day 4</option><option value="1m5">1 month, starting day 5</option><option value="1m6">1 month, starting day 6</option><option value="1m7">1 month, starting day 7</option><option value="1m8">1 month, starting day 8</option><option value="1m9">1 month, starting day 9</option><option value="1m10">1 month, starting day 10</option><option value="1m11">1 month, starting day 11</option><option value="1m12">1 month, starting day 12</option><option value="1m13">1 month, starting day 13</option><option value="1m14">1 month, starting day 14</option><option value="1m15">1 month, starting day 15</option><option value="1m16">1 month, starting day 16</option><option value="1m17">1 month, starting day 17</option><option value="1m18">1 month, starting day 18</option><option value="1m19">1 month, starting day 19</option><option value="1m20">1 month, starting day 20</option><option value="1m21">1 month, starting day 21</option><option value="1m22">1 month, starting day 22</option><option value="1m23">1 month, starting day 23</option><option value="1m24">1 month, starting day 24</option><option value="1m25">1 month, starting day 25</option><option value="1m26">1 month, starting day 26</option><option value="1m27">1 month, starting day 27</option><option value="1m28">1 month, starting day 28</option></select>
+  </div>
+</div>
+
+
+<div class="form-group">
+  <label class="control-label col-lg-2" for="load_limit_type">Load Limit Type</label>
+  <div id="radio-group load_limit_type" class="btn-group col-lg-10" data-toggle="buttons">
+    <label class="btn btn-primary active">
+      <input type="radio" name="load_limit_type" id="load_limit_type" value="flat" checked>Flat
+    </label>
+    <label class="btn btn-primary">
+      <input type="radio" name="load_limit_type" id="load_limit_type" value="scheduled">Scheduled
+    </label>
+  </div>
+</div>
+
+
+<div class="form-group load_limit_type flat">
+  <label class="control-label col-lg-2" for="flat_load_limit">Load Limit</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control numeric no-negative" id="flat_load_limit" max="4800" min="1" name="flat_load_limit" type="number" value="150">
+    <span class="input-group-addon">in watts</span>
+  </div>
+</div>
+
+
+<div class="form-group load_limit_type scheduled hide">
+  <label class="control-label col-lg-2">Load Limit Periods</label>
+  <div class="col-md-5" data-box="tariff-load-limits">
   <table id="tariff-load-limits" class='table table-striped table-bordered table-hover table-normal dataTable '>
       <thead class="">
       <tr>
@@ -308,67 +318,77 @@
     </div>
   </div>
 </div>
-          </div>
-        </div>
-                <div class="form-group" title="An alert can be sent if available credits go under this threshold.">
-          <label class="control-label col-lg-2" for="low_balance_threshold">Warning On Low Balance</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control numeric" id="low_balance_threshold" name="low_balance_threshold" type="text" value="0.0">
-            <span class="input-group-addon">in USD</span>
-          </div>
-        </div>
-                <div class="form-group" title="Turning on a Plan allows the utility to charge customers a minimum monthly fee for electricity to be used during the current period of time. This charge may include a fixed fee and a minimum spend on energy consumption. A plan automatically renews at the start day every month (if monthly) or at the start of the next day (if daily) if the meter is in On mode, or in Auto and the customer has enough credits to pay for the full plan (fixed fee + minimum spend). Payment for consumption of electricity during the current plan period is charged from the Plan balance at the tariff rate until the balance reaches zero. Any consumption of electricity in the current period beyond this is charged from pre-pay credits that may have been purchased by the customer during the period. At the end of the period, a new Plan balance is automatically filled for customers who have more pre-pay credit in their account than the Plan minimum spend + fixed fee.">
-          <label class="control-label col-lg-2" for="plan_enabled">Plan</label>
-          <div class="input-group col-lg-3">
-            <div class="btn-group" data-toggle="buttons">
-              <label class="iButton">
-                <input id="plan_enabled" name="plan_enabled" type="checkbox" value="y">
-              </label>
-            </div>
-          </div>
-        </div>
-        
+  </div>
+</div>
 
 
-        <div class="form-group plan-fixed-fee hide"
-             title="The fixed fee is deducted from the customer's credits wallet when the plan is purchased and is not converted to electricity.">
-          <label class="control-label col-lg-2" for="plan_fixed_fee">Plan Fixed Fee</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control numeric no-negative" id="plan_fixed_fee" name="plan_fixed_fee" type="text" value="0">
-            <span class="input-group-addon">in USD</span>
-          </div>
-        </div>
-        
+<div class="form-group" title="An alert can be sent if available credits go under this threshold.">
+  <label class="control-label col-lg-2" for="low_balance_threshold">Warning On Low Balance</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control numeric" id="low_balance_threshold" name="low_balance_threshold" type="text" value="0.0">
+    <span class="input-group-addon">in USD</span>
+  </div>
+</div>
 
-        <div class="form-group plan-price hide"
-             title="The minimum spend is transferred from the customer's credit wallet to the plan when the plan is purchased and is used to pay for electricity consumption at the tariff price until the plan balance reaches zero or its expiration date is reached.">
-          <label class="control-label col-lg-2" for="plan_price">Plan Minimum Spend</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control numeric no-negative" id="plan_price" name="plan_price" type="text" value="0">
-            <span class="input-group-addon">in USD</span>
-          </div>
-        </div>
-                <div class="form-group">
-          <label class="control-label col-lg-2" for="tariff_type">Tariff Type</label>
-          <div id="radio-group tariff_type" class="btn-group col-lg-10" data-toggle="buttons">
-            <label class="btn btn-primary active">
-              <input type="radio" name="tariff_type" id="tariff_type" value="flat" checked>Flat
-            </label>
-            <label class="btn btn-primary">
-              <input type="radio" name="tariff_type" id="tariff_type" value="blockrate">Block rate
-            </label>
-          </div>
-        </div>
-                <div class="form-group tariff_type flat">
-          <label class="control-label col-lg-2" for="flat_price">Flat Rate</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control numeric no-negative" id="flat_price" name="flat_price" type="text" value="4">
-            <span class="input-group-addon">in USD per kWh</span>
-          </div>
-        </div>
-                <div class="form-group tariff_type blockrate hide">
-          <label class="control-label col-lg-2">Block rates</label>
-          <div class="col-md-5" data-box="tariff-blockrates">
+
+<div class="form-group" title="Turning on a Plan allows the utility to charge customers a minimum monthly fee for electricity to be used during the current period of time. This charge may include a fixed fee and a minimum spend on energy consumption. A plan automatically renews at the start day every month (if monthly) or at the start of the next day (if daily) if the meter is in On mode, or in Auto and the customer has enough credits to pay for the full plan (fixed fee + minimum spend). Payment for consumption of electricity during the current plan period is charged from the Plan balance at the tariff rate until the balance reaches zero. Any consumption of electricity in the current period beyond this is charged from pre-pay credits that may have been purchased by the customer during the period. At the end of the period, a new Plan balance is automatically filled for customers who have more pre-pay credit in their account than the Plan minimum spend + fixed fee.">
+  <label class="control-label col-lg-2" for="plan_enabled">Plan</label>
+  <div class="input-group col-lg-3">
+    <div class="btn-group" data-toggle="buttons">
+      <label class="iButton">
+        <input id="plan_enabled" name="plan_enabled" type="checkbox" value="y">
+      </label>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="form-group plan-fixed-fee hide"
+     title="The fixed fee is deducted from the customer's credits wallet when the plan is purchased and is not converted to electricity.">
+  <label class="control-label col-lg-2" for="plan_fixed_fee">Plan Fixed Fee</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control numeric no-negative" id="plan_fixed_fee" name="plan_fixed_fee" type="text" value="0">
+    <span class="input-group-addon">in USD</span>
+  </div>
+</div>
+
+
+<div class="form-group plan-price hide"
+     title="The minimum spend is transferred from the customer's credit wallet to the plan when the plan is purchased and is used to pay for electricity consumption at the tariff price until the plan balance reaches zero or its expiration date is reached.">
+  <label class="control-label col-lg-2" for="plan_price">Plan Minimum Spend</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control numeric no-negative" id="plan_price" name="plan_price" type="text" value="0">
+    <span class="input-group-addon">in USD</span>
+  </div>
+</div>
+
+
+<div class="form-group">
+  <label class="control-label col-lg-2" for="tariff_type">Tariff Type</label>
+  <div id="radio-group tariff_type" class="btn-group col-lg-10" data-toggle="buttons">
+    <label class="btn btn-primary active">
+      <input type="radio" name="tariff_type" id="tariff_type" value="flat" checked>Flat
+    </label>
+    <label class="btn btn-primary">
+      <input type="radio" name="tariff_type" id="tariff_type" value="blockrate">Block rate
+    </label>
+  </div>
+</div>
+
+
+<div class="form-group tariff_type flat">
+  <label class="control-label col-lg-2" for="flat_price">Flat Rate</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control numeric no-negative" id="flat_price" name="flat_price" type="text" value="4">
+    <span class="input-group-addon">in USD per kWh</span>
+  </div>
+</div>
+
+
+<div class="form-group tariff_type blockrate hide">
+  <label class="control-label col-lg-2">Block rates</label>
+  <div class="col-md-5" data-box="tariff-blockrates">
 
   <table id="tariff-blockrates" class='table table-striped table-bordered table-hover table-normal dataTable '>
       <thead class="">
@@ -429,23 +449,25 @@
     </div>
   </div>
 </div>
-          </div>
-        </div>
-                <div class="form-group">
-          <label class="control-label col-lg-2" for="tou_enabled">Time of Use (TOU) Pricing</label>
-          <div class="input-group col-lg-10">
-            <div class="btn-group" data-toggle="buttons">
-              <label class="iButton active">
-                <input checked id="tou_enabled" name="tou_enabled" type="checkbox" value="True">
-              </label>
-            </div>
-          </div>
-        </div>
-        
+  </div>
+</div>
 
-        <div class="form-group tou">
-          <label class="control-label col-lg-2">TOU Periods</label>
-          <div class="col-md-5" data-box="tariff-tous">
+
+<div class="form-group">
+  <label class="control-label col-lg-2" for="tou_enabled">Time of Use (TOU) Pricing</label>
+  <div class="input-group col-lg-10">
+    <div class="btn-group" data-toggle="buttons">
+      <label class="iButton active">
+        <input checked id="tou_enabled" name="tou_enabled" type="checkbox" value="True">
+      </label>
+    </div>
+  </div>
+</div>
+
+
+<div class="form-group tou">
+  <label class="control-label col-lg-2">TOU Periods</label>
+  <div class="col-md-5" data-box="tariff-tous">
   <table id="tariff-tous" class='table table-striped table-bordered table-hover table-normal dataTable '>
       <thead class="">
       <tr>
@@ -503,43 +525,44 @@
     </div>
   </div>
 </div>
-          </div>
-        </div>
-          <div class="form-group form-group tou" style="padding-left: 20px; margin-top: -10px">
+  </div>
+</div>
+  <div class="form-group form-group tou" style="padding-left: 20px; margin-top: -10px">
     <span class="col-lg-offset-2 help-block note">
     <i class="icon-warning-sign"></i>
       The TOU period modifier must be a positive number.
     </span>
   </div>
-        <div class="form-group">
-          <label class="control-label col-lg-2" for="daily_energy_limit_enabled">Daily Energy Limit</label>
-          <div class="input-group col-lg-10">
-            <div class="btn-group" data-toggle="buttons">
-              <label class="iButton">
-                <input id="daily_energy_limit_enabled" name="daily_energy_limit_enabled" type="checkbox" value="y">
-              </label>
-            </div>
-          </div>
-        </div>
-        
-
-        <div class="form-group daily-energy-limit-reset-hour hide"
-             title="The Daily Energy Limit Reset Hour defines when the counter will reset for this meter's Daily Energy Limit">
-          <label class="control-label col-lg-2" for="daily_energy_limit_reset_hour">Daily Energy Limit Reset Hour</label>
-          <div class="input-group col-lg-3">
-            <select class="form-control" id="daily_energy_limit_reset_hour" name="daily_energy_limit_reset_hour"><option selected value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select>
-          </div>
-        </div>
 
 
-        <div class="form-group daily-energy-limit-value hide"
-             title="The maximum amount of energy that can be consumed in a day.">
-          <label class="control-label col-lg-2" for="daily_energy_limit_value">Daily Energy Limit</label>
-          <div class="input-group col-lg-3">
-            <input class="form-control numeric no-negative" id="daily_energy_limit_value" name="daily_energy_limit_value" type="text" value="0.0">
-            <span class="input-group-addon">in kWh</span>
-          </div>
-        </div>
+<div class="form-group">
+  <label class="control-label col-lg-2" for="daily_energy_limit_enabled">Daily Energy Limit</label>
+  <div class="input-group col-lg-10">
+    <div class="btn-group" data-toggle="buttons">
+      <label class="iButton">
+        <input id="daily_energy_limit_enabled" name="daily_energy_limit_enabled" type="checkbox" value="y">
+      </label>
+    </div>
+  </div>
+</div>
+
+
+<div class="form-group daily-energy-limit-reset-hour hide"
+     title="The Daily Energy Limit Reset Hour defines when the counter will reset for this meter's Daily Energy Limit">
+  <label class="control-label col-lg-2" for="daily_energy_limit_reset_hour">Daily Energy Limit Reset Hour</label>
+  <div class="input-group col-lg-3">
+    <select class="form-control" id="daily_energy_limit_reset_hour" name="daily_energy_limit_reset_hour"><option selected value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select>
+  </div>
+</div>
+
+<div class="form-group daily-energy-limit-value hide"
+     title="The maximum amount of energy that can be consumed in a day.">
+  <label class="control-label col-lg-2" for="daily_energy_limit_value">Daily Energy Limit</label>
+  <div class="input-group col-lg-3">
+    <input class="form-control numeric no-negative" id="daily_energy_limit_value" name="daily_energy_limit_value" type="text" value="0.0">
+    <span class="input-group-addon">in kWh</span>
+  </div>
+</div>
         <div class="form-group">
           <div class="col-lg-offset-2 col-lg-10">
             <input class="btn btn-primary" id="save_button" name="save_button" type="submit" value="Save">
