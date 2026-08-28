@@ -33,6 +33,7 @@
         <link href="%% APPLICATION_CSS %%" media="screen" rel="stylesheet" type="text/css" />
         <script src="%% VENDOR_JS %%" type="text/javascript"></script>
         <script src="%% APPLICATION_JS %%" type="text/javascript"></script>
+  
 
         <link rel="apple-touch-icon" sizes="57x57" href="/static/logo/apple-touch-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="/static/logo/apple-touch-icon-60x60.png">
@@ -90,6 +91,11 @@
                                     <li>
                                         <a href="/config/meters" data-name="meter-config">
                                             <span>Meters</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/config/meter-driver" data-name="meter-driver-config">
+                                            <span>Meter Drivers</span>
                                         </a>
                                     </li>
                                     <li class="divider"></li>
@@ -234,7 +240,16 @@
 
   </div>
   </div>
-<div class="form-group" title="List of tags for this meter, could mean anything, for instance a geographical location">
+<div class="form-group" title="">
+                      <label class="control-label col-lg-2" for="provider_id">Meter driver</label>
+                      <div class="input-group col-lg-10">
+                        <select class="form-control" id="provider_id" name="provider_id"><option selected value="">Select a meter driver</option></select>
+                      </div>
+                    </div>
+                    <div class="col-lg-offset-2 col-lg-10">
+                      
+                    </div>
+                    <div class="form-group" title="List of tags for this meter, could mean anything, for instance a geographical location">
                       <label class="control-label col-lg-2" for="tags">Tags</label>
                       <div class="input-group col-lg-10">
                         <select class="form-control tags" id="tags" multiple name="tags"></select>

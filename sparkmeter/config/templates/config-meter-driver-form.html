@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{%- from "_macros.html" import form_error %}
+
+{% block title %}{{ icon('config') }} {{ _('Edit meter driver') if form.mode == 'edit' else _('Register meter driver') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('settings') }} {{ _('Settings') }}
+    {% endcall %}
+    {% call breadcrumb(url=url_for('config.meter_driver')) %}
+        {{ icon('config') }} {{ _('Meter drivers') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {% if form.mode == 'edit' %}
+            {{ icon('edit') }} {{ _('Edit meter driver') }}
+        {% else %}
+            {{ icon('add') }} {{ _('Register meter driver') }}
+        {% endif %}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            {% call render_box(_('Edit meter driver') if form.mode == 'edit' else _('Register meter driver'), box_content_class='padded') %}
+                <p>{{ _('Paste the base URL for a running meter driver service, for example SparkNet-Http. TC2.0 will validate its OpenAPI contract before saving it.') }}</p>
+                <form class="form form-horizontal" role="form" method="POST">
+                    {{ form.hidden_tag() }}
+                    {{ addon_form_field(form.service_url, form_type="horizontal", horizontal_columns=('lg', 2, 10)) }}
+                    {% if form.vendor_option_fields() %}
+                    <div class="form-group">
+                      <label class="control-label col-lg-2">{{ _('Driver config JSON') }}</label>
+                      <div class="input-group col-lg-10">
+                        {% if form.config_file_path() %}
+                        <p class="form-control-static">
+                          {{ _('Edit this file after saving:') }}<br>
+                          <code>{{ form.config_file_path() }}</code>
+                        </p>
+                        {% else %}
+                        <p class="form-control-static">
+                          {{ _('After saving, TC2.0 will create a JSON template under:') }}<br>
+                          <code>{{ form.config_directory() }}</code>
+                        </p>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="control-label col-lg-2">{{ _('Required fields') }}</label>
+                      <div class="input-group col-lg-10">
+                        {% for option in form.vendor_option_fields() %}
+                        <div>
+                          <strong>{{ option.label }}</strong>
+                          {% if option.required %}
+                          <small>({{ _('required') }})</small>
+                          {% else %}
+                          <small>({{ _('optional') }})</small>
+                          {% endif %}
+                          {% if option.description %}
+                          <div><small>{{ option.description }}</small></div>
+                          {% endif %}
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    {% endif %}
+                    {% if form.selected_interface.choices %}
+                    <div class="form-group{% if form.selected_interface.errors %} has-error{% endif %}">
+                      {{ form.selected_interface.label(class="control-label col-lg-2") }}
+                      <div class="input-group col-lg-10">
+                        {{ form.selected_interface(class="form-control") }}
+                      </div>
+                    </div>
+                    <div class="col-lg-offset-2 col-lg-10">
+                      {{ form_error(form.selected_interface) }}
+                    </div>
+                    {% else %}
+                    <div class="form-group">
+                      <label class="control-label col-lg-2">{{ _('Selected interface') }}</label>
+                      <div class="input-group col-lg-10">
+                        <p class="form-control-static">
+                          {{ _('Available interfaces will be detected from the driver after validation. HTTP is used by default until you choose another interface.') }}
+                        </p>
+                      </div>
+                    </div>
+                    {% endif %}
+                    <div class="form-group">
+                      {{ form.enabled.label(class="control-label col-lg-2") }}
+                      <div class="input-group col-lg-10">
+                        {{ form.enabled(class="form-control") }}
+                      </div>
+                    </div>
+                    {{ addon_form_field(form.save_button, form_type="horizontal", horizontal_columns=('lg', 2, 10), button_map={'save_button': 'primary'}) }}
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}

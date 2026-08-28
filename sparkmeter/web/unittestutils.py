@@ -166,6 +166,13 @@ class ContentTester(object):
         """Verify a file on disk."""
         content = content.lstrip()
 
+        # Normalize CRLF/CR to LF so content round-trips through the golden file.
+        # The expected file is read back with universal-newline translation
+        # (open(...).read() turns "\r\n" and "\r" into "\n"), so any literal
+        # carriage return in the fresh content — e.g. WTForms' TextArea widget
+        # emits "<textarea ...>\r\n" — would never match the read-back golden.
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
+
         for ignore in self.ignores:
             if ignore.startswith("0000000"):
                 continue

@@ -4,6 +4,7 @@ CREATE TABLE meter (
     meter_type VARCHAR NOT NULL,
     address_id CHAR(32) NOT NULL,
     ground_id CHAR(32) NOT NULL,
+    provider_id VARCHAR,
     model_id CHAR(32),
     id CHAR(32) DEFAULT uuid_generate_v4() NOT NULL,
     PRIMARY KEY (id),

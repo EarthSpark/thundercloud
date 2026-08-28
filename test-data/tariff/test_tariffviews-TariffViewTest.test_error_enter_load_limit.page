@@ -93,6 +93,11 @@
                                             <span>Meters</span>
                                         </a>
                                     </li>
+                                    <li>
+                                        <a href="/config/meter-driver" data-name="meter-driver-config">
+                                            <span>Meter Drivers</span>
+                                        </a>
+                                    </li>
                                     <li class="divider"></li>
                                     <li>
                                         <a href="/config/sms" data-name="sms-config">

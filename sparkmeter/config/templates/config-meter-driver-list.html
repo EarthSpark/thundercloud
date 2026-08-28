@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ icon('config') }} {{ _('Meter drivers') }}{% endblock %}
+
+{% block breadcrumbs %}
+    {% call breadcrumb() %}
+        {{ icon('settings') }} {{ _('Settings') }}
+    {% endcall %}
+    {% call breadcrumb() %}
+        {{ icon('config') }} {{ _('Meter drivers') }}
+    {% endcall %}
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            {% call render_box(_('Meter drivers')) %}
+                <div class="padded">
+                    <p>{{ _('Register a standalone meter driver such as SparkNet-Http by entering the base URL of its HTTP service.') }}</p>
+                    <p>
+                        <a class="btn btn-primary" href="{{ url_for('config.meter_driver_add') }}">
+                            {{ _('Register driver') }}
+                        </a>
+                    </p>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ _('Init') }}</th>
+                                <th>{{ _('Driver name') }}</th>
+                                <th>{{ _('Base URL') }}</th>
+                                <th>{{ _('Config JSON') }}</th>
+                                <th>{{ _('Version') }}</th>
+                                <th>{{ _('Available interfaces') }}</th>
+                                <th>{{ _('Selected interface') }}</th>
+                                <th>{{ _('Enabled') }}</th>
+                                <th>{{ _('Status') }}</th>
+                                <th>{{ _('Gateway') }}</th>
+                                <th>{{ _('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for provider in providers %}
+                            {% set status = provider_statuses.get(provider.id) %}
+                            {% set contract = provider_contracts.get(provider.id) %}
+                            {% set config_path = provider_config_paths.get(provider.id) %}
+                            {% set init_status = provider_init_statuses.get(provider.id) %}
+                            <tr>
+                                <td>
+                                    {% if init_status and init_status.has_successful_init %}
+                                        <span class="text-success" title="{{ _('Driver init succeeded') }}">
+                                            <span style="display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;text-align:center;border-radius:50%;background:#69c84f;color:#fff;font-weight:bold;">&#10003;</span>
+                                        </span>
+                                    {% else %}
+                                        <span class="text-danger" title="{{ _('Driver init has not succeeded yet') }}">
+                                            <span style="display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;text-align:center;border-radius:50%;background:#e24a4a;color:#fff;font-weight:bold;">&#10005;</span>
+                                        </span>
+                                        {% if init_status and init_status.last_init_error %}
+                                            <div><small>{{ init_status.last_init_error }}</small></div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>{{ contract.name if contract and contract.name else provider.name }}</td>
+                                <td>{{ provider.base_url }}</td>
+                                <td>
+                                    {% if config_path %}
+                                        <a href="{{ url_for('config.meter_driver_config', provider_id=provider.id) }}">
+                                            <code>{{ config_path }}</code>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">{{ _('Unavailable') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ contract.service_version if contract and contract.service_version else provider.service_version }}</td>
+                                <td>
+                                    {% if contract and contract.interfaces %}
+                                        {% for interface in contract.interfaces %}
+                                            <div>
+                                                <strong>{{ interface.label }}</strong>
+                                                <small>({{ interface.type }})</small>
+                                                {% if interface.address %}
+                                                    <div><small>{{ interface.address }}</small></div>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">{{ _('Unavailable') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if contract and contract.selected_interface_details %}
+                                        <strong>{{ contract.selected_interface_details.label }}</strong>
+                                        <small>({{ contract.selected_interface_details.type }})</small>
+                                        {% if contract.selected_interface_details.address %}
+                                            <div><small>{{ contract.selected_interface_details.address }}</small></div>
+                                        {% endif %}
+                                    {% elif contract and contract.selected_interface %}
+                                        <strong>{{ contract.selected_interface|upper }}</strong>
+                                    {% else %}
+                                        <span class="text-muted">{{ _('Default') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ _('Yes') if provider.enabled else _('No') }}</td>
+                                <td>
+                                    {% if status and status.online %}
+                                        <span class="text-success">{{ _('Online') }}</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ _('Offline') }}</span>
+                                        {% if status %}
+                                            <div><small>{{ status.message }}</small></div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if status and not status.gateway_checked %}
+                                        <span class="text-muted">
+                                            {{ _('Not initialized') }}
+                                        </span>
+                                    {% elif status and status.gateway_active %}
+                                        <span class="text-success">
+                                            <span style="font-size: 1.2em; line-height: 1;">&#9679;</span>
+                                            {{ _('Gateway Active') }}
+                                        </span>
+                                        {% if status.gateway_type %}
+                                            <div><small>{{ status.gateway_type }}</small></div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">
+                                            <span style="font-size: 1.2em; line-height: 1;">&#9679;</span>
+                                            {{ _('Gateway Inactive') }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a class="btn btn-default btn-xs" href="{{ url_for('config.meter_driver_edit', provider_id=provider.id) }}">
+                                        {{ _('Edit') }}
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="11">{{ _('No meter drivers registered yet.') }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock %}

@@ -349,23 +349,21 @@ class ControllerTest(SparkMeterTestCaseBase):
             "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
             "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
             "frequency": 60.0,
-            "voltage_min": 120.0,
-            "voltage_max": 120.0,
+            "voltage_min": 118.0,
+            "voltage_max": 122.0,
             "voltage_avg": 120.0,
-            "current_min": 1.0,
-            "current_max": 1.0,
-            "current_avg": 1.0,
-            "true_power_inst": 1.0,
-            "true_power_avg": 1.0,
-            "apparent_power_avg": 1.0,
-            "power_factor_avg": 1.0,
-            "energy": meter.system_info.last_energy + 500000,
+            "current_min": 4.8,
+            "current_max": 5.2,
+            "current_avg": 5.0,
+            "true_power_inst": 600.0,
+            "true_power_avg": 600.0,
+            "apparent_power_avg": 632.0,
+            "power_factor_avg": 0.95,
+            "energy": 15.625375,
             "uptime": 100,
             "state": "on",
-            "user_power_limit": 12000,
+            "user_power_limit": 24000,
         }
-
-        scaled_voltage = reading_data["voltage_avg"] * 0.01
 
         reading_id = add_reading(reading_data)
 
@@ -374,8 +372,7 @@ class ControllerTest(SparkMeterTestCaseBase):
         wallet_id = meter.credit_wallet.id
         wallet = Wallet.get_by_id(wallet_id)
 
-        # make sure the scalars were applied
-        assert reading.voltage_avg == scaled_voltage
+        assert reading.voltage_avg == reading_data["voltage_avg"]
         assert wallet.value == 963.74625
         assert snapshot.hash_ == "c07510ca03a4c5920efcb2e11c4b5171db842404700a7ecb6c266ad7997b949f"
         snapshot_payload = json.loads(snapshot.payload)
@@ -410,29 +407,27 @@ class ControllerTest(SparkMeterTestCaseBase):
             "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
             "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
             "frequency": 60.0,
-            "voltage_min": 1000,
-            "voltage_max": 1000,
-            "voltage_avg": 1000,
-            "current_min": 1.0,
-            "current_max": 1.0,
-            "current_avg": 1.0,
-            "true_power_inst": 1.0,
-            "true_power_avg": 1.0,
-            "apparent_power_avg": 1.0,
-            "power_factor_avg": 1.0,
-            "energy": 500000,
+            "voltage_min": 238.0,
+            "voltage_max": 242.0,
+            "voltage_avg": 240.0,
+            "current_min": 4.8,
+            "current_max": 5.2,
+            "current_avg": 5.0,
+            "true_power_inst": 600.0,
+            "true_power_avg": 600.0,
+            "apparent_power_avg": 632.0,
+            "power_factor_avg": 0.95,
+            "energy": 15.625,
             "uptime": 100,
             "state": "on",
-            "user_power_limit": 12000,
+            "user_power_limit": 24000,
         }
 
-        scaled_voltage = reading_data["voltage_avg"] * 0.01
         reading_id = add_reading(reading_data)
         reading = Reading.get_by_id(reading_id)
         snapshot = Snapshot.get_by_id(reading.snapshot_id)
 
-        # make sure the scalars were applied
-        assert reading.voltage_avg == scaled_voltage
+        assert reading.voltage_avg == reading_data["voltage_avg"]
         # make sure kilowatt hours and period are calculated
         assert reading.kilowatt_hours == 5.625
         assert reading.kilowatt_hours_period == 60
@@ -457,20 +452,20 @@ class ControllerTest(SparkMeterTestCaseBase):
             "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
             "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
             "frequency": 60.0,
-            "voltage_min": 120.0,
-            "voltage_max": 120.0,
+            "voltage_min": 118.0,
+            "voltage_max": 122.0,
             "voltage_avg": 120.0,
-            "current_min": 1.0,
-            "current_max": 1.0,
-            "current_avg": 1.0,
-            "true_power_inst": 1.0,
-            "true_power_avg": 1.0,
-            "apparent_power_avg": 1.0,
-            "power_factor_avg": 1.0,
-            "energy": meter.system_info.last_energy + 500000,
+            "current_min": 4.8,
+            "current_max": 5.2,
+            "current_avg": 5.0,
+            "true_power_inst": 600.0,
+            "true_power_avg": 600.0,
+            "apparent_power_avg": 632.0,
+            "power_factor_avg": 0.95,
+            "energy": 15.625375,
             "uptime": 100,
             "state": "on",
-            "user_power_limit": 12000,
+            "user_power_limit": 24000,
         }
 
         # First reading works correctly
@@ -511,23 +506,21 @@ class ControllerTest(SparkMeterTestCaseBase):
             "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
             "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
             "frequency": 60.0,
-            "voltage_min": 120.0,
-            "voltage_max": 120.0,
+            "voltage_min": 118.0,
+            "voltage_max": 122.0,
             "voltage_avg": 120.0,
-            "current_min": 1.0,
-            "current_max": 1.0,
-            "current_avg": 1.0,
-            "true_power_inst": 1.0,
-            "true_power_avg": 1.0,
-            "apparent_power_avg": 1.0,
-            "power_factor_avg": 1.0,
-            "energy": meter.system_info.last_energy + 500000,
+            "current_min": 4.8,
+            "current_max": 5.2,
+            "current_avg": 5.0,
+            "true_power_inst": 600.0,
+            "true_power_avg": 600.0,
+            "apparent_power_avg": 632.0,
+            "power_factor_avg": 0.95,
+            "energy": 15.625375,
             "uptime": 100,
             "state": "on",
-            "user_power_limit": 12000,
+            "user_power_limit": 24000,
         }
-
-        scaled_voltage = reading_data["voltage_avg"] * 0.01
 
         with LogCapture("sparkmeter.controller") as logger:
             reading_id = add_reading(reading_data)
@@ -537,8 +530,7 @@ class ControllerTest(SparkMeterTestCaseBase):
             wallet_id = meter.credit_wallet.id
             wallet = Wallet.get_by_id(wallet_id)
 
-            # make sure the scalars were applied
-            assert reading.voltage_avg == scaled_voltage
+            assert reading.voltage_avg == reading_data["voltage_avg"]
             assert wallet.value == 963.74625
             logger.check(
                 (
@@ -571,23 +563,21 @@ class ControllerTest(SparkMeterTestCaseBase):
             "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
             "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
             "frequency": 60.0,
-            "voltage_min": 120.0,
-            "voltage_max": 120.0,
+            "voltage_min": 118.0,
+            "voltage_max": 122.0,
             "voltage_avg": 120.0,
-            "current_min": 1.0,
-            "current_max": 1.0,
-            "current_avg": 1.0,
-            "true_power_inst": 1.0,
-            "true_power_avg": 1.0,
-            "apparent_power_avg": 1.0,
-            "power_factor_avg": 1.0,
-            "energy": meter.system_info.last_energy + 500000,
+            "current_min": 4.8,
+            "current_max": 5.2,
+            "current_avg": 5.0,
+            "true_power_inst": 600.0,
+            "true_power_avg": 600.0,
+            "apparent_power_avg": 632.0,
+            "power_factor_avg": 0.95,
+            "energy": 15.625375,
             "uptime": 100,
             "state": "on",
-            "user_power_limit": 12000,
+            "user_power_limit": 24000,
         }
-
-        scaled_voltage = reading_data["voltage_avg"] * 0.01
 
         with LogCapture("sparkmeter.controller") as logger:
             reading_id = add_reading(reading_data)
@@ -597,8 +587,7 @@ class ControllerTest(SparkMeterTestCaseBase):
             wallet_id = meter.credit_wallet.id
             wallet = Wallet.get_by_id(wallet_id)
 
-            # make sure the scalars were applied
-            assert reading.voltage_avg == scaled_voltage
+            assert reading.voltage_avg == reading_data["voltage_avg"]
             assert wallet.value == 963.74625
             logger.check()  # verify no logs
 
@@ -872,20 +861,20 @@ def _do_reading(meter, delay, session_manager, exceptions=None):
         "heartbeat_start": datetime(2013, 1, 1, 1, 0, 1),
         "heartbeat_end": datetime(2013, 1, 1, 1, 1, 1),
         "frequency": 60.0,
-        "voltage_min": 120.0,
-        "voltage_max": 120.0,
+        "voltage_min": 118.0,
+        "voltage_max": 122.0,
         "voltage_avg": 120.0,
-        "current_min": 1.0,
-        "current_max": 1.0,
-        "current_avg": 1.0,
-        "true_power_inst": 1.0,
-        "true_power_avg": 1.0,
-        "apparent_power_avg": 1.0,
-        "power_factor_avg": 1.0,
-        "energy": meter.system_info.last_energy + 500000,
+        "current_min": 4.8,
+        "current_max": 5.2,
+        "current_avg": 5.0,
+        "true_power_inst": 600.0,
+        "true_power_avg": 600.0,
+        "apparent_power_avg": 632.0,
+        "power_factor_avg": 0.95,
+        "energy": 15.625375,
         "uptime": 100,
         "state": "on",
-        "user_power_limit": 12000,
+        "user_power_limit": 24000,
     }
     read_sessions = [session_manager.create("rprocessor1"), session_manager.create("rprocessor2")]
     with mock.patch("sparkmeter.controller.session_scope") as session_mock:

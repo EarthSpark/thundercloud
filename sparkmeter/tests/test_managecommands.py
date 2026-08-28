@@ -19,7 +19,6 @@ class CliRegistrationTest(SparkMeterTestCaseBase):
             "initdb",
             "meter",
             "metering",
-            "reading",
             "resetdb",
             "salesaccount",
             "server",

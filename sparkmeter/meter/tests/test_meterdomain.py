@@ -221,6 +221,24 @@ class MeterTest(SparkMeterTestCaseBase):
             firmware_version="abc1234",
         )
 
+    def test_send_set_config_unconditionally_with_provider_uses_engineering_units(
+        self, config, send_set_config
+    ):
+        config["HEROKU"] = False
+        meter = MeterFactory(config__subnet=255, provider_id="sparknet-http")
+        meter.send_set_config_unconditionally()
+        self.session.commit()
+        send_set_config.assert_called_once_with(
+            load_limit=100.0,
+            subnet=255,
+            current_limit=20.0,
+            command="disable",
+            mac="1",
+            balance=0,
+            low_balance=False,
+            firmware_version="abc1234",
+        )
+
     def test_send_set_config_unconditionally_same_state(self, send_set_config):
         meter = MeterFactory(system_info__current_state=0, config__state=0)
         self.session.commit()
@@ -579,33 +597,6 @@ class MeterTest(SparkMeterTestCaseBase):
         ]
         assert disable_all_meters.mock_calls == []
         assert event_create.mock_calls == []
-
-    def test_apply_scalars(self):
-        m = MeterFactory(serial="SM15R-01-00000001")
-        m.model = MeterModels.get_by_serial(m.serial)
-        self.session.commit()
-        data = m.apply_scalars(
-            dict(frequency=1, energy=1, power_factor_avg=1, voltage_min=1, current_min=1, user_power_limit=1)
-        )
-        assert data["frequency"] == 0.01
-        assert data["energy"] == 0.00003125
-        assert data["power_factor_avg"] == 0.001
-        assert data["voltage_min"] == 0.01
-        assert data["current_min"] == 0.002
-        assert data["user_power_limit"] == 2.0
-
-        m = MeterFactory(serial="SM200E-01-00000001")
-        m.model = MeterModels.get_by_serial(m.serial)
-        self.session.commit()
-        data = m.apply_scalars(
-            dict(frequency=1, energy=1, power_factor_avg=1, voltage_min=1, current_min=1, user_power_limit=1)
-        )
-        assert data["frequency"] == 0.01
-        assert data["energy"] == 0.00003125
-        assert data["power_factor_avg"] == 0.001
-        assert data["voltage_min"] == 0.01
-        assert data["current_min"] == 0.004
-        assert data["user_power_limit"] == 4.0
 
     def test_product_code(self):
         m = MeterFactory(serial="SM15R-01-00000001")

@@ -35,6 +35,9 @@ class MeterState(object):
     # state name to state id dict, created on first request
     _state_name_to_id = None
 
+    # state id to state name dict, created on first request
+    _state_id_to_name = None
+
     # state id to translation dict, created on first request
     _state_id_to_translation = None
 
@@ -50,6 +53,19 @@ class MeterState(object):
         if cls._state_name_to_id is None:
             cls._state_name_to_id = {s.name: s.id for s in cls._all_states()}
         return cls._state_name_to_id.get(name, cls.STATE_UNKNOWN.id)
+
+    @classmethod
+    def get_state_name_from_id(cls, state_id):
+        """Get the state name from the specified id.
+
+        Inverse of get_state_id_from_name; if the id is not recognized the
+        name of the "unknown" state is returned.
+        :param state_id: State id (int) as specified in Reading.state
+        :returns: str name of the state
+        """
+        if cls._state_id_to_name is None:
+            cls._state_id_to_name = {s.id: s.name for s in cls._all_states()}
+        return cls._state_id_to_name.get(state_id, cls.STATE_UNKNOWN.name)
 
     @classmethod
     def get_state_translation_from_id(cls, state_id):

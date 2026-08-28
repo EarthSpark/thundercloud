@@ -131,7 +131,7 @@ class Float(ParameterType):
             msg = "value cannot be less than {}, defaulting to {}."
             logger.warning(msg.format(self.min_value, retval))
         if self.max_value is not None and value > self.max_value:
-            retval = self.min_value
+            retval = self.max_value
             msg = "value cannot be more than {}, defaulting to {}."
             logger.warning(msg.format(self.max_value, retval))
         return retval
@@ -185,3 +185,25 @@ class Voltage(Float):
         if retval not in self.allowed:
             raise TypeError("value must be one of: {}".format(", ".join(str(val) for val in self.allowed)))
         return retval
+
+
+class String(ParameterType):
+    """A string parameter."""
+
+    type_name = "string"
+    python_type = str
+
+    def to_python(self, value):
+        """Convert a database value to python."""
+        if value is None:
+            return ""
+        return str(value)
+
+    def from_python(self, value):
+        """Convert a python value to database."""
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            msg = "string parameters must be strings, not {!r}."
+            raise TypeError(msg.format(type(value).__name__))
+        return value

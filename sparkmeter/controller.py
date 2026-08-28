@@ -57,11 +57,10 @@ def save_raw_reading(data, session):
     This method is exposed to make existing unit testing possible and should
     otherwise not be used directly.
 
-    A raw reading is the the direct output of a slipstreamj response, it will
-    need to be scaled appropriately and mapped to the database. This method
-    commits the data to the database.
+    `data` is a dict of reading field values. This method commits the data to
+    the database.
 
-    :param data: incoming slipstreamj data
+    :param data: reading field values
     :type data: dict
     :param session: The database session to use
     :type Session:
@@ -80,7 +79,6 @@ def save_raw_reading(data, session):
         )
 
     meter = session.query(Meter).filter_by(code=data["meter"]).one()
-    data = meter.apply_scalars(data)
     snapshot = Snapshot.get_or_create_meter_snapshot(code=str(data["meter"]), session=session)
     session.add(snapshot)
     reading = Reading(
