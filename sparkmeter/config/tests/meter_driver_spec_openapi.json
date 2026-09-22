@@ -1,0 +1,1644 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Meter Driver API",
+    "version": "1.4.0",
+    "description": "Normative OpenAPI document for the required HTTP+SSE contract of the Meter Driver Specification (see docs/spec/index.md, sections 4-6). Any compliant driver's own /openapi.json response must be a valid OpenAPI document describing this same contract, extended with the x-meter-driver interface-discovery block. This file is the machine-readable reference other implementations validate against; it is illustrative of the required surface, not a specific driver's actual response.\n"
+  },
+  "externalDocs": {
+    "description": "Full specification (prose, data conventions, event definitions, gRPC profile, compliance checklist)",
+    "url": "../docs/spec/index.md"
+  },
+  "x-meter-driver": {
+    "interfaces": [
+      {
+        "type": "http",
+        "label": "HTTP API",
+        "base_url": "http://127.0.0.1:18080"
+      },
+      {
+        "type": "grpc",
+        "label": "gRPC",
+        "target": "127.0.0.1:50051"
+      }
+    ],
+    "default_interface": "http"
+  },
+  "paths": {
+    "/v1/requirements": {
+      "get": {
+        "summary": "Discover required initialization fields",
+        "operationId": "getRequirements",
+        "tags": [
+          "system"
+        ],
+        "responses": {
+          "200": {
+            "description": "Fields the caller must supply to /v1/init.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/init": {
+      "post": {
+        "summary": "Reset driver runtime state and apply configuration",
+        "operationId": "initDriver",
+        "tags": [
+          "system"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Configuration accepted; a configuration-applied event follows on /v1/events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nodes/register": {
+      "post": {
+        "summary": "Register a meter/node with the driver",
+        "operationId": "registerNode",
+        "tags": [
+          "nodes"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterNodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; node_registered or node_already_registered follows on /v1/events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nodes/{node_id}": {
+      "delete": {
+        "summary": "Unregister a meter/node",
+        "operationId": "unregisterNode",
+        "tags": [
+          "nodes"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NodeIdPathParam"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted; node_unregistered or node_to_unregister_unknown follows on /v1/events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nodes/{node_id}/configure-meter": {
+      "post": {
+        "summary": "Apply operational configuration to one meter",
+        "operationId": "configureElectricalMeter",
+        "tags": [
+          "meters"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NodeIdPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureElectricalMeterPathRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; electrical_meter_configuration_accepted then electrical_meter_configuration_applied follow on /v1/events (or invalid_electrical_meter_configuration on rejection).\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meters/configure": {
+      "post": {
+        "summary": "Body-node_id compatibility form of configure-meter",
+        "operationId": "configureElectricalMeterCompat",
+        "tags": [
+          "meters"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureElectricalMeterCompatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Same semantics as POST /v1/nodes/{node_id}/configure-meter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nodes/{node_id}/balance-and-flags": {
+      "post": {
+        "summary": "Update cached prepaid balance and low-balance flag",
+        "operationId": "setBalanceAndFlags",
+        "tags": [
+          "meters"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NodeIdPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBalanceAndFlagsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; electrical_meter_balance_and_flags_accepted follows on /v1/events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "summary": "Live event stream (Server-Sent Events)",
+        "operationId": "subscribeEvents",
+        "tags": [
+          "events"
+        ],
+        "responses": {
+          "200": {
+            "description": "text/event-stream. Each message is an Event: a \"type\" naming the event and a \"data\" payload whose shape is selected by that type. See docs/spec/index.md section 6 for when each event is emitted.\n",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "summary": "Operational status for UI and diagnostics",
+        "operationId": "getStatus",
+        "tags": [
+          "system"
+        ],
+        "responses": {
+          "200": {
+            "description": "Current driver/gateway status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/healthz": {
+      "get": {
+        "summary": "Process liveness check",
+        "operationId": "healthz",
+        "tags": [
+          "system"
+        ],
+        "responses": {
+          "200": {
+            "description": "Process is alive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/shutdown": {
+      "post": {
+        "summary": "Orderly remote shutdown",
+        "operationId": "shutdown",
+        "tags": [
+          "system"
+        ],
+        "responses": {
+          "202": {
+            "description": "Shutdown accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "NodeIdPathParam": {
+        "name": "node_id",
+        "in": "path",
+        "required": true,
+        "description": "Application-visible meter/node identifier.",
+        "schema": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      }
+    },
+    "schemas": {
+      "AcceptedResponse": {
+        "type": "object",
+        "required": [
+          "accepted"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "RequirementsResponse": {
+        "type": "object",
+        "required": [
+          "required_fields"
+        ],
+        "properties": {
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Field names the caller must supply to /v1/init. Driver-defined; discoverable, not hardcoded by clients."
+          }
+        }
+      },
+      "Version": {
+        "type": "object",
+        "required": [
+          "major",
+          "minor",
+          "patch"
+        ],
+        "properties": {
+          "major": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "minor": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "patch": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        }
+      },
+      "Decimal": {
+        "type": "object",
+        "required": [
+          "sign",
+          "coef",
+          "exp"
+        ],
+        "description": "value = sign * coef * 10^exp",
+        "properties": {
+          "sign": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "coef": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "exp": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AesKeyInput": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{32}$",
+            "description": "16-byte AES key as a 32-character hex string."
+          },
+          {
+            "type": "array",
+            "minItems": 16,
+            "maxItems": 16,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "16-byte AES key as an array of byte values."
+          }
+        ]
+      },
+      "InitRequest": {
+        "type": "object",
+        "description": "Reference fields shown here match the reference radio-network driver; a driver with different init fields must still document them here and make them discoverable via /v1/requirements.\n",
+        "required": [
+          "heartbeat_period_duration",
+          "aes_key"
+        ],
+        "properties": {
+          "heartbeat_period_duration": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0,
+            "description": "Heartbeat/reading interval in seconds."
+          },
+          "channel": {
+            "type": "integer",
+            "format": "uint32"
+          },
+          "aes_key": {
+            "$ref": "#/components/schemas/AesKeyInput"
+          }
+        }
+      },
+      "NodeTypeName": {
+        "type": "string",
+        "description": "Driver-defined meter model/family name."
+      },
+      "RegisterNodeRequest": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "node_type"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "node_type": {
+            "$ref": "#/components/schemas/NodeTypeName"
+          },
+          "mac": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "firmware_version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "balance": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "low_balance_flag": {
+            "type": "boolean"
+          },
+          "request_phased_readings": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ElectricalMeterCommandName": {
+        "type": "string",
+        "enum": [
+          "ElectricalMeterCommandEnable",
+          "ElectricalMeterCommandDisable",
+          "ElectricalMeterCommandReboot",
+          "ElectricalMeterCommandCalibrateStart",
+          "ElectricalMeterCommandCalibrateFinish",
+          "ElectricalMeterCommandEnableSts"
+        ]
+      },
+      "ElectricalMeterConfiguration": {
+        "type": "object",
+        "required": [
+          "power_limit",
+          "current_limit",
+          "startup_delay",
+          "throttle_on_time",
+          "throttle_off_time",
+          "throttle_count_limit"
+        ],
+        "properties": {
+          "power_limit": {
+            "type": "number",
+            "format": "float"
+          },
+          "current_limit": {
+            "type": "number",
+            "format": "float"
+          },
+          "startup_delay": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "throttle_on_time": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "throttle_off_time": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "throttle_count_limit": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        }
+      },
+      "ConfigureElectricalMeterPathRequest": {
+        "type": "object",
+        "required": [
+          "command",
+          "configuration"
+        ],
+        "properties": {
+          "command": {
+            "$ref": "#/components/schemas/ElectricalMeterCommandName"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/ElectricalMeterConfiguration"
+          }
+        }
+      },
+      "ConfigureElectricalMeterCompatRequest": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "command",
+          "configuration"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "command": {
+            "$ref": "#/components/schemas/ElectricalMeterCommandName"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/ElectricalMeterConfiguration"
+          }
+        }
+      },
+      "SetBalanceAndFlagsRequest": {
+        "type": "object",
+        "required": [
+          "balance",
+          "low_balance_flag"
+        ],
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/Decimal"
+          },
+          "low_balance_flag": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "required": [
+          "connected",
+          "firmware_version",
+          "messages_sent",
+          "messages_received",
+          "gateway_type"
+        ],
+        "properties": {
+          "connected": {
+            "type": "boolean"
+          },
+          "firmware_version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "messages_sent": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "messages_received": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "gateway_type": {
+            "type": "string"
+          },
+          "gateway_firmware_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gateway_bootloader_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ElectricalMeterState": {
+        "type": "integer",
+        "format": "int32",
+        "enum": [
+          -1,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "description": "Meter operational state. -1 = Unknown, 0 = Off, 1 = On, 2 = Start, 3 = Error, 4 = Poweron, 5 = Startup, 6 = Throttle, 7 = ThrottleCheck, 8 = ThrottleError, 9 = Protect, 10 = MeterCheck, 11 = MeterDisabled, 12 = Calibrate, 13 = Tamper.\n"
+      },
+      "RegisterSourceType": {
+        "type": "integer",
+        "format": "int32",
+        "enum": [
+          0,
+          1
+        ],
+        "description": "0 = Unknown, 1 = Manual."
+      },
+      "Statistics": {
+        "type": "object",
+        "required": [
+          "count",
+          "last_value",
+          "max",
+          "min",
+          "avg"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "last_value": {
+            "type": "number",
+            "format": "double"
+          },
+          "max": {
+            "type": "number",
+            "format": "double"
+          },
+          "min": {
+            "type": "number",
+            "format": "double"
+          },
+          "avg": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Phases": {
+        "type": "object",
+        "required": [
+          "a",
+          "b",
+          "c"
+        ],
+        "properties": {
+          "a": {
+            "type": "boolean"
+          },
+          "b": {
+            "type": "boolean"
+          },
+          "c": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HeartbeatReadHop": {
+        "type": "object",
+        "required": [
+          "mac",
+          "rssi",
+          "retry"
+        ],
+        "properties": {
+          "mac": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "rssi": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "retry": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        }
+      },
+      "DriverConfigurationApplied": {
+        "type": "object",
+        "required": [
+          "masked_aes_key",
+          "channel",
+          "heartbeat_period_duration"
+        ],
+        "properties": {
+          "masked_aes_key": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "heartbeat_period_duration": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        }
+      },
+      "NodeRegistered": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "source_type"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "source_type": {
+            "$ref": "#/components/schemas/RegisterSourceType"
+          }
+        }
+      },
+      "NodeAlreadyRegistered": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        }
+      },
+      "NodeUnregistered": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        }
+      },
+      "NodeToUnregisterUnknown": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        }
+      },
+      "ElectricalMeterReading": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "period_start",
+          "period_end",
+          "state",
+          "frequency",
+          "current_avg",
+          "current_min",
+          "current_max",
+          "voltage_avg",
+          "voltage_min",
+          "voltage_max",
+          "true_power_avg",
+          "true_power_inst",
+          "apparent_power_avg",
+          "power_factor_avg",
+          "energy",
+          "uptime_secs",
+          "user_power_limit"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "period_start": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "period_end": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "state": {
+            "$ref": "#/components/schemas/ElectricalMeterState"
+          },
+          "frequency": {
+            "type": "number",
+            "format": "float"
+          },
+          "current_avg": {
+            "type": "number",
+            "format": "float"
+          },
+          "current_min": {
+            "type": "number",
+            "format": "float"
+          },
+          "current_max": {
+            "type": "number",
+            "format": "float"
+          },
+          "voltage_avg": {
+            "type": "number",
+            "format": "float"
+          },
+          "voltage_min": {
+            "type": "number",
+            "format": "float"
+          },
+          "voltage_max": {
+            "type": "number",
+            "format": "float"
+          },
+          "true_power_avg": {
+            "type": "number",
+            "format": "float"
+          },
+          "true_power_inst": {
+            "type": "number",
+            "format": "float"
+          },
+          "apparent_power_avg": {
+            "type": "number",
+            "format": "float"
+          },
+          "power_factor_avg": {
+            "type": "number",
+            "format": "float"
+          },
+          "energy": {
+            "type": "number",
+            "format": "double"
+          },
+          "uptime_secs": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "user_power_limit": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "ElectricalMeterReadingPhased": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ElectricalMeterReading"
+          },
+          {
+            "type": "object",
+            "required": [
+              "phases",
+              "computed_fields_version"
+            ],
+            "properties": {
+              "frequency_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "frequency_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "frequency_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_avg_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_avg_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_avg_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_min_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_min_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_min_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_max_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_max_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "current_max_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_avg_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_avg_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_avg_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_min_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_min_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_min_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_max_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_max_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "voltage_max_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "true_power_avg_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "true_power_avg_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "true_power_avg_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "true_power_inst_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "true_power_inst_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "true_power_inst_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "apparent_power_avg_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "apparent_power_avg_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "apparent_power_avg_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "power_factor_avg_a": {
+                "type": "number",
+                "format": "float"
+              },
+              "power_factor_avg_b": {
+                "type": "number",
+                "format": "float"
+              },
+              "power_factor_avg_c": {
+                "type": "number",
+                "format": "float"
+              },
+              "phases": {
+                "$ref": "#/components/schemas/Phases"
+              },
+              "computed_fields_version": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
+      "InvalidElectricalMeterConfiguration": {
+        "type": "object",
+        "required": [
+          "invalid_configuration"
+        ],
+        "properties": {
+          "invalid_configuration": {
+            "$ref": "#/components/schemas/ConfigureElectricalMeterCompatRequest"
+          }
+        }
+      },
+      "ElectricalMeterConfigurationAccepted": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        }
+      },
+      "ElectricalMeterConfigurationApplied": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "configuration"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/ElectricalMeterConfiguration"
+          }
+        }
+      },
+      "NodeFirmwareVersionChanged": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "firmware_version"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "firmware_version": {
+            "$ref": "#/components/schemas/Version"
+          }
+        }
+      },
+      "ElectricalMeterBalanceAndFlagsAccepted": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          }
+        }
+      },
+      "HeartbeatStatistics": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "total_registered_nodes",
+          "total_packets_sent",
+          "total_packets_received",
+          "nodes_reached_out_to_in_current_heartbeat",
+          "nodes_heard_from_in_current_heartbeat",
+          "packets_sent_in_current_heartbeat",
+          "packets_received_in_current_heartbeat",
+          "millisecond_read_reply_stats",
+          "millisecond_set_config_reply_stats"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "total_registered_nodes": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "total_packets_sent": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "total_packets_received": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "nodes_reached_out_to_in_current_heartbeat": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "nodes_heard_from_in_current_heartbeat": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "packets_sent_in_current_heartbeat": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "packets_received_in_current_heartbeat": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "millisecond_read_reply_stats": {
+            "$ref": "#/components/schemas/Statistics"
+          },
+          "millisecond_set_config_reply_stats": {
+            "$ref": "#/components/schemas/Statistics"
+          }
+        }
+      },
+      "GatewayStatus": {
+        "type": "object",
+        "required": [
+          "connected",
+          "firmware_version",
+          "messages_sent",
+          "messages_received",
+          "gateway_type"
+        ],
+        "properties": {
+          "connected": {
+            "type": "boolean"
+          },
+          "firmware_version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "messages_sent": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "messages_received": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "gateway_type": {
+            "type": "string"
+          },
+          "gateway_firmware_raw": {
+            "type": "string"
+          },
+          "gateway_bootloader_raw": {
+            "type": "string"
+          }
+        }
+      },
+      "HeartbeatReadHops": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "mac",
+          "src_ttl",
+          "ttl",
+          "last_hop",
+          "hop_list_length",
+          "hop_list_overflow",
+          "hops"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0
+          },
+          "mac": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "src_ttl": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "ttl": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "last_hop": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "hop_list_length": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "hop_list_overflow": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "hops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeartbeatReadHop"
+            }
+          }
+        }
+      },
+      "DriverConfigurationAppliedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "driver_configuration_applied"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DriverConfigurationApplied"
+          }
+        }
+      },
+      "NodeRegisteredEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "node_registered"
+          },
+          "data": {
+            "$ref": "#/components/schemas/NodeRegistered"
+          }
+        }
+      },
+      "NodeAlreadyRegisteredEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "node_already_registered"
+          },
+          "data": {
+            "$ref": "#/components/schemas/NodeAlreadyRegistered"
+          }
+        }
+      },
+      "NodeUnregisteredEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "node_unregistered"
+          },
+          "data": {
+            "$ref": "#/components/schemas/NodeUnregistered"
+          }
+        }
+      },
+      "NodeToUnregisterUnknownEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "node_to_unregister_unknown"
+          },
+          "data": {
+            "$ref": "#/components/schemas/NodeToUnregisterUnknown"
+          }
+        }
+      },
+      "ElectricalMeterReadingEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "electrical_meter_reading"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ElectricalMeterReading"
+          }
+        }
+      },
+      "ElectricalMeterReadingPhasedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "electrical_meter_reading_phased"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ElectricalMeterReadingPhased"
+          }
+        }
+      },
+      "InvalidElectricalMeterConfigurationEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "invalid_electrical_meter_configuration"
+          },
+          "data": {
+            "$ref": "#/components/schemas/InvalidElectricalMeterConfiguration"
+          }
+        }
+      },
+      "ElectricalMeterConfigurationAcceptedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "electrical_meter_configuration_accepted"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ElectricalMeterConfigurationAccepted"
+          }
+        }
+      },
+      "ElectricalMeterConfigurationAppliedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "electrical_meter_configuration_applied"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ElectricalMeterConfigurationApplied"
+          }
+        }
+      },
+      "NodeFirmwareVersionChangedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "node_firmware_version_changed"
+          },
+          "data": {
+            "$ref": "#/components/schemas/NodeFirmwareVersionChanged"
+          }
+        }
+      },
+      "ElectricalMeterBalanceAndFlagsAcceptedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "electrical_meter_balance_and_flags_accepted"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ElectricalMeterBalanceAndFlagsAccepted"
+          }
+        }
+      },
+      "HeartbeatStatisticsEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "heartbeat_statistics"
+          },
+          "data": {
+            "$ref": "#/components/schemas/HeartbeatStatistics"
+          }
+        }
+      },
+      "GatewayStatusEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "gateway_status"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GatewayStatus"
+          }
+        }
+      },
+      "HeartbeatReadHopsEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "heartbeat_read_hops"
+          },
+          "data": {
+            "$ref": "#/components/schemas/HeartbeatReadHops"
+          }
+        }
+      },
+      "Event": {
+        "description": "One SSE message: a per-event envelope { type, data }. The event name also appears in the SSE `event:` line.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DriverConfigurationAppliedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/NodeRegisteredEvent"
+          },
+          {
+            "$ref": "#/components/schemas/NodeAlreadyRegisteredEvent"
+          },
+          {
+            "$ref": "#/components/schemas/NodeUnregisteredEvent"
+          },
+          {
+            "$ref": "#/components/schemas/NodeToUnregisterUnknownEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ElectricalMeterReadingEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ElectricalMeterReadingPhasedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/InvalidElectricalMeterConfigurationEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ElectricalMeterConfigurationAcceptedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ElectricalMeterConfigurationAppliedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/NodeFirmwareVersionChangedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ElectricalMeterBalanceAndFlagsAcceptedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/HeartbeatStatisticsEvent"
+          },
+          {
+            "$ref": "#/components/schemas/GatewayStatusEvent"
+          },
+          {
+            "$ref": "#/components/schemas/HeartbeatReadHopsEvent"
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "system"
+    },
+    {
+      "name": "nodes"
+    },
+    {
+      "name": "meters"
+    },
+    {
+      "name": "events"
+    }
+  ]
+}

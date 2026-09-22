@@ -30,6 +30,24 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _METER_DRIVER_CONFIG_DIR = _REPO_ROOT / "meter_driver_configs"
 logger = logging.getLogger(__name__)
 
+# The routes the Meter Driver Specification (v1.4.0, docs/spec/index.md
+# section 4) marks Required, other than /openapi.json, which is the document
+# being checked. A driver's /openapi.json must list every one of these.
+REQUIRED_CONTRACT_PATHS = (
+    "/v1/requirements",
+    "/v1/init",
+    "/v1/nodes/register",
+    "/v1/nodes/{node_id}",
+    "/v1/nodes/{node_id}/configure-meter",
+    "/v1/meters/configure",
+    "/v1/events",
+    "/v1/status",
+    "/v1/healthz",
+)
+
+# The spec's interface-discovery extension block on /openapi.json (section 5.1).
+DISCOVERY_EXTENSION = "x-meter-driver"
+
 
 def _resolve_local_ref(spec, ref):
     """Resolve a local JSON Pointer reference within an OpenAPI document."""
@@ -51,6 +69,16 @@ def _resolve_schema(spec, schema):
     if "$ref" in schema:
         return _resolve_local_ref(spec, schema["$ref"]) or {}
     return schema
+
+
+# ---------------------------------------------------------------------------
+# Optional extension: /v1/commands configure_provider vendor options
+#
+# Not part of the spec. A driver may additionally document a /v1/commands
+# route whose configure_provider command carries a vendor_options object;
+# its fields are offered as optional extras after the spec-discovered
+# required fields. Nothing below is required for registration.
+# ---------------------------------------------------------------------------
 
 
 def _command_type_values(spec, schema):
@@ -127,117 +155,115 @@ def _vendor_option_field_map(spec):
     return {field["name"]: field for field in _extract_vendor_option_fields(spec)}
 
 
+# ---------------------------------------------------------------------------
+# Init-field discovery: GET /v1/requirements typed by the InitRequest schema
+# (spec sections 2, 5.2, 5.3 and 9)
+# ---------------------------------------------------------------------------
+
+
 def _requirements_url(service_url):
     """Build the requirements endpoint URL from a service URL."""
     return normalize_base_url(service_url) + "/v1/requirements"
 
 
 def _fetch_requirements_payload(service_url, timeout=10.0):
-    """Fetch the optional driver requirements payload."""
-    response = httpx.get(_requirements_url(service_url), timeout=timeout)
-    response.raise_for_status()
-    payload = response.json()
+    """Fetch the driver's GET /v1/requirements response (a RequirementsResponse object)."""
+    try:
+        response = httpx.get(_requirements_url(service_url), timeout=timeout)
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise ProviderRegistrationError("could not fetch driver requirements from /v1/requirements") from exc
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise ProviderRegistrationError("driver requirements response is not valid JSON") from exc
     if not isinstance(payload, dict):
         raise ProviderRegistrationError("driver requirements response must be a JSON object")
     return payload
 
 
-def _iter_candidate_requirement_schemas(spec):
-    """Yield object schemas that may describe driver requirement fields."""
+def _required_field_names_from_requirements(payload):
+    """Return the `required_fields` names from a RequirementsResponse, in the driver's order."""
+    names = payload.get("required_fields")
+    if not isinstance(names, list):
+        raise ProviderRegistrationError("driver requirements response must list required_fields")
+    normalized = []
+    for name in names:
+        text = str(name).strip()
+        if text and text not in normalized:
+            normalized.append(text)
+    return normalized
 
-    def _walk(schema, depth=0):
-        if depth > 6:
-            return
-        resolved = _resolve_schema(spec, schema)
-        if not isinstance(resolved, dict):
-            return
-        properties = resolved.get("properties") or {}
-        if properties:
-            yield resolved
-            # Requirement fields are frequently nested (e.g. under
-            # vendor_options), so descend into object-typed properties too.
-            for prop_schema in properties.values():
-                yield from _walk(prop_schema, depth + 1)
 
+def _init_request_schema(spec):
+    """Return the document's InitRequest schema.
+
+    The POST /v1/init request-body schema is authoritative; a document that
+    documents init fields only under components.schemas.InitRequest is
+    read from there.
+    """
+    schema = (
+        (((spec.get("paths") or {}).get("/v1/init") or {}).get("post") or {})
+        .get("requestBody", {})
+        .get("content", {})
+        .get("application/json", {})
+        .get("schema", {})
+    )
+    resolved = _resolve_schema(spec, schema)
+    if resolved.get("properties"):
+        return resolved
     components = (spec.get("components") or {}).get("schemas") or {}
-    for schema in components.values():
-        yield from _walk(schema)
-
-    for path_item in (spec.get("paths") or {}).values():
-        if not isinstance(path_item, dict):
-            continue
-        for operation in path_item.values():
-            if not isinstance(operation, dict):
-                continue
-            schema = (
-                ((operation.get("requestBody") or {}).get("content") or {})
-                .get("application/json", {})
-                .get("schema", {})
-            )
-            yield from _walk(schema)
+    return _resolve_schema(spec, components.get("InitRequest") or {})
 
 
-def _best_matching_requirements_schema(spec, required_fields):
-    """Find the schema whose properties best match the reported required fields."""
-    required_names = set(required_fields or [])
-    best_schema = {}
-    best_score = 0
-    for schema in _iter_candidate_requirement_schemas(spec):
-        properties = set((schema.get("properties") or {}).keys())
-        score = len(required_names & properties)
-        if score > best_score:
-            best_schema = schema
-            best_score = score
-    return best_schema if best_score else {}
+def _scalar_schema(spec, schema):
+    """Resolve a property schema to the alternative describing its scalar wire form.
 
-
-# Type hints for the spec's standard driver init fields, used when the
-# driver's OpenAPI does not describe a required field's schema itself.
-_STANDARD_INIT_FIELD_TYPES = {
-    "aes_key": "string",
-    "channel": "integer",
-    "heartbeat_period_duration": "integer",
-}
+    A oneOf/anyOf without its own type (the spec's AesKeyInput: 32-hex
+    string or 16-byte array) reduces to its first string-typed alternative,
+    else its first alternative, so the form layer sees one type and pattern.
+    """
+    resolved = _resolve_schema(spec, schema)
+    alternatives = resolved.get("oneOf") or resolved.get("anyOf") or []
+    if resolved.get("type") or not alternatives:
+        return resolved
+    resolved_alternatives = [_resolve_schema(spec, alternative) for alternative in alternatives]
+    for alternative in resolved_alternatives:
+        if alternative.get("type") == "string":
+            return alternative
+    return resolved_alternatives[0]
 
 
 def _extract_fields_from_requirements(spec, required_fields):
-    """Build normalized field specs from a requirements list plus OpenAPI schema hints."""
-    schema = _best_matching_requirements_schema(spec, required_fields)
-    properties = schema.get("properties") or {}
-    schema_required = set(schema.get("required") or [])
-    fields = []
-    for name in required_fields:
-        resolved = dict(_resolve_schema(spec, properties.get(name) or {}))
-        if not resolved.get("type") and name in _STANDARD_INIT_FIELD_TYPES:
-            resolved["type"] = _STANDARD_INIT_FIELD_TYPES[name]
-        fields.append(
-            _field_spec(
-                name,
-                resolved,
-                name in schema_required or name in set(required_fields),
-            )
-        )
-    return fields
+    """Build field specs for the advertised init fields, typed from InitRequest.
+
+    A field the document does not describe is typed as a string.
+    """
+    properties = _init_request_schema(spec).get("properties") or {}
+    return [
+        _field_spec(name, _scalar_schema(spec, properties.get(name) or {}), True) for name in required_fields
+    ]
 
 
 def _extract_driver_requirement_fields(base_url, spec, timeout=10.0):
-    """Discover required driver fields from /v1/requirements, else OpenAPI."""
-    vendor_option_fields = _extract_vendor_option_fields(spec)
-    if not vendor_option_fields:
-        # The driver declares no configurable requirements, so there is
-        # nothing to enrich and no reason to probe /v1/requirements.
-        return []
-    try:
-        payload = _fetch_requirements_payload(base_url, timeout=timeout)
-        required_fields = payload.get("required_fields") or []
-        if isinstance(required_fields, list) and required_fields:
-            normalized = [str(name).strip() for name in required_fields if str(name).strip()]
-            if normalized:
-                return _extract_fields_from_requirements(spec, normalized)
-    except (httpx.HTTPError, ValueError, ProviderRegistrationError):
-        pass
+    """Discover the driver's init fields.
 
-    return vendor_option_fields
+    GET /v1/requirements is required and its list order is kept; each name
+    is typed from the document's InitRequest schema. Fields from the
+    optional /v1/commands vendor-option extension, if the document has
+    one, follow as optional extras.
+    """
+    payload = _fetch_requirements_payload(base_url, timeout=timeout)
+    fields = _extract_fields_from_requirements(spec, _required_field_names_from_requirements(payload))
+    known = {field["name"] for field in fields}
+    for vendor_field in _extract_vendor_option_fields(spec):
+        if vendor_field["name"] in known:
+            continue
+        extra = dict(vendor_field)
+        extra["required"] = False
+        fields.append(extra)
+        known.add(extra["name"])
+    return fields
 
 
 def _get_parameter(name):
@@ -492,13 +518,20 @@ def parse_provider_config_text(config_text):
 
 
 def _required_field_names(payload):
-    """Return the required field names from a config payload."""
+    """Return the names a config payload must supply values for.
+
+    Entries are the field specs written at registration (dicts) or bare
+    names. A dict entry marked `"required": false` is an optional extra
+    and is not demanded.
+    """
     names = payload.get("required_fields") or []
     if not isinstance(names, list):
         raise DriverConfigError("required_fields must be a list")
     normalized = []
     for entry in names:
         if isinstance(entry, dict):
+            if entry.get("required") is False:
+                continue
             name = str(entry.get("name") or "").strip()
         else:
             name = str(entry).strip()
@@ -557,7 +590,11 @@ def _coerce_field_value(name, value, spec):
 
 
 def validate_provider_config_payload(payload):
-    """Validate required field presence in a driver config payload."""
+    """Validate a driver config payload and return the typed init values.
+
+    Every required field needs a value. An optional field left blank is
+    omitted from the returned `field_values` rather than sent as "".
+    """
     required_fields = _required_field_names(payload)
     required_field_specs = _required_field_specs(payload)
     field_values = _field_values(payload)
@@ -566,10 +603,11 @@ def validate_provider_config_payload(payload):
     ]
     if missing:
         raise DriverConfigError("required fields are missing values: {}".format(", ".join(missing)))
-    coerced_field_values = {
-        name: _coerce_field_value(name, value, required_field_specs.get(name))
-        for name, value in field_values.items()
-    }
+    coerced_field_values = {}
+    for name, value in field_values.items():
+        if value in (None, "") and name not in required_fields:
+            continue
+        coerced_field_values[name] = _coerce_field_value(name, value, required_field_specs.get(name))
     return {
         "required_fields": required_fields,
         "field_values": coerced_field_values,
@@ -756,8 +794,12 @@ def get_openapi_url(service_url):
 
 
 def _normalize_interface_metadata(base_url, spec):
-    """Extract the advertised interface inventory from a provider contract."""
-    extension = spec.get("x-open-thunder") or {}
+    """Extract the advertised interface inventory from the contract's x-meter-driver block.
+
+    Without the block, or without an http entry in it, one http interface
+    at the registered base URL is synthesized and becomes the default.
+    """
+    extension = spec.get(DISCOVERY_EXTENSION) or {}
     interface_entries = extension.get("interfaces") or []
 
     interfaces = []
@@ -863,7 +905,12 @@ def _fallback_interface_metadata(base_url, selected_interface=None):
 
 
 def validate_contract(service_url, timeout=10.0):
-    """Fetch and validate the provider's OpenAPI contract."""
+    """Fetch and validate the driver's OpenAPI contract, then discover its init fields.
+
+    Follows the spec's integration sequence (section 2): GET /openapi.json,
+    check it lists every required route, read x-meter-driver, then GET
+    /v1/requirements. A driver missing any of that is not registrable.
+    """
     base_url = normalize_base_url(service_url)
     openapi_url = get_openapi_url(service_url)
     try:
@@ -879,8 +926,7 @@ def validate_contract(service_url, timeout=10.0):
 
     info = spec.get("info") or {}
     paths = spec.get("paths") or {}
-    required_paths = ("/v1/commands", "/v1/events")
-    missing_paths = [path for path in required_paths if path not in paths]
+    missing_paths = [path for path in REQUIRED_CONTRACT_PATHS if path not in paths]
     if missing_paths:
         raise ProviderRegistrationError(
             "driver contract missing required paths: {}".format(", ".join(missing_paths))
@@ -925,46 +971,40 @@ def get_live_interface_details(service_url, selected_interface=None, timeout=2.0
 
 
 def get_runtime_status(service_url, timeout=2.0, include_gateway_status=True):
-    """Check whether the provider service is currently reachable."""
+    """Check driver liveness on GET /v1/healthz and, optionally, gateway state on GET /v1/status."""
     base_url = normalize_base_url(service_url)
     healthz_url = base_url.rstrip("/") + "/v1/healthz"
-    legacy_health_url = base_url.rstrip("/") + "/health"
     status_url = base_url.rstrip("/") + "/v1/status"
-    urls = (healthz_url, legacy_health_url)
-    last_error = None
-    for url in urls:
-        try:
-            response = httpx.get(url, timeout=timeout)
-            response.raise_for_status()
-            status = {
-                "online": True,
-                "message": "online",
-                "checked_url": url,
-                "gateway_checked": bool(include_gateway_status),
-            }
-            if not include_gateway_status:
-                status["gateway_active"] = False
-                status["gateway_type"] = None
-                return status
-            try:
-                gateway_response = httpx.get(status_url, timeout=timeout)
-                gateway_response.raise_for_status()
-                gateway_data = gateway_response.json()
-                status["gateway_active"] = bool(gateway_data.get("connected"))
-                status["gateway_type"] = gateway_data.get("gateway_type")
-            except (httpx.HTTPError, ValueError):
-                status["gateway_checked"] = True
-                status["gateway_active"] = False
-                status["gateway_type"] = None
-            return status
-        except httpx.HTTPError as exc:
-            last_error = exc
+    try:
+        response = httpx.get(healthz_url, timeout=timeout)
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        return {
+            "online": False,
+            "message": str(exc) or "unreachable",
+            "checked_url": healthz_url,
+            "gateway_checked": bool(include_gateway_status),
+            "gateway_active": False,
+            "gateway_type": None,
+        }
 
-    return {
-        "online": False,
-        "message": str(last_error) if last_error is not None else "unreachable",
+    status = {
+        "online": True,
+        "message": "online",
         "checked_url": healthz_url,
         "gateway_checked": bool(include_gateway_status),
-        "gateway_active": False,
-        "gateway_type": None,
     }
+    if not include_gateway_status:
+        status["gateway_active"] = False
+        status["gateway_type"] = None
+        return status
+    try:
+        gateway_response = httpx.get(status_url, timeout=timeout)
+        gateway_response.raise_for_status()
+        gateway_data = gateway_response.json()
+        status["gateway_active"] = bool(gateway_data.get("connected"))
+        status["gateway_type"] = gateway_data.get("gateway_type")
+    except (httpx.HTTPError, ValueError):
+        status["gateway_active"] = False
+        status["gateway_type"] = None
+    return status
