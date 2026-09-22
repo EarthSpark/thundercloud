@@ -59,6 +59,11 @@ _READING_EVENT_TYPES: dict[str, type] = {
 # *Event schemas) other than the reading, heartbeat_statistics and
 # heartbeat_read_hops types handled above. Any other name, including a
 # driver's own alias for one of these, is unknown and logged as such.
+#
+# The OpenAPI constants are normative. The prose table in docs/spec/index.md
+# section 6 lists different names for several of these (meter_registered,
+# meter_reading, meter_configuration_applied, ...); those are not wire
+# names and are not recognized.
 _SIDE_CHANNEL_TYPES = {
     "driver_configuration_applied",
     "gateway_status",

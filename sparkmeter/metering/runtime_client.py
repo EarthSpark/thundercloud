@@ -361,150 +361,118 @@ def _decimal_proto(value: SpecDecimal) -> pb2.Decimal:
     return pb2.Decimal(sign=int(value.sign), coef=int(value.coef), exp=int(value.exp))
 
 
+# Event names whose protobuf message maps field-for-field onto the spec's
+# SSE payload, so a JSON rendering of the message is the envelope's data.
+_PASSTHROUGH_GRPC_EVENTS = {
+    "heartbeat_statistics",
+    "gateway_status",
+    "heartbeat_read_hops",
+    "driver_configuration_applied",
+    "node_registered",
+    "node_already_registered",
+    "node_unregistered",
+    "node_to_unregister_unknown",
+    "invalid_electrical_meter_configuration",
+    "electrical_meter_configuration_accepted",
+    "electrical_meter_configuration_applied",
+    "electrical_meter_balance_and_flags_accepted",
+}
+
+# ElectricalMeterReading fields (spec section 6) by wire type.
+_READING_INT_FIELDS = ("period_start", "period_end", "uptime_secs")
+_READING_FLOAT_FIELDS = (
+    "frequency",
+    "current_avg",
+    "current_min",
+    "current_max",
+    "voltage_avg",
+    "voltage_min",
+    "voltage_max",
+    "true_power_avg",
+    "true_power_inst",
+    "apparent_power_avg",
+    "power_factor_avg",
+    "energy",
+    "user_power_limit",
+)
+# The per-phase measurements ElectricalMeterReadingPhased adds, suffixed _a/_b/_c.
+_PHASED_FLOAT_FIELDS = (
+    "frequency",
+    "current_avg",
+    "current_min",
+    "current_max",
+    "voltage_avg",
+    "voltage_min",
+    "voltage_max",
+    "true_power_avg",
+    "true_power_inst",
+    "apparent_power_avg",
+    "power_factor_avg",
+)
+_PHASES = ("a", "b", "c")
+
+
 def _grpc_event_to_raw_dict(event: "pb2.MeterDriverEvent", event_id: int):
-    """Translate a protobuf stream event into the raw event dict shape."""
+    """Translate a protobuf stream event into the `{type, event_id, data}` envelope.
+
+    `type` and `data` are what the dispatcher reads, exactly as an SSE frame
+    carries them; `data` uses the spec's field names and JSON types.
+    """
     event_name = event.WhichOneof("event")
     if not event_name:
         return None
 
     message = getattr(event, event_name)
-    message_dict = MessageToDict(message, preserving_proto_field_name=True)
 
     if event_name == "electrical_meter_reading":
+        data = _reading_data(message)
+    elif event_name == "electrical_meter_reading_phased":
+        data = _phased_reading_data(message)
+    elif event_name == "node_firmware_version_changed":
         data = {
             "node_id": int(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": int(message.state),
-            "frequency": float(message.frequency),
-            "current_avg": float(message.current_avg),
-            "current_min": float(message.current_min),
-            "current_max": float(message.current_max),
-            "voltage_avg": float(message.voltage_avg),
-            "voltage_min": float(message.voltage_min),
-            "voltage_max": float(message.voltage_max),
-            "true_power_avg": float(message.true_power_avg),
-            "true_power_inst": float(message.true_power_inst),
-            "apparent_power_avg": float(message.apparent_power_avg),
-            "power_factor_avg": float(message.power_factor_avg),
-            "energy": float(message.energy),
-            "uptime_secs": int(message.uptime_secs),
-            "user_power_limit": float(message.user_power_limit),
-        }
-        return {
-            "type": "electrical_meter_reading",
-            "event_id": event_id,
-            "event_type": "meter_reading",
-            "meter_id": str(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": _meter_state_name(message.state),
-            "frequency_hz": float(message.frequency),
-            "current_avg_amps": float(message.current_avg),
-            "current_max_amps": float(message.current_max),
-            "current_min_amps": float(message.current_min),
-            "voltage_avg": float(message.voltage_avg),
-            "voltage_max": float(message.voltage_max),
-            "voltage_min": float(message.voltage_min),
-            "true_power_avg_watts": float(message.true_power_avg),
-            "true_power_inst_watts": float(message.true_power_inst),
-            "apparent_power_avg_va": float(message.apparent_power_avg),
-            "power_factor_avg": float(message.power_factor_avg),
-            "energy_wh": float(message.energy),
-            "uptime_seconds": int(message.uptime_secs),
-            "user_power_limit_watts": float(message.user_power_limit),
-            "data": data,
-        }
-
-    if event_name == "electrical_meter_reading_phased":
-        data = {
-            "node_id": int(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": int(message.state),
-            "energy": float(message.energy),
-            "uptime_secs": int(message.uptime_secs),
-            "user_power_limit": float(message.user_power_limit),
-        }
-        return {
-            "type": "electrical_meter_reading_phased",
-            "event_id": event_id,
-            "event_type": "meter_reading_phased",
-            "meter_id": str(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": _meter_state_name(message.state),
-            "energy_wh": float(message.energy),
-            "uptime_seconds": int(message.uptime_secs),
-            "user_power_limit_watts": float(message.user_power_limit),
-            "aggregate": _phase_reading_dict(message),
-            "per_phase": _phased_per_phase_dict(message),
-            "phases": _phases_list(message),
-            "computed_fields_version": int(message.computed_fields_version),
-            "data": data,
-        }
-
-    if event_name == "heartbeat_statistics":
-        return {
-            "type": "heartbeat_statistics",
-            "event_id": event_id,
-            "event_type": "heartbeat_summary",
-            "timestamp": int(message.timestamp),
-            "total_registered_meters": int(message.total_registered_nodes),
-            "meters_attempted": int(message.nodes_reached_out_to_in_current_heartbeat),
-            "meters_responded": int(message.nodes_heard_from_in_current_heartbeat),
-            "packets_sent": int(message.packets_sent_in_current_heartbeat),
-            "packets_received": int(message.packets_received_in_current_heartbeat),
-            "read_reply_latency_ms": _stats_dict(message_dict.get("millisecond_read_reply_stats")),
-            "set_config_reply_latency_ms": _stats_dict(
-                message_dict.get("millisecond_set_config_reply_stats")
-            ),
-            "data": message_dict,
-        }
-
-    if event_name == "node_firmware_version_changed":
-        return {
-            "type": "node_firmware_version_changed",
-            "event_id": event_id,
-            "event_type": "meter_firmware_changed",
-            "meter_id": str(message.node_id),
             "firmware_version": _version_dict(message.firmware_version),
-            "data": {
-                "node_id": int(message.node_id),
-                "firmware_version": _version_dict(message.firmware_version),
-            },
         }
+    elif event_name in _PASSTHROUGH_GRPC_EVENTS:
+        data = _message_data(message)
+    else:
+        logger.debug("ignoring unsupported gRPC provider event %s", event_name)
+        return None
 
-    if event_name in {
-        "gateway_status",
-        "heartbeat_read_hops",
-        "driver_configuration_applied",
-        "node_registered",
-        "node_already_registered",
-        "node_unregistered",
-        "node_to_unregister_unknown",
-        "invalid_electrical_meter_configuration",
-        "electrical_meter_configuration_accepted",
-        "electrical_meter_configuration_applied",
-        "electrical_meter_balance_and_flags_accepted",
-    }:
-        return {
-            "type": event_name,
-            "event_id": event_id,
-            "data": message_dict,
-        }
-
-    logger.debug("ignoring unsupported gRPC provider event %s", event_name)
-    return None
+    return {"type": event_name, "event_id": event_id, "data": data}
 
 
-def _meter_state_name(state_value: int) -> str:
-    mapping = {
-        getattr(pb2.ElectricalMeterState, "ElectricalMeterStateOff", 0): "off",
-        getattr(pb2.ElectricalMeterState, "ElectricalMeterStateOn", 1): "on",
-        getattr(pb2.ElectricalMeterState, "ElectricalMeterStateUnknown", -1): "unknown",
-    }
-    return mapping.get(state_value, "unknown")
+def _message_data(message) -> dict[str, Any]:
+    """Render a protobuf message as the spec's JSON payload.
+
+    Fields at their default value are kept (the spec payloads require
+    them) and a 64-bit node_id, which the protobuf JSON mapping renders as
+    a string, is restored to an integer.
+    """
+    data = MessageToDict(message, preserving_proto_field_name=True, always_print_fields_with_no_presence=True)
+    if "node_id" in data:
+        data["node_id"] = int(message.node_id)
+    return data
+
+
+def _reading_data(message) -> dict[str, Any]:
+    data: dict[str, Any] = {"node_id": int(message.node_id), "state": int(message.state)}
+    for name in _READING_INT_FIELDS:
+        data[name] = int(getattr(message, name))
+    for name in _READING_FLOAT_FIELDS:
+        data[name] = float(getattr(message, name))
+    return data
+
+
+def _phased_reading_data(message) -> dict[str, Any]:
+    data = _reading_data(message)
+    for name in _PHASED_FLOAT_FIELDS:
+        for phase in _PHASES:
+            field = "{}_{}".format(name, phase)
+            data[field] = float(getattr(message, field))
+    data["phases"] = {phase: bool(getattr(message.phases, phase)) for phase in _PHASES}
+    data["computed_fields_version"] = int(message.computed_fields_version)
+    return data
 
 
 def _version_dict(version_message: Any) -> dict[str, int]:
@@ -513,63 +481,4 @@ def _version_dict(version_message: Any) -> dict[str, int]:
         "major": int(getattr(version_message, "major", 0) or 0),
         "minor": int(getattr(version_message, "minor", 0) or 0),
         "patch": int(getattr(version_message, "patch", 0) or 0),
-    }
-
-
-def _phase_reading_dict(message) -> dict[str, float]:
-    return {
-        "apparent_power_avg_va": float(message.apparent_power_avg),
-        "current_avg_amps": float(message.current_avg),
-        "current_max_amps": float(message.current_max),
-        "current_min_amps": float(message.current_min),
-        "frequency_hz": float(message.frequency),
-        "power_factor_avg": float(message.power_factor_avg),
-        "true_power_avg_watts": float(message.true_power_avg),
-        "true_power_inst_watts": float(message.true_power_inst),
-        "voltage_avg": float(message.voltage_avg),
-        "voltage_max": float(message.voltage_max),
-        "voltage_min": float(message.voltage_min),
-    }
-
-
-def _phased_per_phase_dict(message) -> dict[str, dict[str, float]]:
-    per_phase = {}
-    for phase in _phases_list(message):
-        suffix = phase
-        per_phase[phase] = {
-            "apparent_power_avg_va": float(getattr(message, f"apparent_power_avg_{suffix}")),
-            "current_avg_amps": float(getattr(message, f"current_avg_{suffix}")),
-            "current_max_amps": float(getattr(message, f"current_max_{suffix}")),
-            "current_min_amps": float(getattr(message, f"current_min_{suffix}")),
-            "frequency_hz": float(getattr(message, f"frequency_{suffix}")),
-            "power_factor_avg": float(getattr(message, f"power_factor_avg_{suffix}")),
-            "true_power_avg_watts": float(getattr(message, f"true_power_avg_{suffix}")),
-            "true_power_inst_watts": float(getattr(message, f"true_power_inst_{suffix}")),
-            "voltage_avg": float(getattr(message, f"voltage_avg_{suffix}")),
-            "voltage_max": float(getattr(message, f"voltage_max_{suffix}")),
-            "voltage_min": float(getattr(message, f"voltage_min_{suffix}")),
-        }
-    return per_phase
-
-
-def _phases_list(message) -> list[str]:
-    phases = []
-    if getattr(message.phases, "a", False):
-        phases.append("a")
-    if getattr(message.phases, "b", False):
-        phases.append("b")
-    if getattr(message.phases, "c", False):
-        phases.append("c")
-    return phases
-
-
-def _stats_dict(data: dict[str, Any] | None):
-    if not data:
-        return None
-    return {
-        "count": int(data.get("count", 0)),
-        "last_value": float(data.get("last_value", 0.0)),
-        "max": float(data.get("max", 0.0)),
-        "min": float(data.get("min", 0.0)),
-        "avg": float(data.get("avg", 0.0)),
     }

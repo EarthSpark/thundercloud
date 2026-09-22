@@ -46,8 +46,9 @@ async def stream_json_events(
 ) -> AsyncIterator[dict[str, Any]]:
     """Yield JSON event payloads from the driver's HTTP SSE endpoint.
 
-    GET /v1/events declares no parameters in the spec; the client
-    identifies itself only through the X-Client-Id header.
+    GET /v1/events declares no parameters in the spec, so nothing goes in
+    the query string. The X-Client-Id header is ThunderCloud's own
+    convention (the spec defines no such header); a driver may ignore it.
     """
     headers = {"X-Client-Id": client_id, "Accept": "text/event-stream"}
     async with httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=None) as client:

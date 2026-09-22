@@ -93,14 +93,6 @@ def test_aes_key_bytes_accepts_hex_bytes_and_iterables():
     assert runtime_client._aes_key_bytes([1, 2, 3]) == b"\x01\x02\x03"
 
 
-def test_meter_state_name_maps_known_and_unknown():
-    on_value = getattr(runtime_client.pb2.ElectricalMeterState, "ElectricalMeterStateOn", 1)
-    off_value = getattr(runtime_client.pb2.ElectricalMeterState, "ElectricalMeterStateOff", 0)
-    assert runtime_client._meter_state_name(on_value) == "on"
-    assert runtime_client._meter_state_name(off_value) == "off"
-    assert runtime_client._meter_state_name(9999) == "unknown"
-
-
 def test_version_dict_defaults_missing_components():
     assert runtime_client._version_dict(SimpleNamespace(major=1, minor=2, patch=3)) == {
         "major": 1,
@@ -110,24 +102,7 @@ def test_version_dict_defaults_missing_components():
     assert runtime_client._version_dict(SimpleNamespace()) == {"major": 0, "minor": 0, "patch": 0}
 
 
-def test_stats_dict_handles_none_and_values():
-    assert runtime_client._stats_dict(None) is None
-    assert runtime_client._stats_dict(
-        {"count": 2, "last_value": 1.5, "max": 3.0, "min": 0.5, "avg": 1.75}
-    ) == {"count": 2, "last_value": 1.5, "max": 3.0, "min": 0.5, "avg": 1.75}
-
-
-def test_phases_list_reads_phase_flags():
-    message = SimpleNamespace(phases=SimpleNamespace(a=True, b=False, c=True))
-    assert runtime_client._phases_list(message) == ["a", "c"]
-
-
-def test_phases_list_includes_phase_b_when_set():
-    # Exercise the middle phase-b branch, which the a/c-only case skips.
-    message = SimpleNamespace(phases=SimpleNamespace(a=False, b=True, c=False))
-    assert runtime_client._phases_list(message) == ["b"]
-
-
+# The per-phase measurements of ElectricalMeterReadingPhased (spec section 6).
 _AGG_PHASE_FIELDS = (
     "apparent_power_avg",
     "current_avg",
@@ -141,60 +116,6 @@ _AGG_PHASE_FIELDS = (
     "voltage_max",
     "voltage_min",
 )
-
-
-# A distinct value per source field, so any src→dest field swap is detected.
-_DISTINCT_PHASE_VALUES = {
-    "apparent_power_avg": 1.0,
-    "current_avg": 2.0,
-    "current_max": 3.0,
-    "current_min": 4.0,
-    "frequency": 5.0,
-    "power_factor_avg": 6.0,
-    "true_power_avg": 7.0,
-    "true_power_inst": 8.0,
-    "voltage_avg": 9.0,
-    "voltage_max": 10.0,
-    "voltage_min": 11.0,
-}
-# The mapping the source performs, keyed as output key -> source protobuf field.
-_EXPECTED_PHASE_MAP = {
-    "apparent_power_avg_va": "apparent_power_avg",
-    "current_avg_amps": "current_avg",
-    "current_max_amps": "current_max",
-    "current_min_amps": "current_min",
-    "frequency_hz": "frequency",
-    "power_factor_avg": "power_factor_avg",
-    "true_power_avg_watts": "true_power_avg",
-    "true_power_inst_watts": "true_power_inst",
-    "voltage_avg": "voltage_avg",
-    "voltage_max": "voltage_max",
-    "voltage_min": "voltage_min",
-}
-
-
-def test_phase_reading_dict_maps_each_field_to_the_right_key():
-    message = SimpleNamespace(**_DISTINCT_PHASE_VALUES)
-    result = runtime_client._phase_reading_dict(message)
-    # Every output key must carry the value of its specific source field —
-    # a swap (e.g. voltage_min reading voltage_max) would change the value.
-    expected = {out: _DISTINCT_PHASE_VALUES[src] for out, src in _EXPECTED_PHASE_MAP.items()}
-    assert result == pytest.approx(expected)
-
-
-def test_phased_per_phase_dict_maps_each_field_and_skips_inactive_phases():
-    # Phase a carries the distinct values; phase b's fields exist but are inactive.
-    fields = {"{}_a".format(name): value for name, value in _DISTINCT_PHASE_VALUES.items()}
-    fields.update({"{}_b".format(name): -1.0 for name in _DISTINCT_PHASE_VALUES})
-    fields["phases"] = SimpleNamespace(a=True, b=False, c=False)
-    message = SimpleNamespace(**fields)
-
-    per_phase = runtime_client._phased_per_phase_dict(message)
-
-    # Only the active phase is emitted, and each key maps to its own source field.
-    assert set(per_phase) == {"a"}
-    expected = {out: _DISTINCT_PHASE_VALUES[src] for out, src in _EXPECTED_PHASE_MAP.items()}
-    assert per_phase["a"] == pytest.approx(expected)
 
 
 def test_selected_interface_details_prefers_provider_details():
@@ -635,7 +556,10 @@ def _reading_message():
 def _phased_message():
     on_value = getattr(runtime_client.pb2.ElectricalMeterState, "ElectricalMeterStateOn", 1)
     fields = {name: 1.0 for name in _AGG_PHASE_FIELDS}
+    # A distinct value per phase so a phase swap in the translation shows.
     fields.update({"{}_a".format(name): 2.0 for name in _AGG_PHASE_FIELDS})
+    fields.update({"{}_b".format(name): 3.0 for name in _AGG_PHASE_FIELDS})
+    fields.update({"{}_c".format(name): 0.0 for name in _AGG_PHASE_FIELDS})
     fields.update(
         node_id=100,
         period_start=1,
@@ -645,12 +569,14 @@ def _phased_message():
         uptime_secs=5,
         user_power_limit=1500.0,
         computed_fields_version=3,
-        phases=SimpleNamespace(a=True, b=False, c=False),
+        phases=SimpleNamespace(a=True, b=True, c=False),
     )
     return SimpleNamespace(**fields)
 
 
 class TestGrpcEventToRawDict:
+    """The translation yields only what an SSE frame carries: type, event_id, data."""
+
     def test_no_oneof_returns_none(self):
         event = SimpleNamespace(WhichOneof=lambda field: None)
         assert runtime_client._grpc_event_to_raw_dict(event, 1) is None
@@ -665,34 +591,14 @@ class TestGrpcEventToRawDict:
         raw = runtime_client._grpc_event_to_raw_dict(
             _event("electrical_meter_reading", _reading_message()), 5
         )
+        on_value = getattr(runtime_client.pb2.ElectricalMeterState, "ElectricalMeterStateOn", 1)
+        # Exactly the envelope keys: no renamed convenience copies of the data.
+        assert set(raw) == {"type", "event_id", "data"}
         assert raw["type"] == "electrical_meter_reading"
         assert raw["event_id"] == 5
-        assert raw["event_type"] == "meter_reading"
-        assert raw["meter_id"] == "100"
-        assert raw["period_start"] == 1700000000
-        assert raw["period_end"] == 1700000900
-        # The state id is translated to its name.
-        assert raw["state"] == "on"
-        # Every renamed top-level electrical field carries its own source value,
-        # so a field swap in the translation would change one of these.
-        assert raw["frequency_hz"] == pytest.approx(50.0)
-        assert raw["current_avg_amps"] == pytest.approx(5.0)
-        assert raw["current_min_amps"] == pytest.approx(1.0)
-        assert raw["current_max_amps"] == pytest.approx(10.0)
-        assert raw["voltage_avg"] == pytest.approx(230.0)
-        assert raw["voltage_min"] == pytest.approx(220.0)
-        assert raw["voltage_max"] == pytest.approx(235.0)
-        assert raw["true_power_avg_watts"] == pytest.approx(1000.0)
-        assert raw["true_power_inst_watts"] == pytest.approx(1100.0)
-        assert raw["apparent_power_avg_va"] == pytest.approx(1200.0)
-        assert raw["power_factor_avg"] == pytest.approx(0.95)
-        assert raw["energy_wh"] == pytest.approx(1234.5)
-        assert raw["uptime_seconds"] == 12345
-        assert raw["user_power_limit_watts"] == pytest.approx(1500.0)
-        # The nested spec "data" block preserves the raw spec field names and
-        # values in full; a swap inside it (e.g. current_min/current_max) would
-        # change one of these, and the exact-dict compare also catches drift.
-        on_value = getattr(runtime_client.pb2.ElectricalMeterState, "ElectricalMeterStateOn", 1)
+        # The "data" block carries the spec field names and values in full; a
+        # swap inside it (e.g. current_min/current_max) would change one of
+        # these, and the exact-dict compare also catches drift.
         assert raw["data"] == pytest.approx(
             {
                 "node_id": 100,
@@ -716,47 +622,79 @@ class TestGrpcEventToRawDict:
             }
         )
 
-    def test_phased_reading_event_translated(self, monkeypatch):
-        monkeypatch.setattr(runtime_client, "MessageToDict", lambda message, **kwargs: {})
+    def test_reading_data_parses_as_the_spec_model(self):
+        from meter_driver_spec.http.models import ElectricalMeterReading
+
+        raw = runtime_client._grpc_event_to_raw_dict(
+            _event("electrical_meter_reading", _reading_message()), 5
+        )
+        event = ElectricalMeterReading.model_validate(raw["data"])
+        assert event.node_id == 100
+        assert event.state.value == 1
+
+    def test_phased_reading_event_translated(self):
+        from meter_driver_spec.http.models import ElectricalMeterReadingPhased
+
         raw = runtime_client._grpc_event_to_raw_dict(
             _event("electrical_meter_reading_phased", _phased_message()), 6
         )
+        assert set(raw) == {"type", "event_id", "data"}
         assert raw["type"] == "electrical_meter_reading_phased"
-        assert raw["phases"] == ["a"]
-        assert raw["per_phase"]["a"]["current_avg_amps"] == pytest.approx(2.0)
+        data = raw["data"]
+        assert data["phases"] == {"a": True, "b": True, "c": False}
+        assert data["computed_fields_version"] == 3
+        assert data["current_avg_a"] == pytest.approx(2.0)
+        assert data["current_avg_b"] == pytest.approx(3.0)
+        assert data["current_avg_c"] == pytest.approx(0.0)
+        assert data["current_avg"] == pytest.approx(1.0)
+        # Every aggregate and per-phase field the spec payload has is present.
+        event = ElectricalMeterReadingPhased.model_validate(data)
+        assert event.voltage_min_b == pytest.approx(3.0)
+        assert event.phases.b is True
 
-    def test_heartbeat_event_translated(self, monkeypatch):
+    def test_heartbeat_event_passes_the_message_through(self, monkeypatch):
         stats = {"count": 1, "last_value": 1.0, "max": 1.0, "min": 1.0, "avg": 1.0}
-        monkeypatch.setattr(
-            runtime_client,
-            "MessageToDict",
-            lambda message, **kwargs: {
-                "millisecond_read_reply_stats": stats,
-                "millisecond_set_config_reply_stats": stats,
-            },
-        )
-        message = SimpleNamespace(
-            timestamp=1700000000,
-            total_registered_nodes=20,
-            nodes_reached_out_to_in_current_heartbeat=20,
-            nodes_heard_from_in_current_heartbeat=18,
-            packets_sent_in_current_heartbeat=40,
-            packets_received_in_current_heartbeat=36,
-        )
-        raw = runtime_client._grpc_event_to_raw_dict(_event("heartbeat_statistics", message), 7)
-        assert raw["type"] == "heartbeat_statistics"
-        assert raw["total_registered_meters"] == 20
-        assert raw["meters_responded"] == 18
-        assert raw["read_reply_latency_ms"]["count"] == 1
+        rendered = {
+            "timestamp": 1700000000,
+            "total_registered_nodes": 20,
+            "millisecond_read_reply_stats": stats,
+            "millisecond_set_config_reply_stats": stats,
+        }
+        seen = {}
 
-    def test_firmware_change_event_translated(self, monkeypatch):
-        monkeypatch.setattr(runtime_client, "MessageToDict", lambda message, **kwargs: {})
+        def fake_to_dict(message, **kwargs):
+            seen["kwargs"] = kwargs
+            return dict(rendered)
+
+        monkeypatch.setattr(runtime_client, "MessageToDict", fake_to_dict)
+        raw = runtime_client._grpc_event_to_raw_dict(_event("heartbeat_statistics", SimpleNamespace()), 7)
+        assert raw == {"type": "heartbeat_statistics", "event_id": 7, "data": rendered}
+        # Spec field names, and zero-valued counters kept (the model requires them).
+        assert seen["kwargs"] == {
+            "preserving_proto_field_name": True,
+            "always_print_fields_with_no_presence": True,
+        }
+
+    def test_firmware_change_event_translated(self):
         message = SimpleNamespace(node_id=100, firmware_version=SimpleNamespace(major=1, minor=2, patch=3))
         raw = runtime_client._grpc_event_to_raw_dict(_event("node_firmware_version_changed", message), 8)
-        assert raw["type"] == "node_firmware_version_changed"
-        assert raw["firmware_version"] == {"major": 1, "minor": 2, "patch": 3}
+        assert raw == {
+            "type": "node_firmware_version_changed",
+            "event_id": 8,
+            "data": {"node_id": 100, "firmware_version": {"major": 1, "minor": 2, "patch": 3}},
+        }
 
     def test_side_channel_event_passes_through_message_dict(self, monkeypatch):
         monkeypatch.setattr(runtime_client, "MessageToDict", lambda message, **kwargs: {"connected": True})
         raw = runtime_client._grpc_event_to_raw_dict(_event("gateway_status", SimpleNamespace()), 9)
         assert raw == {"type": "gateway_status", "event_id": 9, "data": {"connected": True}}
+
+    def test_side_channel_node_id_is_restored_to_an_integer(self, monkeypatch):
+        # The protobuf JSON mapping renders uint64 as a string; the spec payload wants an integer.
+        monkeypatch.setattr(
+            runtime_client, "MessageToDict", lambda message, **kwargs: {"node_id": "63519", "source_type": 1}
+        )
+        raw = runtime_client._grpc_event_to_raw_dict(
+            _event("node_registered", SimpleNamespace(node_id=63519)), 10
+        )
+        assert raw["data"] == {"node_id": 63519, "source_type": 1}
