@@ -55,7 +55,12 @@ _READING_EVENT_TYPES: dict[str, type] = {
 }
 
 # Envelope "type" values that are observed but not acted on beyond logging.
+# These are the spec's event `type` constants (openapi/meter-driver.yaml
+# *Event schemas) other than the reading, heartbeat_statistics and
+# heartbeat_read_hops types handled above. Any other name, including a
+# driver's own alias for one of these, is unknown and logged as such.
 _SIDE_CHANNEL_TYPES = {
+    "driver_configuration_applied",
     "gateway_status",
     "node_registered",
     "node_already_registered",
@@ -66,13 +71,6 @@ _SIDE_CHANNEL_TYPES = {
     "electrical_meter_configuration_accepted",
     "electrical_meter_configuration_applied",
     "electrical_meter_balance_and_flags_accepted",
-    # "sparknet_configuration_applied" is what SparkNet-Http-New's live HTTP
-    # SSE stream actually emits for this event (its own server-side naming,
-    # not something Thundercloud controls) -- kept for as long as that
-    # specific driver is in use. "driver_configuration_applied" is the
-    # vendor-neutral name from the meter-driver-spec.
-    "sparknet_configuration_applied",
-    "driver_configuration_applied",
 }
 
 # Side-channel types worth an INFO line rather than DEBUG.
