@@ -144,6 +144,7 @@ def meter_driver_edit(provider_id):
     provider_details = get_live_interface_details(
         provider["base_url"],
         selected_interface=provider["selected_interface"],
+        provider=provider,
     )
 
     form = MeterDriverSettingsForm(
@@ -171,6 +172,7 @@ def meter_driver_config(provider_id):
     provider_details = get_live_interface_details(
         provider["base_url"],
         selected_interface=provider["selected_interface"],
+        provider=provider,
     )
     form = MeterDriverConfigEditorForm(
         formdata=request.form if request.method == "POST" else None,

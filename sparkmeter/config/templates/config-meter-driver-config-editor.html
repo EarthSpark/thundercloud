@@ -23,12 +23,17 @@
                 <p><strong>{{ _('Driver') }}:</strong> {{ provider_details.name if provider_details and provider_details.name else provider.name }}</p>
                 <p><strong>{{ _('File') }}:</strong> <code>{{ form.config_file_path() }}</code></p>
 
-                {% if form.required_fields() %}
-                <p><strong>{{ _('Required fields') }}:</strong></p>
+                {% if form.driver_fields() %}
+                <p><strong>{{ _('Driver fields') }}:</strong></p>
                 <ul>
-                    {% for option in form.required_fields() %}
+                    {% for option in form.driver_fields() %}
                     <li>
                         <strong>{{ option.label }}</strong>
+                        {% if option.required %}
+                        <small>({{ _('required') }})</small>
+                        {% else %}
+                        <small>({{ _('optional') }})</small>
+                        {% endif %}
                         {% if option.description %}
                         : {{ option.description }}
                         {% endif %}
