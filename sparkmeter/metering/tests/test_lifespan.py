@@ -379,7 +379,7 @@ class TestObserveGatewayDisconnect:
     @pytest.mark.asyncio
     async def test_non_gateway_event_ignored(self):
         app, gateway_state = _build_app()
-        await lifespan._observe_gateway_status(app, {"type": "meter_reading"})
+        await lifespan._observe_gateway_status(app, {"type": "electrical_meter_reading"})
         assert gateway_state["gateway_paused"] is False
 
     @pytest.mark.asyncio
@@ -625,7 +625,7 @@ class TestRunSseConsumer:
                 if index == 0:
                     # Connect successfully, deliver one event, then the
                     # stream ends -> "treating provider as restarted".
-                    yield {"type": "meter_reading", "data": {}}
+                    yield {"type": "electrical_meter_reading", "data": {}}
                     return
                 # Second connection attempt breaks mid-stream.
                 raise RuntimeError("stream broke")

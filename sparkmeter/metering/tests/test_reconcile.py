@@ -379,8 +379,104 @@ class TestWorkerThreadEntryPoints:
         assert payload is None
         assert any("channel" in record.message for record in caplog.records)
 
-        )
 
+class _AcceptedResponse:
+    def raise_for_status(self):
+        return None
+
+
+class _RecordingHttpx:
+    """httpx.AsyncClient double recording every request the HTTP transport makes."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.calls: list = []
+
+    async def post(self, path, json=None):
+        self.calls.append(("POST", path, json))
+        return _AcceptedResponse()
+
+    async def delete(self, path):
+        self.calls.append(("DELETE", path, None))
+        return _AcceptedResponse()
+
+    async def get(self, path, **kwargs):
+        raise AssertionError("unexpected GET {}".format(path))
+
+    async def aclose(self):
+        return None
+
+
+class TestSpecOnlyDriverInit:
+    """A driver serving exactly the spec: registered, configured, initialized."""
+
+    @pytest.mark.asyncio
+    async def test_reconcile_posts_exactly_one_init_with_the_discovered_fields(
+        self, app, session, monkeypatch, tmp_path
+    ):
+        import json
+        from pathlib import Path
+
+        from sparkmeter.metering import runtime_client
+
+        spec_document = json.loads(
+            (Path(provider_settings.__file__).parent / "tests" / "meter_driver_spec_openapi.json").read_text()
+        )
+        required_fields = ["heartbeat_period_duration", "aes_key"]
+
+        class _Response:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return self.payload
+
+        def fake_get(url, timeout):
+            if url.endswith("/openapi.json"):
+                return _Response(spec_document)
+            if url.endswith("/v1/requirements"):
+                return _Response({"required_fields": required_fields})
+            raise AssertionError("unexpected GET {}".format(url))
+
+        monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
+        monkeypatch.setattr(provider_settings, "_REPO_ROOT", tmp_path)
+        monkeypatch.setattr(provider_settings, "_METER_DRIVER_CONFIG_DIR", tmp_path / "meter_driver_configs")
+
+        # Register the driver from its base URL, as the settings form does.
+        provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
+        session.commit()
+        provider = provider_settings.get_provider(provider_id)
+
+        # The generated config lists the driver's own /v1/requirements fields;
+        # the operator fills them in.
+        config = json.loads(provider_settings.load_provider_config_text(provider))
+        assert [field["name"] for field in config["required_fields"]] == required_fields
+        assert config["field_values"] == {"heartbeat_period_duration": "", "aes_key": ""}
+        config["field_values"] = {
+            "heartbeat_period_duration": "60",
+            "aes_key": "00112233445566778899aabbccddeeff",
+        }
+        provider_settings.save_provider_config_text(provider, json.dumps(config))
+
+        monkeypatch.setattr(runtime_client.httpx, "AsyncClient", _RecordingHttpx)
+        monkeypatch.setattr(reconcile, "_load_meters", lambda flask_app: [])
+        client = runtime_client.HttpCommandClient(provider["base_url"], "cid")
+
+        await reconcile.reconcile_all(client, app)
+
+        # Exactly one POST /v1/init carrying exactly the discovered fields,
+        # typed by the spec's InitRequest schema; no vendor init route, no
+        # legacy /health probe.
+        assert client._client.calls == [
+            (
+                "POST",
+                "/v1/init",
+                {"heartbeat_period_duration": 60, "aes_key": "00112233445566778899aabbccddeeff"},
+            )
+        ]
 
 
 class _RecordingClient:

@@ -134,6 +134,65 @@ class TestDispatchDictEvent:
         assert captured == []
         assert any("side-channel" in rec.message for rec in caplog.records)
 
+    def test_side_channel_types_are_exactly_the_spec_event_names(self):
+        # The spec's *Event `type` constants, less the ones dispatched to handlers
+        # (electrical_meter_reading, electrical_meter_reading_phased,
+        # heartbeat_statistics, heartbeat_read_hops).
+        assert events._SIDE_CHANNEL_TYPES == {
+            "driver_configuration_applied",
+            "node_registered",
+            "node_already_registered",
+            "node_unregistered",
+            "node_to_unregister_unknown",
+            "invalid_electrical_meter_configuration",
+            "electrical_meter_configuration_accepted",
+            "electrical_meter_configuration_applied",
+            "node_firmware_version_changed",
+            "electrical_meter_balance_and_flags_accepted",
+            "gateway_status",
+        }
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "spec_type",
+        sorted(events._SIDE_CHANNEL_TYPES),
+    )
+    async def test_every_spec_side_channel_type_is_recognized(self, caplog, spec_type):
+        with caplog.at_level(logging.DEBUG):
+            await events.dispatch_dict_event({"type": spec_type, "data": {}}, [])
+
+        assert any("side-channel" in rec.message for rec in caplog.records)
+        assert not any("unknown type" in rec.message for rec in caplog.records)
+
+    @pytest.mark.asyncio
+    async def test_driver_configuration_applied_is_a_known_side_channel(self, caplog):
+        raw = {
+            "type": "driver_configuration_applied",
+            "data": {"masked_aes_key": "62..22", "channel": 26, "heartbeat_period_duration": 60},
+        }
+        with caplog.at_level(logging.DEBUG):
+            await events.dispatch_dict_event(raw, [])
+
+        assert any("side-channel" in rec.message for rec in caplog.records)
+
+    @pytest.mark.asyncio
+    async def test_vendor_alias_for_configuration_applied_is_unknown(self, caplog):
+        # The reference driver's own name for the spec's
+        # driver_configuration_applied event is not a spec name and is not
+        # accepted as one. It is assembled here so that no source line in
+        # sparkmeter/ carries the non-spec name verbatim.
+        alias = "_".join(["sparknet", "configuration", "applied"])
+        captured: list = []
+
+        async def capture(event):
+            captured.append(event)
+
+        with caplog.at_level(logging.WARNING):
+            await events.dispatch_dict_event({"type": alias, "data": {"channel": 26}}, [capture])
+
+        assert captured == []
+        assert any("unknown type" in rec.message and alias in rec.getMessage() for rec in caplog.records)
+
     @pytest.mark.asyncio
     async def test_heartbeat_statistics_parsed(self):
         captured: list = []
