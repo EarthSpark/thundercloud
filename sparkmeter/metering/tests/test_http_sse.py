@@ -40,20 +40,13 @@ class _FakeAsyncClient:
         del exc_type, exc, tb
         return False
 
-    def stream(self, method, path, params=None, headers=None):
-        type(self).calls.append(
-            {
-                "method": method,
-                "path": path,
-                "params": params,
-                "headers": headers,
-            }
-        )
+    def stream(self, method, path, **kwargs):
+        type(self).calls.append({"method": method, "path": path, **kwargs})
         return _FakeResponse(
             [
                 'data: {"type":"gateway_status"}',
                 "",
-                'data: {"event_type":"meter_reading","meter_id":"42"}',
+                'data: {"type":"electrical_meter_reading","data":{"node_id":42}}',
                 "",
             ]
         )
@@ -74,13 +67,14 @@ async def test_stream_json_events_uses_streaming_sse_request(monkeypatch):
 
     assert events == [
         {"type": "gateway_status"},
-        {"event_type": "meter_reading", "meter_id": "42"},
+        {"type": "electrical_meter_reading", "data": {"node_id": 42}},
     ]
+    # The spec's GET /v1/events takes no parameters: the client id travels
+    # only in the X-Client-Id header, never as a query string.
     assert _FakeAsyncClient.calls == [
         {
             "method": "GET",
             "path": "/v1/events",
-            "params": {"client_id": "test-client"},
             "headers": {
                 "Accept": "text/event-stream",
                 "X-Client-Id": "test-client",
@@ -96,7 +90,7 @@ async def test_iter_sse_payloads_skips_comments_and_flushes_trailing_data():
     response = _FakeResponse(
         [
             ": keep-alive heartbeat",
-            "event: meter_reading",
+            "event: electrical_meter_reading",
             "data: line-one",
             "data: line-two",
             "",
