@@ -3,11 +3,14 @@
 
 import json
 import logging
+import re
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
+from meter_driver_spec.http.models import RequirementsResponse
+from pydantic import ValidationError
 
 from sparkmeter.config.configdomain import ConfigParameter
 from sparkmeter.config.configparameter import ParameterObject
@@ -30,32 +33,60 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _METER_DRIVER_CONFIG_DIR = _REPO_ROOT / "meter_driver_configs"
 logger = logging.getLogger(__name__)
 
-# The routes the Meter Driver Specification (v1.4.0, docs/spec/index.md
-# section 4) marks Required, other than /openapi.json, which is the document
-# being checked. A driver's /openapi.json must list every one of these.
-REQUIRED_CONTRACT_PATHS = (
-    "/v1/requirements",
-    "/v1/init",
-    "/v1/nodes/register",
-    "/v1/nodes/{node_id}",
-    "/v1/nodes/{node_id}/configure-meter",
-    "/v1/meters/configure",
-    "/v1/events",
-    "/v1/status",
-    "/v1/healthz",
+# The operations the Meter Driver Specification (v1.4.0, docs/spec/index.md
+# section 4) marks Required, other than GET /openapi.json, which is the
+# document being checked. A driver's /openapi.json must document every one
+# of these under its path with this method; the two Recommended routes
+# (/v1/nodes/{node_id}/balance-and-flags, /v1/shutdown) are not demanded.
+REQUIRED_CONTRACT_OPERATIONS = (
+    ("get", "/v1/requirements"),
+    ("post", "/v1/init"),
+    ("post", "/v1/nodes/register"),
+    ("delete", "/v1/nodes/{node_id}"),
+    ("post", "/v1/nodes/{node_id}/configure-meter"),
+    ("post", "/v1/meters/configure"),
+    ("get", "/v1/events"),
+    ("get", "/v1/status"),
+    ("get", "/v1/healthz"),
 )
 
 # The spec's interface-discovery extension block on /openapi.json (section 5.1).
 DISCOVERY_EXTENSION = "x-meter-driver"
 
+# The gRPC profile's ConfigureDriver message (spec section 7,
+# meter_driver.proto) has fixed fields, so a driver used over gRPC must list
+# these on /v1/requirements whatever else it asks for.
+GRPC_INIT_REQUIRED_FIELDS = ("heartbeat_period_duration", "aes_key")
+
+# A path template parameter, e.g. {node_id}; its name is not significant
+# when matching a driver's paths against the spec's.
+_PATH_PARAM_RE = re.compile(r"\{[^}]*\}")
+
+# The spec's AesKeyInput (section 3): a 16-byte key as 32 hex characters or
+# as 16 byte values.
+_AES_KEY_HEX_RE = re.compile(r"^[0-9a-fA-F]{32}$")
+_AES_KEY_BYTES = 16
+
+# Bound on nested schema composition (allOf parts, $ref chains) followed
+# while reading a document, so a self-referential schema cannot recurse
+# without end.
+_SCHEMA_DEPTH_LIMIT = 8
+
+
+# ---------------------------------------------------------------------------
+# OpenAPI schema helpers
+# ---------------------------------------------------------------------------
+
 
 def _resolve_local_ref(spec, ref):
     """Resolve a local JSON Pointer reference within an OpenAPI document."""
-    if not ref or not ref.startswith("#/"):
+    if not isinstance(ref, str) or not ref.startswith("#/"):
         return None
 
     node = spec
     for part in ref[2:].split("/"):
+        if not isinstance(node, dict):
+            return None
         node = node.get(part.replace("~1", "/").replace("~0", "~"))
         if node is None:
             return None
@@ -63,12 +94,67 @@ def _resolve_local_ref(spec, ref):
 
 
 def _resolve_schema(spec, schema):
-    """Resolve a schema object or local ref to a plain dict."""
-    if not isinstance(schema, dict):
-        return {}
-    if "$ref" in schema:
-        return _resolve_local_ref(spec, schema["$ref"]) or {}
-    return schema
+    """Resolve a schema object to a plain dict, following $ref chains.
+
+    Anything that is not a dict, or a $ref that does not resolve to one,
+    is an empty schema. A reference cycle stops at its first repeat.
+    """
+    seen = set()
+    while isinstance(schema, dict) and "$ref" in schema:
+        ref = schema["$ref"]
+        if not isinstance(ref, str) or ref in seen:
+            return {}
+        seen.add(ref)
+        schema = _resolve_local_ref(spec, ref)
+    return schema if isinstance(schema, dict) else {}
+
+
+def _schema_type(schema):
+    """Return a schema's JSON type name, or "" when it declares none.
+
+    An OpenAPI 3.1 type array (["string", "null"]) yields its first non-null
+    entry.
+    """
+    value = (schema or {}).get("type")
+    if isinstance(value, list):
+        for entry in value:
+            if entry != "null":
+                return str(entry).strip().lower()
+        return ""
+    return str(value or "").strip().lower()
+
+
+def _object_schema(spec, schema, depth=0):
+    """Resolve an object schema, merging the properties and required lists of its allOf parts."""
+    resolved = _resolve_schema(spec, schema)
+    parts = resolved.get("allOf")
+    if not isinstance(parts, list) or depth >= _SCHEMA_DEPTH_LIMIT:
+        return resolved
+
+    merged = {key: value for key, value in resolved.items() if key != "allOf"}
+    properties = dict(merged["properties"]) if isinstance(merged.get("properties"), dict) else {}
+    required = list(merged["required"]) if isinstance(merged.get("required"), list) else []
+    for part in parts:
+        part_schema = _object_schema(spec, part, depth + 1)
+        if isinstance(part_schema.get("properties"), dict):
+            properties.update(part_schema["properties"])
+        if isinstance(part_schema.get("required"), list):
+            required.extend(name for name in part_schema["required"] if name not in required)
+        for key, value in part_schema.items():
+            if key not in ("properties", "required", "allOf"):
+                merged.setdefault(key, value)
+    merged["properties"] = properties
+    merged["required"] = required
+    return merged
+
+
+def _dig(node, *keys):
+    """Walk nested dicts by key; anything missing or not a dict yields {}."""
+    for key in keys:
+        if not isinstance(node, dict):
+            return {}
+        node = node.get(key)
+    return node if isinstance(node, dict) else {}
 
 
 # ---------------------------------------------------------------------------
@@ -84,7 +170,7 @@ def _resolve_schema(spec, schema):
 def _command_type_values(spec, schema):
     """Extract the possible command_type discriminator values from a schema."""
     resolved = _resolve_schema(spec, schema)
-    properties = resolved.get("properties") or {}
+    properties = resolved.get("properties") if isinstance(resolved.get("properties"), dict) else {}
     command_type = _resolve_schema(spec, properties.get("command_type") or {})
     values = []
     if "const" in command_type:
@@ -96,21 +182,18 @@ def _command_type_values(spec, schema):
 
 def _find_configure_provider_schema(spec):
     """Locate the configure-provider command schema in the OpenAPI document."""
-    request_schema = (
-        (((spec.get("paths") or {}).get("/v1/commands") or {}).get("post") or {})
-        .get("requestBody", {})
-        .get("content", {})
-        .get("application/json", {})
-        .get("schema", {})
+    request_schema = _dig(
+        spec, "paths", "/v1/commands", "post", "requestBody", "content", "application/json", "schema"
     )
     request_schema = _resolve_schema(spec, request_schema)
 
-    for candidate in request_schema.get("oneOf") or []:
+    candidates = request_schema.get("oneOf")
+    for candidate in candidates if isinstance(candidates, list) else []:
         values = _command_type_values(spec, candidate)
         if "configure_provider" in values:
             return _resolve_schema(spec, candidate)
 
-    components = (spec.get("components") or {}).get("schemas") or {}
+    components = _dig(spec, "components", "schemas")
     for schema in components.values():
         values = _command_type_values(spec, schema)
         if "configure_provider" in values:
@@ -120,8 +203,8 @@ def _find_configure_provider_schema(spec):
 
 
 def _field_spec(name, schema, required):
-    """Normalize a vendor-option field description for the form layer."""
-    field_type = str(schema.get("type") or "string").strip().lower() or "string"
+    """Normalize a field description for the form and config layers."""
+    field_type = _schema_type(schema) or "string"
     return {
         "name": name,
         "label": str(schema.get("title") or name.replace("_", " ").title()),
@@ -138,14 +221,21 @@ def _field_spec(name, schema, required):
 def _extract_vendor_option_fields(spec):
     """Extract configure-provider vendor option requirements from OpenAPI."""
     command_schema = _find_configure_provider_schema(spec)
-    properties = command_schema.get("properties") or {}
-    vendor_schema = _resolve_schema(spec, properties.get("vendor_options") or {})
+    properties = (
+        command_schema.get("properties") if isinstance(command_schema.get("properties"), dict) else {}
+    )
+    vendor_schema = _object_schema(spec, properties.get("vendor_options") or {})
 
     fields = []
-    required_fields = set(vendor_schema.get("required") or [])
-    for field_name, field_schema in (vendor_schema.get("properties") or {}).items():
-        resolved_field = _resolve_schema(spec, field_schema)
-        fields.append(_field_spec(field_name, resolved_field, field_name in required_fields))
+    required_fields = (
+        set(vendor_schema["required"]) if isinstance(vendor_schema.get("required"), list) else set()
+    )
+    vendor_properties = (
+        vendor_schema.get("properties") if isinstance(vendor_schema.get("properties"), dict) else {}
+    )
+    for field_name, field_schema in vendor_properties.items():
+        resolved_field = _scalar_schema(spec, field_schema)
+        fields.append(_field_spec(str(field_name), resolved_field, field_name in required_fields))
 
     return fields
 
@@ -166,54 +256,69 @@ def _requirements_url(service_url):
     return normalize_base_url(service_url) + "/v1/requirements"
 
 
-def _fetch_requirements_payload(service_url, timeout=10.0):
-    """Fetch the driver's GET /v1/requirements response (a RequirementsResponse object)."""
+def _validation_summary(exc):
+    """One line naming each pydantic validation error's location and message."""
+    return "; ".join(
+        "{}: {}".format(".".join(str(part) for part in error.get("loc") or ()) or "body", error.get("msg"))
+        for error in exc.errors()
+    )
+
+
+def _required_field_names_from_requirements(payload):
+    """Return the `required_fields` names from a RequirementsResponse, in the driver's order.
+
+    The payload is validated as the spec's RequirementsResponse model
+    (`required_fields` is an array of strings). A blank name is rejected;
+    a repeated name is kept once.
+    """
     try:
-        response = httpx.get(_requirements_url(service_url), timeout=timeout)
+        requirements = RequirementsResponse.model_validate(payload)
+    except ValidationError as exc:
+        raise ProviderRegistrationError(
+            "driver requirements response is not a valid RequirementsResponse: {}".format(
+                _validation_summary(exc)
+            )
+        ) from exc
+    names = []
+    for name in requirements.required_fields:
+        if not name.strip():
+            raise ProviderRegistrationError("driver requirements response lists a blank field name")
+        if name not in names:
+            names.append(name)
+    return names
+
+
+def _fetch_requirements_payload(service_url, timeout=10.0):
+    """GET /v1/requirements and return the driver's required field names."""
+    url = _requirements_url(service_url)
+    try:
+        response = httpx.get(url, timeout=timeout)
         response.raise_for_status()
     except httpx.HTTPError as exc:
-        raise ProviderRegistrationError("could not fetch driver requirements from /v1/requirements") from exc
+        raise ProviderRegistrationError(
+            "could not fetch driver requirements from /v1/requirements: {}".format(
+                str(exc) or exc.__class__.__name__
+            )
+        ) from exc
     try:
         payload = response.json()
     except ValueError as exc:
         raise ProviderRegistrationError("driver requirements response is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ProviderRegistrationError("driver requirements response must be a JSON object")
-    return payload
-
-
-def _required_field_names_from_requirements(payload):
-    """Return the `required_fields` names from a RequirementsResponse, in the driver's order."""
-    names = payload.get("required_fields")
-    if not isinstance(names, list):
-        raise ProviderRegistrationError("driver requirements response must list required_fields")
-    normalized = []
-    for name in names:
-        text = str(name).strip()
-        if text and text not in normalized:
-            normalized.append(text)
-    return normalized
+    return _required_field_names_from_requirements(payload)
 
 
 def _init_request_schema(spec):
-    """Return the document's InitRequest schema.
+    """Return the document's InitRequest schema as one object schema.
 
     The POST /v1/init request-body schema is authoritative; a document that
     documents init fields only under components.schemas.InitRequest is
-    read from there.
+    read from there. $ref chains are followed and allOf parts merged.
     """
-    schema = (
-        (((spec.get("paths") or {}).get("/v1/init") or {}).get("post") or {})
-        .get("requestBody", {})
-        .get("content", {})
-        .get("application/json", {})
-        .get("schema", {})
-    )
-    resolved = _resolve_schema(spec, schema)
-    if resolved.get("properties"):
+    schema = _dig(spec, "paths", "/v1/init", "post", "requestBody", "content", "application/json", "schema")
+    resolved = _object_schema(spec, schema)
+    if isinstance(resolved.get("properties"), dict) and resolved["properties"]:
         return resolved
-    components = (spec.get("components") or {}).get("schemas") or {}
-    return _resolve_schema(spec, components.get("InitRequest") or {})
+    return _object_schema(spec, _dig(spec, "components", "schemas").get("InitRequest") or {})
 
 
 def _scalar_schema(spec, schema):
@@ -224,25 +329,40 @@ def _scalar_schema(spec, schema):
     else its first alternative, so the form layer sees one type and pattern.
     """
     resolved = _resolve_schema(spec, schema)
-    alternatives = resolved.get("oneOf") or resolved.get("anyOf") or []
-    if resolved.get("type") or not alternatives:
+    alternatives = resolved.get("oneOf") or resolved.get("anyOf")
+    if _schema_type(resolved) or not isinstance(alternatives, list) or not alternatives:
         return resolved
-    resolved_alternatives = [_resolve_schema(spec, alternative) for alternative in alternatives]
+    # Alternatives that are not schema objects (or $refs to none) are skipped.
+    resolved_alternatives = [
+        resolved_alternative
+        for resolved_alternative in (_resolve_schema(spec, alternative) for alternative in alternatives)
+        if resolved_alternative
+    ]
     for alternative in resolved_alternatives:
-        if alternative.get("type") == "string":
+        if _schema_type(alternative) == "string":
             return alternative
-    return resolved_alternatives[0]
+    return resolved_alternatives[0] if resolved_alternatives else {}
 
 
 def _extract_fields_from_requirements(spec, required_fields):
     """Build field specs for the advertised init fields, typed from InitRequest.
 
-    A field the document does not describe is typed as a string.
+    A field the document does not describe is typed as a string, with a
+    warning: the spec (section 5.2) says the names must match the init
+    request schema in /openapi.json.
     """
-    properties = _init_request_schema(spec).get("properties") or {}
-    return [
-        _field_spec(name, _scalar_schema(spec, properties.get(name) or {}), True) for name in required_fields
-    ]
+    init_schema = _init_request_schema(spec)
+    properties = init_schema.get("properties") if isinstance(init_schema.get("properties"), dict) else {}
+    fields = []
+    for name in required_fields:
+        if name not in properties:
+            logger.warning(
+                "driver requirement field %r is not described by the contract's InitRequest schema; "
+                "treating it as a string",
+                name,
+            )
+        fields.append(_field_spec(name, _scalar_schema(spec, properties.get(name) or {}), True))
+    return fields
 
 
 def _extract_driver_requirement_fields(base_url, spec, timeout=10.0):
@@ -253,8 +373,8 @@ def _extract_driver_requirement_fields(base_url, spec, timeout=10.0):
     optional /v1/commands vendor-option extension, if the document has
     one, follow as optional extras.
     """
-    payload = _fetch_requirements_payload(base_url, timeout=timeout)
-    fields = _extract_fields_from_requirements(spec, _required_field_names_from_requirements(payload))
+    names = _fetch_requirements_payload(base_url, timeout=timeout)
+    fields = _extract_fields_from_requirements(spec, names)
     known = {field["name"] for field in fields}
     for vendor_field in _extract_vendor_option_fields(spec):
         if vendor_field["name"] in known:
@@ -517,27 +637,47 @@ def parse_provider_config_text(config_text):
     return payload
 
 
+def _stored_field_specs(payload):
+    """Return a config payload's field specs keyed by name, in stored order.
+
+    Entries in `required_fields` are the specs written at registration
+    (dicts with name, type, required, pattern, minimum, maximum, ...). A
+    bare name is a config written before field types were recorded: it is
+    treated as a required string field, and a warning says that
+    re-registering the driver records its types.
+    """
+    entries = payload.get("required_fields") or []
+    if not isinstance(entries, list):
+        raise DriverConfigError("required_fields must be a list")
+
+    specs = {}
+    untyped = []
+    for entry in entries:
+        if isinstance(entry, dict):
+            name = str(entry.get("name") or "").strip()
+            if name:
+                specs[name] = entry
+            continue
+        name = str(entry).strip()
+        if name:
+            specs[name] = {"name": name, "type": "string", "required": True}
+            untyped.append(name)
+    if untyped:
+        logger.warning(
+            "driver config lists required_fields without types (%s); they are treated as required "
+            "strings. Re-register the driver to record the types its contract declares.",
+            ", ".join(untyped),
+        )
+    return specs
+
+
 def _required_field_names(payload):
     """Return the names a config payload must supply values for.
 
-    Entries are the field specs written at registration (dicts) or bare
-    names. A dict entry marked `"required": false` is an optional extra
-    and is not demanded.
+    A spec entry marked `"required": false` is an optional extra and is
+    not demanded.
     """
-    names = payload.get("required_fields") or []
-    if not isinstance(names, list):
-        raise DriverConfigError("required_fields must be a list")
-    normalized = []
-    for entry in names:
-        if isinstance(entry, dict):
-            if entry.get("required") is False:
-                continue
-            name = str(entry.get("name") or "").strip()
-        else:
-            name = str(entry).strip()
-        if name:
-            normalized.append(name)
-    return normalized
+    return [name for name, spec in _stored_field_specs(payload).items() if spec.get("required") is not False]
 
 
 def _field_values(payload):
@@ -548,25 +688,39 @@ def _field_values(payload):
     return values
 
 
-def _required_field_specs(payload):
-    """Return required field metadata keyed by field name."""
-    names = payload.get("required_fields") or []
-    if not isinstance(names, list):
-        raise DriverConfigError("required_fields must be a list")
+def _is_blank(value):
+    """Whether a stored value counts as not supplied."""
+    return value is None or (isinstance(value, str) and not value.strip())
 
-    specs = {}
-    for entry in names:
-        if not isinstance(entry, dict):
-            continue
-        name = str(entry.get("name") or "").strip()
-        if name:
-            specs[name] = entry
-    return specs
+
+def _coerce_aes_key(value):
+    """Return an aes_key value in one of the spec's AesKeyInput forms.
+
+    The wire forms (spec section 3) are 32 hex characters or an array of
+    exactly 16 integers 0..255.
+    """
+    if isinstance(value, str):
+        value = value.strip()
+        if _AES_KEY_HEX_RE.fullmatch(value):
+            return value
+    elif (
+        isinstance(value, list)
+        and len(value) == _AES_KEY_BYTES
+        and all(isinstance(item, int) and not isinstance(item, bool) and 0 <= item <= 255 for item in value)
+    ):
+        return list(value)
+    raise DriverConfigError(
+        "field 'aes_key' must be 32 hex characters or an array of {} byte values".format(_AES_KEY_BYTES)
+    )
 
 
 def _coerce_field_value(name, value, spec):
-    """Coerce a raw JSON field value to the type required by the driver."""
-    field_type = str((spec or {}).get("type") or "string").strip().lower()
+    """Coerce a raw JSON field value to the type the driver's contract declares."""
+    if name == "aes_key":
+        return _coerce_aes_key(value)
+    if isinstance(value, str):
+        value = value.strip()
+    field_type = _schema_type(spec) or "string"
     if field_type == "integer":
         try:
             return int(value)
@@ -586,28 +740,69 @@ def _coerce_field_value(name, value, spec):
         if normalized in ("false", "0", "no", "off"):
             return False
         raise DriverConfigError("field {!r} must be a boolean".format(name))
-    return value
+    if field_type == "array":
+        if isinstance(value, list):
+            return list(value)
+        raise DriverConfigError("field {!r} must be an array".format(name))
+    if field_type == "object":
+        if isinstance(value, dict):
+            return dict(value)
+        raise DriverConfigError("field {!r} must be an object".format(name))
+    if isinstance(value, (list, dict)):
+        raise DriverConfigError("field {!r} must be a string".format(name))
+    return value if isinstance(value, str) else str(value)
+
+
+def _check_field_constraints(name, value, spec):
+    """Enforce the pattern, minimum and maximum the driver's contract declared for a field."""
+    pattern = str((spec or {}).get("pattern") or "")
+    if pattern and isinstance(value, str):
+        try:
+            matched = re.search(pattern, value) is not None
+        except re.error:
+            logger.warning("field %r declares an unusable pattern %r; not checked", name, pattern)
+            matched = True
+        if not matched:
+            raise DriverConfigError("field {!r} must match the pattern {}".format(name, pattern))
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return
+    minimum = (spec or {}).get("minimum")
+    if isinstance(minimum, (int, float)) and not isinstance(minimum, bool) and value < minimum:
+        raise DriverConfigError("field {!r} must be at least {}".format(name, minimum))
+    maximum = (spec or {}).get("maximum")
+    if isinstance(maximum, (int, float)) and not isinstance(maximum, bool) and value > maximum:
+        raise DriverConfigError("field {!r} must be at most {}".format(name, maximum))
 
 
 def validate_provider_config_payload(payload):
-    """Validate a driver config payload and return the typed init values.
+    """Validate a driver config payload and return the typed init body.
 
-    Every required field needs a value. An optional field left blank is
-    omitted from the returned `field_values` rather than sent as "".
+    Every required field needs a non-blank value. Values are coerced to
+    the types the driver's contract declared and checked against its
+    pattern/minimum/maximum. Only fields the driver asked for are
+    returned: an optional field left blank is omitted, and a key the
+    driver never listed is dropped with a warning.
     """
-    required_fields = _required_field_names(payload)
-    required_field_specs = _required_field_specs(payload)
+    specs = _stored_field_specs(payload)
+    required_fields = [name for name, spec in specs.items() if spec.get("required") is not False]
     field_values = _field_values(payload)
-    missing = [
-        name for name in required_fields if name not in field_values or field_values[name] in (None, "")
-    ]
+    missing = [name for name in required_fields if _is_blank(field_values.get(name))]
     if missing:
         raise DriverConfigError("required fields are missing values: {}".format(", ".join(missing)))
+
+    unknown = [name for name in field_values if name not in specs]
+    if unknown:
+        logger.warning(
+            "driver config field_values has keys the driver did not ask for; not sent: %s", ", ".join(unknown)
+        )
+
     coerced_field_values = {}
-    for name, value in field_values.items():
-        if value in (None, "") and name not in required_fields:
+    for name, spec in specs.items():
+        if name not in field_values or _is_blank(field_values[name]):
             continue
-        coerced_field_values[name] = _coerce_field_value(name, value, required_field_specs.get(name))
+        value = _coerce_field_value(name, field_values[name], spec)
+        _check_field_constraints(name, value, spec)
+        coerced_field_values[name] = value
     return {
         "required_fields": required_fields,
         "field_values": coerced_field_values,
@@ -725,14 +920,51 @@ def initialize_configured_providers_on_startup(timeout=10.0):
     return results
 
 
-def save_provider_settings(
-    service_url, selected_interface, enabled=True, provider_id=None, aes_key="", channel=""
-):
-    """Persist a meter driver entry and return its id."""
+def check_grpc_selection(details):
+    """Raise ProviderRegistrationError unless the contract supports being driven over gRPC.
+
+    The spec fixes no gRPC port, so gRPC needs a grpc interface with a
+    target in x-meter-driver. Its ConfigureDriver message has fixed
+    fields, so the driver's /v1/requirements must list
+    heartbeat_period_duration and aes_key among the required fields.
+    """
+    grpc_interface = next(
+        (interface for interface in details.get("interfaces") or [] if interface.get("type") == "grpc"),
+        None,
+    )
+    if grpc_interface is None:
+        raise ProviderRegistrationError(
+            "gRPC is not available: the driver's x-meter-driver block advertises no grpc interface"
+        )
+    if not (grpc_interface.get("target") or grpc_interface.get("address")):
+        raise ProviderRegistrationError(
+            "gRPC is not available: the driver's grpc interface advertises no target"
+        )
+    required_names = {
+        field["name"] for field in details.get("driver_requirement_fields") or [] if field.get("required")
+    }
+    missing = [name for name in GRPC_INIT_REQUIRED_FIELDS if name not in required_names]
+    if missing:
+        raise ProviderRegistrationError(
+            "gRPC init (ConfigureDriver) needs the init fields {} but the driver's /v1/requirements "
+            "does not list: {}".format(", ".join(GRPC_INIT_REQUIRED_FIELDS), ", ".join(missing))
+        )
+
+
+def save_provider_settings(service_url, selected_interface, enabled=True, provider_id=None):
+    """Persist a meter driver entry and return its id.
+
+    A gRPC selection is refused (ProviderRegistrationError) unless the
+    contract advertises a grpc target and the init fields gRPC needs; any
+    other interface the contract does not advertise falls back to its
+    default interface.
+    """
     details = validate_contract(service_url)
     selected_interface = (selected_interface or details["default_interface"]).strip().lower()
     valid_interfaces = {interface["type"] for interface in details.get("interfaces") or []}
-    if selected_interface not in valid_interfaces:
+    if selected_interface == "grpc":
+        check_grpc_selection(details)
+    elif selected_interface not in valid_interfaces:
         selected_interface = details["default_interface"]
 
     selected_interface_details = next(
@@ -798,9 +1030,15 @@ def _normalize_interface_metadata(base_url, spec):
 
     Without the block, or without an http entry in it, one http interface
     at the registered base URL is synthesized and becomes the default.
+    That leniency goes beyond the spec, which says the block lists the
+    active interfaces.
     """
-    extension = spec.get(DISCOVERY_EXTENSION) or {}
-    interface_entries = extension.get("interfaces") or []
+    extension = spec.get(DISCOVERY_EXTENSION)
+    if not isinstance(extension, dict):
+        extension = {}
+    interface_entries = extension.get("interfaces")
+    if not isinstance(interface_entries, list):
+        interface_entries = []
 
     interfaces = []
     seen_types = set()
@@ -904,12 +1142,36 @@ def _fallback_interface_metadata(base_url, selected_interface=None):
     )
 
 
-def validate_contract(service_url, timeout=10.0):
-    """Fetch and validate the driver's OpenAPI contract, then discover its init fields.
+def _normalize_path_template(path):
+    """Return a path with every {param} replaced by {} so parameter names do not matter."""
+    return _PATH_PARAM_RE.sub("{}", path)
 
-    Follows the spec's integration sequence (section 2): GET /openapi.json,
-    check it lists every required route, read x-meter-driver, then GET
-    /v1/requirements. A driver missing any of that is not registrable.
+
+def _missing_required_operations(paths):
+    """Return "METHOD /path" labels for the spec's required operations a document lacks.
+
+    A path matches regardless of its parameter names (/v1/nodes/{id} is
+    /v1/nodes/{node_id}); a trailing slash does not match.
+    """
+    by_template = {}
+    for path, item in paths.items():
+        if isinstance(path, str) and isinstance(item, dict):
+            by_template.setdefault(_normalize_path_template(path), item)
+
+    missing = []
+    for method, path in REQUIRED_CONTRACT_OPERATIONS:
+        item = by_template.get(_normalize_path_template(path), {})
+        if not isinstance(item.get(method), dict):
+            missing.append("{} {}".format(method.upper(), path))
+    return missing
+
+
+def _fetch_contract_document(service_url, timeout=10.0):
+    """GET /openapi.json and check it is a document a compliant driver would serve.
+
+    Returns `(base_url, openapi_url, document)`. The document must be a
+    JSON object with `info.title`, a `paths` object listing every required
+    operation, and, when present, an object-valued x-meter-driver block.
     """
     base_url = normalize_base_url(service_url)
     openapi_url = get_openapi_url(service_url)
@@ -923,70 +1185,135 @@ def validate_contract(service_url, timeout=10.0):
         spec = response.json()
     except ValueError as exc:
         raise ProviderRegistrationError("driver returned invalid JSON") from exc
+    if not isinstance(spec, dict):
+        raise ProviderRegistrationError("driver OpenAPI document must be a JSON object")
 
-    info = spec.get("info") or {}
-    paths = spec.get("paths") or {}
-    missing_paths = [path for path in REQUIRED_CONTRACT_PATHS if path not in paths]
-    if missing_paths:
-        raise ProviderRegistrationError(
-            "driver contract missing required paths: {}".format(", ".join(missing_paths))
-        )
-
-    name = info.get("title")
-    if not name:
+    info = spec.get("info")
+    if not isinstance(info, dict) or not info.get("title"):
         raise ProviderRegistrationError("driver contract missing info.title")
 
-    driver_requirement_fields = _extract_driver_requirement_fields(base_url, spec, timeout=timeout)
+    paths = spec.get("paths")
+    if not isinstance(paths, dict):
+        raise ProviderRegistrationError("driver contract missing paths")
+    missing = _missing_required_operations(paths)
+    if missing:
+        raise ProviderRegistrationError(
+            "driver contract missing required routes: {}".format(", ".join(missing))
+        )
 
+    extension = spec.get(DISCOVERY_EXTENSION)
+    if extension is not None and not isinstance(extension, dict):
+        raise ProviderRegistrationError("driver contract {} must be an object".format(DISCOVERY_EXTENSION))
+
+    return base_url, openapi_url, spec
+
+
+def _contract_details(base_url, openapi_url, spec):
+    """Build the details dict for a fetched contract, without init-field discovery."""
+    info = spec["info"]
     return {
-        "name": str(name),
+        "name": str(info["title"]),
         "base_url": base_url,
         "openapi_url": openapi_url,
         "service_version": str(info.get("version") or ""),
-        "driver_requirement_fields": driver_requirement_fields,
-        "driver_requirement_field_map": {field["name"]: field for field in driver_requirement_fields},
+        "driver_requirement_fields": [],
+        "driver_requirement_field_map": {},
         "vendor_option_fields": _extract_vendor_option_fields(spec),
         "vendor_option_field_map": _vendor_option_field_map(spec),
         **_normalize_interface_metadata(base_url, spec),
     }
 
 
-def get_live_interface_details(service_url, selected_interface=None, timeout=2.0):
-    """Fetch the current interface inventory advertised by the provider."""
+def inspect_contract(service_url, timeout=10.0):
+    """Fetch and validate the driver's OpenAPI contract and discover its interfaces.
+
+    One round trip (GET /openapi.json). `driver_requirement_fields` is
+    empty here: init-field discovery is a second round trip that
+    registration makes through `validate_contract`.
+    """
+    base_url, openapi_url, spec = _fetch_contract_document(service_url, timeout=timeout)
+    return _contract_details(base_url, openapi_url, spec)
+
+
+def validate_contract(service_url, timeout=10.0):
+    """Fetch and validate the driver's OpenAPI contract, then discover its init fields.
+
+    Follows the spec's integration sequence (section 2): GET /openapi.json,
+    check it lists every required operation, read x-meter-driver, then GET
+    /v1/requirements typed by the document's InitRequest schema. A driver
+    missing any of that is not registrable.
+    """
+    base_url, openapi_url, spec = _fetch_contract_document(service_url, timeout=timeout)
+    details = _contract_details(base_url, openapi_url, spec)
+    driver_requirement_fields = _extract_driver_requirement_fields(base_url, spec, timeout=timeout)
+    details["driver_requirement_fields"] = driver_requirement_fields
+    details["driver_requirement_field_map"] = {field["name"]: field for field in driver_requirement_fields}
+    return details
+
+
+def _stored_driver_fields(provider):
+    """Return the field specs recorded in a saved provider's config file, if any."""
+    if not provider:
+        return []
+    try:
+        return list(_stored_field_specs(load_provider_runtime_settings(provider)).values())
+    except DriverConfigError:
+        return []
+
+
+def get_live_interface_details(service_url, selected_interface=None, timeout=2.0, provider=None):
+    """Fetch the interface inventory the driver advertises right now.
+
+    Only GET /openapi.json is called, so an advertised gRPC target is
+    never lost to a slow or failing /v1/requirements. When `provider` is
+    given, `driver_requirement_fields` come from the fields recorded in
+    its config file at registration.
+    """
     base_url = normalize_base_url(service_url)
     try:
-        provider_data = validate_contract(base_url, timeout=timeout)
+        details = inspect_contract(base_url, timeout=timeout)
     except ProviderRegistrationError as exc:
-        details = _fallback_interface_metadata(
-            base_url,
-            selected_interface=selected_interface,
-        )
+        details = _fallback_interface_metadata(base_url, selected_interface=selected_interface)
         details["error"] = str(exc)
-        return details
 
-    return _apply_selected_interface(
-        provider_data,
-        selected_interface=selected_interface,
-    )
+    fields = _stored_driver_fields(provider)
+    details["driver_requirement_fields"] = fields
+    details["driver_requirement_field_map"] = {field["name"]: field for field in fields}
+    return _apply_selected_interface(details, selected_interface=selected_interface)
 
 
 def get_runtime_status(service_url, timeout=2.0, include_gateway_status=True):
-    """Check driver liveness on GET /v1/healthz and, optionally, gateway state on GET /v1/status."""
+    """Check driver liveness on GET /v1/healthz and, optionally, gateway state on GET /v1/status.
+
+    Online means /v1/healthz answered 200 with the spec's HealthResponse
+    `{"ok": true}`. With `include_gateway_status`, /v1/status must answer
+    a JSON object (its `connected` and `gateway_type` are reported); a
+    transport failure there leaves the driver online with no gateway.
+    """
     base_url = normalize_base_url(service_url)
     healthz_url = base_url.rstrip("/") + "/v1/healthz"
     status_url = base_url.rstrip("/") + "/v1/status"
-    try:
-        response = httpx.get(healthz_url, timeout=timeout)
-        response.raise_for_status()
-    except httpx.HTTPError as exc:
+
+    def offline(message):
         return {
             "online": False,
-            "message": str(exc) or "unreachable",
+            "message": message,
             "checked_url": healthz_url,
             "gateway_checked": bool(include_gateway_status),
             "gateway_active": False,
             "gateway_type": None,
         }
+
+    try:
+        response = httpx.get(healthz_url, timeout=timeout)
+        response.raise_for_status()
+        health = response.json()
+    except httpx.HTTPError as exc:
+        return offline(str(exc) or "unreachable")
+    except ValueError:
+        return offline("driver /v1/healthz response is not valid JSON")
+    if not isinstance(health, dict) or health.get("ok") is not True:
+        return offline('driver /v1/healthz did not answer {"ok": true}')
 
     status = {
         "online": True,
@@ -1002,9 +1329,12 @@ def get_runtime_status(service_url, timeout=2.0, include_gateway_status=True):
         gateway_response = httpx.get(status_url, timeout=timeout)
         gateway_response.raise_for_status()
         gateway_data = gateway_response.json()
-        status["gateway_active"] = bool(gateway_data.get("connected"))
-        status["gateway_type"] = gateway_data.get("gateway_type")
     except (httpx.HTTPError, ValueError):
         status["gateway_active"] = False
         status["gateway_type"] = None
+        return status
+    if not isinstance(gateway_data, dict):
+        return offline("driver /v1/status response is not a JSON object")
+    status["gateway_active"] = bool(gateway_data.get("connected"))
+    status["gateway_type"] = gateway_data.get("gateway_type")
     return status

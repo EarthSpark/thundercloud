@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Meter driver settings tests."""
+"""Meter driver settings tests.
 
+The spec-document fixture (`spec_document`, the spec's own
+openapi/meter-driver.yaml as JSON) and the `fake_driver` httpx.get double
+come from sparkmeter/conftest.py, which also documents how to regenerate
+the fixture after a meter-driver-spec wheel bump.
+"""
+
+import importlib.metadata
 import json
-from pathlib import Path
+import logging
 
 import httpx
 import pytest
@@ -10,40 +17,38 @@ import pytest
 from sparkmeter.config import provider_settings
 from sparkmeter.metering.provider_config import configured_provider_url
 
-# The Meter Driver Specification's own openapi/meter-driver.yaml (v1.4.0),
-# converted to JSON: exactly what a driver serving nothing but the spec
-# answers on GET /openapi.json (its x-meter-driver block lists http + grpc).
-_SPEC_DOCUMENT_PATH = Path(__file__).with_name("meter_driver_spec_openapi.json")
-
 # The reference driver's /v1/requirements list (spec section 5.2 example).
 _REFERENCE_REQUIRED_FIELDS = ("aes_key", "channel", "heartbeat_period_duration")
 
+# The spec's Required operations (docs/spec/index.md section 4), written out
+# rather than derived from the module under test.
+_SPEC_REQUIRED_OPERATIONS = (
+    ("get", "/v1/requirements"),
+    ("post", "/v1/init"),
+    ("post", "/v1/nodes/register"),
+    ("delete", "/v1/nodes/{node_id}"),
+    ("post", "/v1/nodes/{node_id}/configure-meter"),
+    ("post", "/v1/meters/configure"),
+    ("get", "/v1/events"),
+    ("get", "/v1/status"),
+    ("get", "/v1/healthz"),
+)
 
-def load_spec_document():
-    """Return a fresh copy of the spec's OpenAPI document."""
-    return json.loads(_SPEC_DOCUMENT_PATH.read_text())
 
-
-class FakeResponse(object):
-    """Minimal HTTPX-like response test double."""
-
-    def __init__(self, payload):
-        self._payload = payload
-
-    def raise_for_status(self):
-        """Pretend the response was successful."""
-
-    def json(self):
-        """Return the configured JSON payload."""
-        return self._payload
+def _paths(operations):
+    """An OpenAPI `paths` object with an empty operation for each (method, path)."""
+    paths = {}
+    for method, path in operations:
+        paths.setdefault(path, {})[method] = {}
+    return paths
 
 
 def _spec_document(**overrides):
-    """A minimal document listing the spec's required routes with an http x-meter-driver block."""
+    """A minimal document with the spec's required operations and an http x-meter-driver block."""
     document = {
         "openapi": "3.1.0",
         "info": {"title": "Spec Driver", "version": "1.2.3"},
-        "paths": {path: {} for path in provider_settings.REQUIRED_CONTRACT_PATHS},
+        "paths": _paths(_SPEC_REQUIRED_OPERATIONS),
         "x-meter-driver": {
             "default_interface": "http",
             "interfaces": [{"type": "http", "label": "HTTP API", "base_url": "http://127.0.0.1:18080"}],
@@ -56,39 +61,10 @@ def _spec_document(**overrides):
 def _http_error(url, status_code=404):
     request = httpx.Request("GET", url)
     return httpx.HTTPStatusError(
-        "failed", request=request, response=httpx.Response(status_code, request=request)
+        "{} for {}".format(status_code, url),
+        request=request,
+        response=httpx.Response(status_code, request=request),
     )
-
-
-def _fake_driver(
-    document=None, required_fields=("heartbeat_period_duration", "aes_key"), requirements_error=None
-):
-    """Return an httpx.get double for a driver serving /openapi.json and /v1/requirements.
-
-    Every URL it answers is recorded on `fake_get.calls`; anything other
-    than those two routes is an assertion failure, so a test sees any
-    stray probe (a legacy /health, a vendor init route) immediately.
-    """
-    document = _spec_document() if document is None else document
-    calls = []
-
-    def fake_get(url, timeout):
-        calls.append(url)
-        if url.endswith("/v1/requirements"):
-            if requirements_error is not None:
-                raise requirements_error
-            return FakeResponse({"required_fields": list(required_fields)})
-        if url.endswith("/openapi.json"):
-            return FakeResponse(document)
-        raise AssertionError("unexpected GET {}".format(url))
-
-    fake_get.calls = calls
-    return fake_get
-
-
-def _fake_openapi_get(url, timeout):
-    """A spec-only driver, for tests that only need a saved provider."""
-    return _fake_driver()(url, timeout)
 
 
 def _vendor_options_extension(**properties):
@@ -141,24 +117,32 @@ def _with_vendor_options(document, **properties):
     return document
 
 
+def _use_temp_config_root(monkeypatch, tmp_path):
+    """Redirect the module's config directory globals at a temp location."""
+    monkeypatch.setattr(provider_settings, "_REPO_ROOT", tmp_path)
+    monkeypatch.setattr(provider_settings, "_METER_DRIVER_CONFIG_DIR", tmp_path / "meter_driver_configs")
+
+
 # ---------------------------------------------------------------------------
 # validate_contract against the spec's own document
 # ---------------------------------------------------------------------------
 
 
-def test_spec_document_fixture_is_the_spec(monkeypatch):
-    document = load_spec_document()
-    assert document["info"]["version"] == "1.4.0"
-    assert document["x-meter-driver"]["default_interface"] == "http"
-    assert set(provider_settings.REQUIRED_CONTRACT_PATHS) <= set(document["paths"])
-    # The spec's required-route list, and nothing the reference driver adds.
-    assert "/v1/commands" not in document["paths"]
+def test_spec_document_fixture_is_the_pinned_spec(spec_document):
+    # The fixture is regenerated from the spec tag the wheel is built from;
+    # a wheel bump without regeneration fails here.
+    assert spec_document["info"]["version"] == importlib.metadata.version("meter-driver-spec")
+    assert spec_document["x-meter-driver"]["default_interface"] == "http"
+    for method, path in _SPEC_REQUIRED_OPERATIONS:
+        assert method in spec_document["paths"][path]
+    # The spec's routes, and nothing the reference driver adds.
+    assert "/v1/commands" not in spec_document["paths"]
 
 
-def test_validate_contract_accepts_a_spec_only_driver(monkeypatch):
+def test_validate_contract_accepts_a_spec_only_driver(monkeypatch, spec_document, fake_driver):
     # A driver serving exactly the spec document, with the reference
     # /v1/requirements list. This is the meter-driver-emulator case.
-    fake_get = _fake_driver(load_spec_document(), required_fields=_REFERENCE_REQUIRED_FIELDS)
+    fake_get = fake_driver(spec_document, required_fields=_REFERENCE_REQUIRED_FIELDS)
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
@@ -188,8 +172,10 @@ def test_validate_contract_accepts_a_spec_only_driver(monkeypatch):
     ]
 
 
-def test_validate_contract_accepts_the_spec_document_from_its_openapi_url(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(load_spec_document()))
+def test_validate_contract_accepts_the_spec_document_from_its_openapi_url(
+    monkeypatch, spec_document, fake_driver
+):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(spec_document))
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080/openapi.json")
 
@@ -197,12 +183,45 @@ def test_validate_contract_accepts_the_spec_document_from_its_openapi_url(monkey
     assert details["openapi_url"] == "http://127.0.0.1:18080/openapi.json"
 
 
+def test_validate_contract_accepts_exactly_the_spec_required_operations(monkeypatch, fake_driver):
+    # A document whose paths are the nine Required routes with their
+    # methods and nothing else (no Recommended routes) registers.
+    document = {
+        "openapi": "3.1.0",
+        "info": {"title": "Minimal Driver", "version": "0.1.0"},
+        "paths": {
+            "/v1/requirements": {"get": {}},
+            "/v1/init": {"post": {}},
+            "/v1/nodes/register": {"post": {}},
+            "/v1/nodes/{node_id}": {"delete": {}},
+            "/v1/nodes/{node_id}/configure-meter": {"post": {}},
+            "/v1/meters/configure": {"post": {}},
+            "/v1/events": {"get": {}},
+            "/v1/status": {"get": {}},
+            "/v1/healthz": {"get": {}},
+        },
+    }
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    details = provider_settings.validate_contract("http://127.0.0.1:18080")
+
+    assert details["name"] == "Minimal Driver"
+
+
+def test_validate_contract_does_not_demand_recommended_routes(monkeypatch, spec_document, fake_driver):
+    del spec_document["paths"]["/v1/nodes/{node_id}/balance-and-flags"]
+    del spec_document["paths"]["/v1/shutdown"]
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(spec_document))
+
+    assert provider_settings.validate_contract("http://127.0.0.1:18080")["name"] == "Meter Driver API"
+
+
 # ---------------------------------------------------------------------------
 # validate_contract: interfaces
 # ---------------------------------------------------------------------------
 
 
-def test_validate_contract_discovers_grpc_interface(monkeypatch):
+def test_validate_contract_discovers_grpc_interface(monkeypatch, fake_driver):
     document = _spec_document(
         **{
             "x-meter-driver": {
@@ -214,7 +233,7 @@ def test_validate_contract_discovers_grpc_interface(monkeypatch):
             }
         }
     )
-    fake_get = _fake_driver(document)
+    fake_get = fake_driver(document)
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
@@ -228,10 +247,10 @@ def test_validate_contract_discovers_grpc_interface(monkeypatch):
     assert by_type["grpc"]["address"] == "h:50051"
 
 
-def test_validate_contract_synthesizes_http_when_discovery_block_is_absent(monkeypatch):
+def test_validate_contract_synthesizes_http_when_discovery_block_is_absent(monkeypatch, fake_driver):
     document = _spec_document()
     del document["x-meter-driver"]
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(document))
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
@@ -246,17 +265,15 @@ def test_validate_contract_synthesizes_http_when_discovery_block_is_absent(monke
     assert details["default_interface"] == "http"
 
 
-def test_validate_contract_ignores_non_spec_discovery_blocks(monkeypatch):
-    # A block under any other name is not the spec's; it is not read. The
-    # reference driver's pre-spec block name is assembled here so that no
-    # source line in sparkmeter/ carries it verbatim.
+def test_validate_contract_ignores_non_spec_discovery_blocks(monkeypatch, fake_driver):
+    # A block under any other name is not the spec's; it is not read.
     document = _spec_document()
     del document["x-meter-driver"]
-    document["-".join(["x", "open", "thunder"])] = {
+    document["x-vendor-extension"] = {
         "default_interface": "grpc",
         "interfaces": [{"type": "grpc", "target": "h:50051"}],
     }
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(document))
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
@@ -264,62 +281,144 @@ def test_validate_contract_ignores_non_spec_discovery_blocks(monkeypatch):
     assert details["default_interface"] == "http"
 
 
+def test_validate_contract_rejects_a_non_object_discovery_block(monkeypatch, fake_driver):
+    document = _spec_document(**{"x-meter-driver": ["http"]})
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="x-meter-driver must be an object"):
+        provider_settings.validate_contract("http://127.0.0.1:18080")
+
+
 # ---------------------------------------------------------------------------
 # validate_contract: required routes
 # ---------------------------------------------------------------------------
 
 
-def test_required_contract_paths_are_the_spec_required_routes():
-    assert provider_settings.REQUIRED_CONTRACT_PATHS == (
-        "/v1/requirements",
-        "/v1/init",
-        "/v1/nodes/register",
-        "/v1/nodes/{node_id}",
-        "/v1/nodes/{node_id}/configure-meter",
-        "/v1/meters/configure",
-        "/v1/events",
-        "/v1/status",
-        "/v1/healthz",
-    )
+def test_required_contract_operations_are_the_spec_required_routes():
+    assert provider_settings.REQUIRED_CONTRACT_OPERATIONS == _SPEC_REQUIRED_OPERATIONS
 
 
-def test_validate_contract_rejects_missing_paths_naming_them(monkeypatch):
+def test_validate_contract_rejects_missing_routes_naming_them(monkeypatch, fake_driver):
     document = _spec_document()
     del document["paths"]["/v1/requirements"]
     del document["paths"]["/v1/init"]
     del document["paths"]["/v1/healthz"]
-    fake_get = _fake_driver(document)
+    fake_get = fake_driver(document)
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
     with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
         provider_settings.validate_contract("http://127.0.0.1:18080")
 
-    assert "missing required paths" in str(exc.value)
-    assert "/v1/requirements, /v1/init, /v1/healthz" in str(exc.value)
+    assert "missing required routes" in str(exc.value)
+    assert "GET /v1/requirements, POST /v1/init, GET /v1/healthz" in str(exc.value)
     # Rejected on the document alone; requirements are never probed.
     assert fake_get.calls == ["http://127.0.0.1:18080/openapi.json"]
 
 
-def test_validate_contract_does_not_require_vendor_routes(monkeypatch):
+def test_validate_contract_checks_the_method_not_just_the_path(monkeypatch, fake_driver):
+    document = _spec_document()
+    document["paths"]["/v1/init"] = {"get": {}}  # the spec's init is a POST
+    document["paths"]["/v1/nodes/{node_id}"] = {"post": {}}  # the spec's unregister is a DELETE
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
+        provider_settings.validate_contract("http://127.0.0.1:18080")
+
+    assert "POST /v1/init" in str(exc.value)
+    assert "DELETE /v1/nodes/{node_id}" in str(exc.value)
+    assert "/v1/healthz" not in str(exc.value)
+
+
+def test_validate_contract_matches_path_templates_by_position_not_parameter_name(monkeypatch, fake_driver):
+    document = _spec_document()
+    document["paths"]["/v1/nodes/{id}"] = document["paths"].pop("/v1/nodes/{node_id}")
+    document["paths"]["/v1/nodes/{meter}/configure-meter"] = document["paths"].pop(
+        "/v1/nodes/{node_id}/configure-meter"
+    )
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    assert provider_settings.validate_contract("http://127.0.0.1:18080")["name"] == "Spec Driver"
+
+
+def test_validate_contract_rejects_trailing_slashes(monkeypatch, fake_driver):
+    document = _spec_document()
+    document["paths"]["/v1/init/"] = document["paths"].pop("/v1/init")
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="POST /v1/init"):
+        provider_settings.validate_contract("http://127.0.0.1:18080")
+
+
+def test_validate_contract_does_not_require_vendor_routes(monkeypatch, fake_driver):
     # /v1/commands is a reference-driver extension, not a spec route.
     document = _spec_document()
     assert "/v1/commands" not in document["paths"]
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(document))
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
     assert details["name"] == "Spec Driver"
 
 
-def test_validate_contract_rejects_a_document_with_only_vendor_routes(monkeypatch):
-    document = _spec_document(paths={"/v1/commands": {}, "/v1/events": {}})
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(document))
+def test_validate_contract_rejects_a_document_with_only_vendor_routes(monkeypatch, fake_driver):
+    document = _spec_document(paths={"/v1/commands": {"post": {}}, "/v1/events": {"get": {}}})
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
 
     with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
         provider_settings.validate_contract("http://127.0.0.1:18080")
 
-    assert "/v1/requirements" in str(exc.value)
-    assert "/v1/init" in str(exc.value)
+    assert "GET /v1/requirements" in str(exc.value)
+    assert "POST /v1/init" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# validate_contract: malformed documents never raise anything but
+# ProviderRegistrationError
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "document, message",
+    [
+        (["not", "an", "object"], "must be a JSON object"),
+        (_spec_document(paths=["/v1/init"]), "missing paths"),
+        (_spec_document(info="Spec Driver"), "info.title"),
+        (_spec_document(info={"version": "1"}), "info.title"),
+    ],
+)
+def test_validate_contract_rejects_malformed_documents(monkeypatch, fake_driver, document, message):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError, match=message):
+        provider_settings.validate_contract("http://127.0.0.1:18080")
+
+
+def test_validate_contract_tolerates_non_dict_path_items_and_operations(monkeypatch, fake_driver):
+    document = _spec_document()
+    document["paths"]["/v1/shutdown"] = "not-a-dict"
+    document["paths"]["/v1/status"] = {"get": "not-a-dict"}
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
+        provider_settings.validate_contract("http://127.0.0.1:18080")
+
+    assert str(exc.value).endswith("missing required routes: GET /v1/status")
+
+
+def test_validate_contract_tolerates_refs_to_non_dicts(monkeypatch, spec_document, fake_driver):
+    spec_document["components"]["schemas"]["InitRequest"]["properties"]["aes_key"] = {"$ref": "#/tags"}
+    spec_document["components"]["schemas"]["InitRequest"]["properties"]["channel"] = {
+        "oneOf": ["integer", 7, {"type": "integer"}]
+    }
+    monkeypatch.setattr(
+        provider_settings.httpx, "get", fake_driver(spec_document, required_fields=("aes_key", "channel"))
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_field_map"]
+
+    # A $ref to a list is an empty schema (string); non-dict alternatives are skipped.
+    assert fields["aes_key"]["type"] == "string"
+    assert fields["channel"]["type"] == "integer"
 
 
 # ---------------------------------------------------------------------------
@@ -327,15 +426,15 @@ def test_validate_contract_rejects_a_document_with_only_vendor_routes(monkeypatc
 # ---------------------------------------------------------------------------
 
 
-def test_validate_contract_returns_requirements_in_driver_order(monkeypatch):
-    fake_get = _fake_driver(required_fields=("zeta", "alpha", "heartbeat_period_duration"))
+def test_validate_contract_returns_requirements_in_driver_order(monkeypatch, spec_document, fake_driver):
+    fake_get = fake_driver(spec_document, required_fields=("channel", "aes_key", "heartbeat_period_duration"))
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
     assert [field["name"] for field in details["driver_requirement_fields"]] == [
-        "zeta",
-        "alpha",
+        "channel",
+        "aes_key",
         "heartbeat_period_duration",
     ]
     assert fake_get.calls == [
@@ -344,39 +443,51 @@ def test_validate_contract_returns_requirements_in_driver_order(monkeypatch):
     ]
 
 
-def test_validate_contract_types_undocumented_requirements_as_string(monkeypatch):
-    # The minimal document has no InitRequest schema, so every field is a string.
+def test_validate_contract_types_undocumented_requirements_as_string_with_a_warning(
+    monkeypatch, caplog, fake_driver
+):
+    # The minimal document has no InitRequest schema, so every field is a
+    # string, and each is reported: the spec says the names must match the
+    # init request schema.
     monkeypatch.setattr(
-        provider_settings.httpx, "get", _fake_driver(required_fields=("aes_key", "site_token"))
+        provider_settings.httpx,
+        "get",
+        fake_driver(_spec_document(), required_fields=("aes_key", "site_token")),
     )
 
-    details = provider_settings.validate_contract("http://127.0.0.1:18080")
+    with caplog.at_level(logging.WARNING):
+        details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
     fields = details["driver_requirement_field_map"]
     assert fields["aes_key"]["type"] == "string"
     assert fields["site_token"]["type"] == "string"
     assert fields["site_token"]["required"] is True
+    warned = [record.getMessage() for record in caplog.records if "not described" in record.getMessage()]
+    assert any("'site_token'" in message for message in warned)
+    assert any("'aes_key'" in message for message in warned)
 
 
-def test_validate_contract_types_requirements_from_the_init_request_schema(monkeypatch):
-    document = load_spec_document()
+def test_validate_contract_types_requirements_from_the_init_request_schema(
+    monkeypatch, caplog, spec_document, fake_driver
+):
     # A driver with different init fields documents them in InitRequest
     # (spec section 5.3) and lists them on /v1/requirements.
-    document["components"]["schemas"]["InitRequest"]["properties"]["site_token"] = {
+    spec_document["components"]["schemas"]["InitRequest"]["properties"]["site_token"] = {
         "type": "string",
         "title": "Site token",
         "pattern": "^[a-z]+$",
     }
-    document["components"]["schemas"]["InitRequest"]["properties"]["poll_seconds"] = {
+    spec_document["components"]["schemas"]["InitRequest"]["properties"]["poll_seconds"] = {
         "type": "integer",
         "minimum": 5,
         "maximum": 3600,
         "default": 60,
     }
-    fake_get = _fake_driver(document, required_fields=("site_token", "poll_seconds"))
+    fake_get = fake_driver(spec_document, required_fields=("site_token", "poll_seconds"))
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
-    details = provider_settings.validate_contract("http://127.0.0.1:18080")
+    with caplog.at_level(logging.WARNING):
+        details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
     fields = details["driver_requirement_field_map"]
     assert fields["site_token"] == {
@@ -394,47 +505,63 @@ def test_validate_contract_types_requirements_from_the_init_request_schema(monke
     assert fields["poll_seconds"]["minimum"] == 5
     assert fields["poll_seconds"]["maximum"] == 3600
     assert fields["poll_seconds"]["default"] == 60
+    assert not any("not described" in record.getMessage() for record in caplog.records)
 
 
-def test_validate_contract_requires_the_requirements_probe(monkeypatch):
+def test_validate_contract_requires_the_requirements_probe_and_names_the_cause(monkeypatch, fake_driver):
     url = "http://127.0.0.1:18080/v1/requirements"
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(requirements_error=_http_error(url)))
+    monkeypatch.setattr(
+        provider_settings.httpx, "get", fake_driver(_spec_document(), requirements_error=_http_error(url))
+    )
 
     with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
         provider_settings.validate_contract("http://127.0.0.1:18080")
 
     assert "/v1/requirements" in str(exc.value)
+    # The underlying transport error is part of the message the form shows.
+    assert "404 for http://127.0.0.1:18080/v1/requirements" in str(exc.value)
 
 
-def test_validate_contract_requires_the_requirements_probe_even_with_vendor_options(monkeypatch):
+def test_validate_contract_requires_the_requirements_probe_even_with_vendor_options(monkeypatch, fake_driver):
     # The vendor-option schema is not a substitute for /v1/requirements.
     document = _with_vendor_options(_spec_document(), aes_key={"type": "string"})
     monkeypatch.setattr(
         provider_settings.httpx,
         "get",
-        _fake_driver(document, requirements_error=httpx.ConnectError("down")),
+        fake_driver(document, requirements_error=httpx.ConnectError("down")),
     )
 
-    with pytest.raises(provider_settings.ProviderRegistrationError):
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="down"):
         provider_settings.validate_contract("http://127.0.0.1:18080")
 
 
-def test_validate_contract_rejects_malformed_requirements(monkeypatch):
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"fields": ["aes_key"]},
+        {"required_fields": "aes_key"},
+        {"required_fields": ["aes_key", 7]},
+        {"required_fields": [None]},
+        {"required_fields": ["aes_key", " "]},
+        ["aes_key"],
+    ],
+)
+def test_validate_contract_rejects_malformed_requirements(monkeypatch, fake_json_response, payload):
     def fake_get(url, timeout):
         if url.endswith("/v1/requirements"):
-            return FakeResponse({"fields": ["aes_key"]})
-        return FakeResponse(_spec_document())
+            return fake_json_response(payload)
+        return fake_json_response(_spec_document())
 
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
     with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
         provider_settings.validate_contract("http://127.0.0.1:18080")
 
-    assert "required_fields" in str(exc.value)
+    assert "requirements response" in str(exc.value)
 
 
-def test_validate_contract_accepts_a_driver_requiring_no_init_fields(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(required_fields=()))
+def test_validate_contract_accepts_a_driver_requiring_no_init_fields(monkeypatch, fake_driver):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document(), required_fields=()))
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
@@ -443,13 +570,101 @@ def test_validate_contract_accepts_a_driver_requiring_no_init_fields(monkeypatch
 
 
 # ---------------------------------------------------------------------------
+# validate_contract: InitRequest schema composition
+# ---------------------------------------------------------------------------
+
+
+def test_validate_contract_reads_init_request_composed_with_all_of(monkeypatch, spec_document, fake_driver):
+    schemas = spec_document["components"]["schemas"]
+    schemas["BaseInit"] = {
+        "type": "object",
+        "required": ["site_token"],
+        "properties": {"site_token": {"type": "string", "pattern": "^[a-z]+$"}},
+    }
+    schemas["InitRequest"] = {
+        "allOf": [
+            {"$ref": "#/components/schemas/BaseInit"},
+            {"type": "object", "properties": {"poll_seconds": {"type": "integer", "minimum": 5}}},
+        ]
+    }
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("site_token", "poll_seconds")),
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_field_map"]
+
+    assert fields["site_token"]["pattern"] == "^[a-z]+$"
+    assert fields["poll_seconds"]["type"] == "integer"
+    assert fields["poll_seconds"]["minimum"] == 5
+
+
+def test_validate_contract_follows_ref_chains(monkeypatch, spec_document, fake_driver):
+    schemas = spec_document["components"]["schemas"]
+    schemas["InitAlias"] = {"$ref": "#/components/schemas/InitRequest"}
+    schemas["InitAliasAlias"] = {"$ref": "#/components/schemas/InitAlias"}
+    spec_document["paths"]["/v1/init"]["post"]["requestBody"]["content"]["application/json"]["schema"] = {
+        "$ref": "#/components/schemas/InitAliasAlias"
+    }
+    schemas["HexAlias"] = {"$ref": "#/components/schemas/AesKeyInput"}
+    schemas["InitRequest"]["properties"]["aes_key"] = {"$ref": "#/components/schemas/HexAlias"}
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("heartbeat_period_duration", "aes_key")),
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_field_map"]
+
+    assert fields["heartbeat_period_duration"]["type"] == "integer"
+    assert fields["aes_key"]["pattern"] == "^[A-Fa-f0-9]{32}$"
+
+
+def test_validate_contract_stops_at_ref_cycles(monkeypatch, spec_document, fake_driver):
+    schemas = spec_document["components"]["schemas"]
+    schemas["Loop"] = {"$ref": "#/components/schemas/Loop"}
+    schemas["InitRequest"]["properties"]["aes_key"] = {"$ref": "#/components/schemas/Loop"}
+    schemas["InitRequest"]["allOf"] = [{"$ref": "#/components/schemas/InitRequest"}]
+    monkeypatch.setattr(
+        provider_settings.httpx, "get", fake_driver(spec_document, required_fields=("aes_key",))
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_field_map"]
+
+    assert fields["aes_key"]["type"] == "string"
+
+
+def test_validate_contract_reads_openapi_31_type_arrays(monkeypatch, spec_document, fake_driver):
+    schemas = spec_document["components"]["schemas"]
+    schemas["InitRequest"]["properties"]["channel"] = {"type": ["null", "integer"], "minimum": 11}
+    schemas["InitRequest"]["properties"]["region"] = {"type": ["string", "null"]}
+    schemas["InitRequest"]["properties"]["aes_key"] = {
+        "oneOf": [{"type": ["array"]}, {"type": ["string", "null"], "pattern": "^[a-f]+$"}]
+    }
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("channel", "region", "aes_key")),
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_field_map"]
+
+    assert fields["channel"]["type"] == "integer"
+    assert fields["channel"]["minimum"] == 11
+    assert fields["region"]["type"] == "string"
+    assert fields["aes_key"]["type"] == "string"
+    assert fields["aes_key"]["pattern"] == "^[a-f]+$"
+
+
+# ---------------------------------------------------------------------------
 # validate_contract: optional /v1/commands vendor options
 # ---------------------------------------------------------------------------
 
 
-def test_validate_contract_appends_vendor_options_as_optional_extras(monkeypatch):
+def test_validate_contract_appends_vendor_options_as_optional_extras(monkeypatch, spec_document, fake_driver):
     document = _with_vendor_options(
-        load_spec_document(),
+        spec_document,
         aes_key={"type": "string", "title": "AES key", "pattern": "[0-9a-fA-F]{32}"},
         channel={"type": "integer", "title": "Channel", "minimum": 11, "maximum": 26},
         region={"type": "string", "title": "Region", "description": "Radio regulatory region."},
@@ -457,7 +672,7 @@ def test_validate_contract_appends_vendor_options_as_optional_extras(monkeypatch
     monkeypatch.setattr(
         provider_settings.httpx,
         "get",
-        _fake_driver(document, required_fields=("heartbeat_period_duration", "aes_key")),
+        fake_driver(document, required_fields=("heartbeat_period_duration", "aes_key")),
     )
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
@@ -481,8 +696,10 @@ def test_validate_contract_appends_vendor_options_as_optional_extras(monkeypatch
     assert set(details["vendor_option_field_map"]) == {"aes_key", "channel", "region"}
 
 
-def test_validate_contract_appends_nothing_without_vendor_options(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(required_fields=("aes_key",)))
+def test_validate_contract_appends_nothing_without_vendor_options(monkeypatch, fake_driver):
+    monkeypatch.setattr(
+        provider_settings.httpx, "get", fake_driver(_spec_document(), required_fields=("aes_key",))
+    )
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
@@ -491,16 +708,16 @@ def test_validate_contract_appends_nothing_without_vendor_options(monkeypatch):
     assert details["vendor_option_field_map"] == {}
 
 
-def test_configured_provider_url_uses_saved_setting(session, monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+def test_configured_provider_url_uses_saved_setting(session, monkeypatch, fake_driver):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
     provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
     session.commit()
 
     assert configured_provider_url(default="") == "http://127.0.0.1:18080"
 
 
-def test_configured_provider_url_ignores_env_override(session, monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+def test_configured_provider_url_ignores_env_override(session, monkeypatch, fake_driver):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
     provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
     session.commit()
     monkeypatch.setenv("METERING_PROVIDER_URL", "http://127.0.0.1:28080")
@@ -547,12 +764,6 @@ def test_init_provider_from_payload_coerces_integer_fields(monkeypatch, tmp_path
     }
 
 
-def _use_temp_config_root(monkeypatch, tmp_path):
-    """Redirect the module's config directory globals at a temp location."""
-    monkeypatch.setattr(provider_settings, "_REPO_ROOT", tmp_path)
-    monkeypatch.setattr(provider_settings, "_METER_DRIVER_CONFIG_DIR", tmp_path / "meter_driver_configs")
-
-
 # ---------------------------------------------------------------------------
 # JSON-pointer / schema resolution helpers
 # ---------------------------------------------------------------------------
@@ -561,6 +772,7 @@ def _use_temp_config_root(monkeypatch, tmp_path):
 def test_resolve_local_ref_rejects_non_local_refs():
     assert provider_settings._resolve_local_ref({}, "") is None
     assert provider_settings._resolve_local_ref({}, "https://x/y") is None
+    assert provider_settings._resolve_local_ref({}, 7) is None
 
 
 def test_resolve_local_ref_walks_and_unescapes_tokens():
@@ -569,8 +781,9 @@ def test_resolve_local_ref_walks_and_unescapes_tokens():
     assert provider_settings._resolve_local_ref(spec, "#/components/sch~0emas/a~1b") == {"leaf": 1}
 
 
-def test_resolve_local_ref_returns_none_for_missing_node():
+def test_resolve_local_ref_returns_none_for_missing_or_non_dict_nodes():
     assert provider_settings._resolve_local_ref({"a": {}}, "#/a/missing") is None
+    assert provider_settings._resolve_local_ref({"a": [1, 2]}, "#/a/0") is None
 
 
 def test_resolve_schema_handles_non_dict_ref_and_plain():
@@ -579,6 +792,48 @@ def test_resolve_schema_handles_non_dict_ref_and_plain():
     assert provider_settings._resolve_schema(spec, {"$ref": "#/components/schemas/Foo"}) == {"type": "object"}
     assert provider_settings._resolve_schema({}, {"$ref": "#/nope"}) == {}
     assert provider_settings._resolve_schema({}, {"type": "string"}) == {"type": "string"}
+    # A $ref to something that is not a schema object is an empty schema.
+    assert provider_settings._resolve_schema({"x": [1]}, {"$ref": "#/x"}) == {}
+    assert provider_settings._resolve_schema({}, {"$ref": 7}) == {}
+
+
+def test_resolve_schema_follows_chains_and_stops_at_cycles():
+    spec = {
+        "a": {"$ref": "#/b"},
+        "b": {"$ref": "#/c"},
+        "c": {"type": "integer"},
+        "loop1": {"$ref": "#/loop2"},
+        "loop2": {"$ref": "#/loop1"},
+    }
+    assert provider_settings._resolve_schema(spec, {"$ref": "#/a"}) == {"type": "integer"}
+    assert provider_settings._resolve_schema(spec, {"$ref": "#/loop1"}) == {}
+
+
+def test_schema_type_reads_strings_and_type_arrays():
+    assert provider_settings._schema_type({"type": "Integer"}) == "integer"
+    assert provider_settings._schema_type({"type": ["null", "string"]}) == "string"
+    assert provider_settings._schema_type({"type": ["null"]}) == ""
+    assert provider_settings._schema_type({}) == ""
+    assert provider_settings._schema_type(None) == ""
+
+
+def test_object_schema_merges_all_of_parts():
+    spec = {"components": {"schemas": {"Base": {"required": ["a"], "properties": {"a": {"type": "string"}}}}}}
+    merged = provider_settings._object_schema(
+        spec,
+        {
+            "allOf": [
+                {"$ref": "#/components/schemas/Base"},
+                {"required": ["b"], "properties": {"b": {"type": "integer"}}},
+                "not-a-schema",
+            ],
+            "description": "kept",
+        },
+    )
+    assert merged["properties"] == {"a": {"type": "string"}, "b": {"type": "integer"}}
+    assert merged["required"] == ["a", "b"]
+    assert merged["description"] == "kept"
+    assert "allOf" not in merged
 
 
 def test_command_type_values_reads_const_and_enum():
@@ -589,6 +844,7 @@ def test_command_type_values_reads_const_and_enum():
         {}, {"properties": {"command_type": {"enum": ["A", " b ", ""]}}}
     )
     assert values == {"a", "b"}
+    assert provider_settings._command_type_values({}, {"properties": "nope"}) == set()
 
 
 def test_find_configure_provider_schema_falls_back_to_components():
@@ -612,6 +868,7 @@ def test_find_configure_provider_schema_falls_back_to_components():
 
 def test_find_configure_provider_schema_returns_empty_when_absent():
     assert provider_settings._find_configure_provider_schema({"paths": {}, "components": {}}) == {}
+    assert provider_settings._find_configure_provider_schema({"paths": "nope", "components": []}) == {}
 
 
 # ---------------------------------------------------------------------------
@@ -619,22 +876,22 @@ def test_find_configure_provider_schema_returns_empty_when_absent():
 # ---------------------------------------------------------------------------
 
 
-def test_fetch_requirements_payload_rejects_non_object(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", lambda url, timeout: FakeResponse(["nope"]))
+def test_fetch_requirements_payload_rejects_non_object(monkeypatch, fake_json_response):
+    monkeypatch.setattr(provider_settings.httpx, "get", lambda url, timeout: fake_json_response(["nope"]))
     with pytest.raises(provider_settings.ProviderRegistrationError):
         provider_settings._fetch_requirements_payload("http://127.0.0.1:18080")
 
 
-def test_fetch_requirements_payload_wraps_transport_and_json_errors(monkeypatch):
+def test_fetch_requirements_payload_wraps_transport_and_json_errors(monkeypatch, fake_json_response):
     def boom(url, timeout):
         raise httpx.ConnectError("down")
 
     monkeypatch.setattr(provider_settings.httpx, "get", boom)
     with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
         provider_settings._fetch_requirements_payload("http://127.0.0.1:18080")
-    assert "/v1/requirements" in str(exc.value)
+    assert "/v1/requirements: down" in str(exc.value)
 
-    class BadJSON(FakeResponse):
+    class BadJSON(fake_json_response):
         def json(self):
             raise ValueError("bad")
 
@@ -644,22 +901,36 @@ def test_fetch_requirements_payload_wraps_transport_and_json_errors(monkeypatch)
     assert "not valid JSON" in str(exc.value)
 
 
-def test_required_field_names_from_requirements_keeps_order_and_dedups():
-    names = provider_settings._required_field_names_from_requirements(
-        {"required_fields": ["b", " a ", "", "b", 7]}
+def test_fetch_requirements_payload_returns_the_names(monkeypatch, fake_json_response):
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        lambda url, timeout: fake_json_response({"required_fields": ["b", "a", "b"]}),
     )
-    assert names == ["b", "a", "7"]
+    assert provider_settings._fetch_requirements_payload("http://127.0.0.1:18080") == ["b", "a"]
 
 
-def test_required_field_names_from_requirements_rejects_non_list():
-    with pytest.raises(provider_settings.ProviderRegistrationError):
-        provider_settings._required_field_names_from_requirements({"required_fields": "aes_key"})
-    with pytest.raises(provider_settings.ProviderRegistrationError):
-        provider_settings._required_field_names_from_requirements({})
+def test_required_field_names_from_requirements_validates_the_spec_model():
+    names = provider_settings._required_field_names_from_requirements({"required_fields": ["b", "a", "b"]})
+    assert names == ["b", "a"]
+    # RequirementsResponse.required_fields is array[string]: nothing is stringified.
+    for payload in ({"required_fields": "aes_key"}, {"required_fields": [7]}, {}, {"required_fields": [""]}):
+        with pytest.raises(provider_settings.ProviderRegistrationError):
+            provider_settings._required_field_names_from_requirements(payload)
 
 
-def test_init_request_schema_reads_the_init_request_body():
-    schema = provider_settings._init_request_schema(load_spec_document())
+def test_required_field_names_error_names_each_invalid_location():
+    # The message joins pydantic's error locations and messages so the form
+    # can show which part of the /v1/requirements payload was wrong.
+    with pytest.raises(provider_settings.ProviderRegistrationError) as excinfo:
+        provider_settings._required_field_names_from_requirements({"required_fields": ["a", 7]})
+    message = str(excinfo.value)
+    assert "required_fields.1" in message
+    assert "string" in message
+
+
+def test_init_request_schema_reads_the_init_request_body(spec_document):
+    schema = provider_settings._init_request_schema(spec_document)
     assert set(schema["properties"]) == {"heartbeat_period_duration", "channel", "aes_key"}
     assert schema["required"] == ["heartbeat_period_duration", "aes_key"]
 
@@ -671,12 +942,12 @@ def test_init_request_schema_falls_back_to_components_init_request():
     }
     assert provider_settings._init_request_schema(spec) == {"properties": {"site_token": {"type": "string"}}}
     assert provider_settings._init_request_schema({"paths": {}, "components": {}}) == {}
+    assert provider_settings._init_request_schema({"paths": [], "components": "x"}) == {}
 
 
-def test_scalar_schema_reduces_one_of_to_the_string_alternative():
-    spec = load_spec_document()
-    aes_key = spec["components"]["schemas"]["InitRequest"]["properties"]["aes_key"]
-    resolved = provider_settings._scalar_schema(spec, aes_key)
+def test_scalar_schema_reduces_one_of_to_the_string_alternative(spec_document):
+    aes_key = spec_document["components"]["schemas"]["InitRequest"]["properties"]["aes_key"]
+    resolved = provider_settings._scalar_schema(spec_document, aes_key)
     assert resolved["type"] == "string"
     assert resolved["pattern"] == "^[A-Fa-f0-9]{32}$"
 
@@ -691,11 +962,14 @@ def test_scalar_schema_falls_back_to_the_first_alternative_and_passes_plain_sche
         "oneOf": [{"type": "string"}],
     }
     assert provider_settings._scalar_schema({}, {}) == {}
+    assert provider_settings._scalar_schema({}, {"oneOf": "nope"}) == {"oneOf": "nope"}
+    assert provider_settings._scalar_schema({}, {"oneOf": ["nope", 3]}) == {}
 
 
-def test_extract_fields_from_requirements_types_from_init_request_else_string():
-    spec = load_spec_document()
-    fields = provider_settings._extract_fields_from_requirements(spec, ["channel", "aes_key", "site_token"])
+def test_extract_fields_from_requirements_types_from_init_request_else_string(spec_document):
+    fields = provider_settings._extract_fields_from_requirements(
+        spec_document, ["channel", "aes_key", "site_token"]
+    )
     by_name = {field["name"]: field for field in fields}
     assert by_name["channel"]["type"] == "integer"
     assert by_name["aes_key"]["type"] == "string"
@@ -703,9 +977,9 @@ def test_extract_fields_from_requirements_types_from_init_request_else_string():
     assert all(field["required"] for field in fields)
 
 
-def test_extract_driver_requirement_fields_probes_without_vendor_options(monkeypatch):
+def test_extract_driver_requirement_fields_probes_without_vendor_options(monkeypatch, fake_driver):
     # No /v1/commands schema: the probe still happens and is the whole answer.
-    fake_get = _fake_driver(required_fields=("aes_key",))
+    fake_get = fake_driver({}, required_fields=("aes_key",))
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
 
     fields = provider_settings._extract_driver_requirement_fields("http://127.0.0.1:18080", {"paths": {}})
@@ -795,8 +1069,14 @@ def test_normalize_interface_metadata_defaults_to_http_when_unknown():
     assert details["default_interface"] == "http"
 
 
-def test_normalize_interface_metadata_reads_the_spec_block():
-    details = provider_settings._normalize_interface_metadata("http://base", load_spec_document())
+def test_normalize_interface_metadata_tolerates_malformed_blocks():
+    for spec in ({"x-meter-driver": "http"}, {"x-meter-driver": {"interfaces": "grpc"}}):
+        details = provider_settings._normalize_interface_metadata("http://base", spec)
+        assert [interface["type"] for interface in details["interfaces"]] == ["http"]
+
+
+def test_normalize_interface_metadata_reads_the_spec_block(spec_document):
+    details = provider_settings._normalize_interface_metadata("http://base", spec_document)
     assert details["default_interface"] == "http"
     assert details["interfaces"] == [
         {
@@ -858,8 +1138,8 @@ def test_validate_contract_wraps_http_errors(monkeypatch):
     assert "could not fetch" in str(exc.value)
 
 
-def test_validate_contract_rejects_invalid_json(monkeypatch):
-    class BadJSON(FakeResponse):
+def test_validate_contract_rejects_invalid_json(monkeypatch, fake_json_response):
+    class BadJSON(fake_json_response):
         def json(self):
             raise ValueError("bad")
 
@@ -869,8 +1149,8 @@ def test_validate_contract_rejects_invalid_json(monkeypatch):
     assert "invalid JSON" in str(exc.value)
 
 
-def test_validate_contract_requires_info_title(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_driver(_spec_document(info={})))
+def test_validate_contract_requires_info_title(monkeypatch, fake_driver):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document(info={})))
     with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
         provider_settings.validate_contract("http://127.0.0.1:18080")
     assert "info.title" in str(exc.value)
@@ -893,21 +1173,63 @@ def test_get_live_interface_details_falls_back_on_registration_error(monkeypatch
     assert details["selected_interface"] == "grpc"
 
 
-def test_get_live_interface_details_applies_selection_on_success(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+def test_get_live_interface_details_applies_selection_on_success(monkeypatch, fake_driver):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
     details = provider_settings.get_live_interface_details("http://127.0.0.1:18080")
     assert details["selected_interface"] == "http"
 
 
-def test_get_runtime_status_reports_gateway_when_connected(monkeypatch):
+def test_get_live_interface_details_does_not_probe_requirements(monkeypatch, spec_document, fake_driver):
+    # Interface discovery is one round trip; a slow or failing
+    # /v1/requirements cannot lose the advertised gRPC target.
+    fake_get = fake_driver(spec_document, requirements_error=httpx.ConnectError("slow"))
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
+
+    details = provider_settings.get_live_interface_details(
+        "http://127.0.0.1:18080", selected_interface="grpc"
+    )
+
+    assert "error" not in details
+    assert details["selected_interface"] == "grpc"
+    assert details["selected_interface_details"]["target"] == "127.0.0.1:50051"
+    assert details["driver_requirement_fields"] == []
+    assert fake_get.calls == ["http://127.0.0.1:18080/openapi.json"]
+
+
+def test_get_live_interface_details_reads_recorded_fields_for_a_provider(monkeypatch, fake_driver):
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
+    recorded = [{"name": "aes_key", "type": "string", "required": True}]
+    monkeypatch.setattr(
+        provider_settings, "load_provider_runtime_settings", lambda provider: {"required_fields": recorded}
+    )
+
+    details = provider_settings.get_live_interface_details("http://127.0.0.1:18080", provider={"id": "abc"})
+
+    assert details["driver_requirement_fields"] == recorded
+    assert details["driver_requirement_field_map"] == {"aes_key": recorded[0]}
+
+
+def test_inspect_contract_omits_requirements(monkeypatch, spec_document, fake_driver):
+    fake_get = fake_driver(spec_document)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
+
+    details = provider_settings.inspect_contract("http://127.0.0.1:18080")
+
+    assert details["name"] == "Meter Driver API"
+    assert details["driver_requirement_fields"] == []
+    assert [interface["type"] for interface in details["interfaces"]] == ["http", "grpc"]
+    assert fake_get.calls == ["http://127.0.0.1:18080/openapi.json"]
+
+
+def test_get_runtime_status_reports_gateway_when_connected(monkeypatch, fake_json_response):
     calls = []
 
     def fake_get(url, timeout):
         calls.append(url)
         if url.endswith("/v1/healthz"):
-            return FakeResponse({"ok": True})
+            return fake_json_response({"ok": True})
         if url.endswith("/v1/status"):
-            return FakeResponse({"connected": True, "gateway_type": "sparknet"})
+            return fake_json_response({"connected": True, "gateway_type": "sparknet"})
         raise AssertionError("unexpected GET {}".format(url))
 
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
@@ -919,19 +1241,19 @@ def test_get_runtime_status_reports_gateway_when_connected(monkeypatch):
     assert calls == ["http://127.0.0.1:18080/v1/healthz", "http://127.0.0.1:18080/v1/status"]
 
 
-def test_get_runtime_status_can_skip_gateway_probe(monkeypatch):
-    monkeypatch.setattr(provider_settings.httpx, "get", lambda url, timeout: FakeResponse({}))
+def test_get_runtime_status_can_skip_gateway_probe(monkeypatch, fake_json_response):
+    monkeypatch.setattr(provider_settings.httpx, "get", lambda url, timeout: fake_json_response({"ok": True}))
     status = provider_settings.get_runtime_status("http://127.0.0.1:18080", include_gateway_status=False)
     assert status["online"] is True
     assert status["gateway_active"] is False
     assert status["gateway_checked"] is False
 
 
-def test_get_runtime_status_tolerates_gateway_probe_failure(monkeypatch):
+def test_get_runtime_status_tolerates_gateway_probe_failure(monkeypatch, fake_json_response):
     def fake_get(url, timeout):
         if url.endswith("/v1/status"):
             raise httpx.ConnectError("no status")
-        return FakeResponse({})
+        return fake_json_response({"ok": True})
 
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
     status = provider_settings.get_runtime_status("http://127.0.0.1:18080")
@@ -940,7 +1262,54 @@ def test_get_runtime_status_tolerates_gateway_probe_failure(monkeypatch):
     assert status["gateway_checked"] is True
 
 
-def test_get_runtime_status_is_offline_when_healthz_fails_and_probes_nothing_else(monkeypatch):
+@pytest.mark.parametrize("health", [{"ok": False}, {"ok": "true"}, {}, ["ok"], "ok", None])
+def test_get_runtime_status_is_offline_unless_healthz_answers_ok_true(
+    monkeypatch, fake_json_response, health
+):
+    calls = []
+
+    def fake_get(url, timeout):
+        calls.append(url)
+        if url.endswith("/v1/healthz"):
+            return fake_json_response(health)
+        raise AssertionError("unexpected GET {}".format(url))
+
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
+    status = provider_settings.get_runtime_status("http://127.0.0.1:18080")
+    assert status["online"] is False
+    assert '{"ok": true}' in status["message"]
+    assert status["gateway_active"] is False
+    assert calls == ["http://127.0.0.1:18080/v1/healthz"]
+
+
+def test_get_runtime_status_is_offline_when_healthz_is_not_json(monkeypatch, fake_json_response):
+    class BadJSON(fake_json_response):
+        def json(self):
+            raise ValueError("bad")
+
+    monkeypatch.setattr(provider_settings.httpx, "get", lambda url, timeout: BadJSON({}))
+    status = provider_settings.get_runtime_status("http://127.0.0.1:18080")
+    assert status["online"] is False
+    assert "not valid JSON" in status["message"]
+
+
+def test_get_runtime_status_is_offline_when_status_is_not_an_object(monkeypatch, fake_json_response):
+    def fake_get(url, timeout):
+        if url.endswith("/v1/status"):
+            return fake_json_response(["connected"])
+        return fake_json_response({"ok": True})
+
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
+    status = provider_settings.get_runtime_status("http://127.0.0.1:18080")
+    assert status["online"] is False
+    assert "/v1/status" in status["message"]
+    assert status["gateway_active"] is False
+    assert status["gateway_type"] is None
+
+
+def test_get_runtime_status_is_offline_when_healthz_fails_and_probes_nothing_else(
+    monkeypatch, fake_json_response
+):
     # /v1/healthz is the spec's liveness route; a failure means offline. No
     # legacy /health probe is attempted and /v1/status is not consulted.
     calls = []
@@ -949,7 +1318,7 @@ def test_get_runtime_status_is_offline_when_healthz_fails_and_probes_nothing_els
         calls.append(url)
         if url.endswith("/v1/healthz"):
             raise httpx.ConnectError("no healthz")
-        return FakeResponse({"connected": True})
+        return fake_json_response({"connected": True})
 
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
     status = provider_settings.get_runtime_status("http://127.0.0.1:18080")
@@ -1115,14 +1484,32 @@ def test_required_field_helpers_reject_wrong_types():
     with pytest.raises(provider_settings.DriverConfigError):
         provider_settings._field_values({"field_values": "nope"})
     with pytest.raises(provider_settings.DriverConfigError):
-        provider_settings._required_field_specs({"required_fields": "nope"})
+        provider_settings._stored_field_specs({"required_fields": "nope"})
 
 
-def test_required_field_names_accepts_dicts_and_strings():
-    names = provider_settings._required_field_names(
-        {"required_fields": [{"name": "aes_key"}, "channel", {"name": ""}, "  "]}
-    )
+def test_required_field_names_accepts_dicts_and_strings(caplog):
+    with caplog.at_level(logging.WARNING):
+        names = provider_settings._required_field_names(
+            {"required_fields": [{"name": "aes_key"}, "channel", {"name": ""}, "  "]}
+        )
     assert names == ["aes_key", "channel"]
+
+
+def test_stored_field_specs_treats_bare_names_as_required_strings_and_says_so(caplog):
+    # A config written before field types were recorded (spec entries were
+    # bare names): usable as required strings, with a pointer to re-register.
+    with caplog.at_level(logging.WARNING):
+        specs = provider_settings._stored_field_specs(
+            {"required_fields": ["channel", {"name": "aes_key", "type": "string", "required": True}]}
+        )
+    assert specs == {
+        "channel": {"name": "channel", "type": "string", "required": True},
+        "aes_key": {"name": "aes_key", "type": "string", "required": True},
+    }
+    assert any(
+        "channel" in record.getMessage() and "Re-register the driver" in record.getMessage()
+        for record in caplog.records
+    )
 
 
 def test_required_field_names_skips_optional_extras():
@@ -1141,20 +1528,59 @@ def test_required_field_names_skips_optional_extras():
 
 def test_coerce_field_value_by_type():
     assert provider_settings._coerce_field_value("c", "26", {"type": "integer"}) == 26
+    assert provider_settings._coerce_field_value("c", " 26 ", {"type": "integer"}) == 26
     assert provider_settings._coerce_field_value("r", "1.5", {"type": "number"}) == 1.5
     assert provider_settings._coerce_field_value("b", "yes", {"type": "boolean"}) is True
     assert provider_settings._coerce_field_value("b", "off", {"type": "boolean"}) is False
     assert provider_settings._coerce_field_value("b", True, {"type": "boolean"}) is True
-    assert provider_settings._coerce_field_value("s", "kept", {"type": "string"}) == "kept"
+    assert provider_settings._coerce_field_value("s", " kept ", {"type": "string"}) == "kept"
+    assert provider_settings._coerce_field_value("s", 7, {"type": "string"}) == "7"
+    assert provider_settings._coerce_field_value("s", "x", {"type": ["string", "null"]}) == "x"
+    assert provider_settings._coerce_field_value("l", [1], {"type": "array"}) == [1]
+    assert provider_settings._coerce_field_value("o", {"a": 1}, {"type": "object"}) == {"a": 1}
 
 
 def test_coerce_field_value_raises_on_bad_input():
-    with pytest.raises(provider_settings.DriverConfigError):
-        provider_settings._coerce_field_value("c", "nope", {"type": "integer"})
-    with pytest.raises(provider_settings.DriverConfigError):
-        provider_settings._coerce_field_value("r", "nope", {"type": "number"})
-    with pytest.raises(provider_settings.DriverConfigError):
-        provider_settings._coerce_field_value("b", "maybe", {"type": "boolean"})
+    for value, spec in (
+        ("nope", {"type": "integer"}),
+        ("nope", {"type": "number"}),
+        ("maybe", {"type": "boolean"}),
+        ("x", {"type": "array"}),
+        ("x", {"type": "object"}),
+        ([1], {"type": "string"}),
+    ):
+        with pytest.raises(provider_settings.DriverConfigError):
+            provider_settings._coerce_field_value("f", value, spec)
+
+
+def test_coerce_aes_key_accepts_the_two_spec_forms_only():
+    hex_key = "00112233445566778899aabbccddeeff"
+    assert (
+        provider_settings._coerce_field_value("aes_key", " {} ".format(hex_key), {"type": "string"})
+        == hex_key
+    )
+    assert provider_settings._coerce_field_value("aes_key", list(range(16)), {"type": "string"}) == list(
+        range(16)
+    )
+    for bad in ("not-hex", hex_key[:-1], list(range(15)), list(range(17)), [256] + [0] * 15, [True] * 16, 7):
+        with pytest.raises(provider_settings.DriverConfigError, match="aes_key"):
+            provider_settings._coerce_field_value("aes_key", bad, {"type": "string"})
+
+
+def test_check_field_constraints_enforces_pattern_and_bounds():
+    provider_settings._check_field_constraints("s", "abc", {"pattern": "^[a-z]+$"})
+    provider_settings._check_field_constraints("c", 11, {"minimum": 11, "maximum": 26})
+    provider_settings._check_field_constraints("c", 26, {"minimum": 11, "maximum": 26})
+    with pytest.raises(provider_settings.DriverConfigError, match="pattern"):
+        provider_settings._check_field_constraints("s", "ABC", {"pattern": "^[a-z]+$"})
+    with pytest.raises(provider_settings.DriverConfigError, match="at least"):
+        provider_settings._check_field_constraints("c", 10, {"minimum": 11})
+    with pytest.raises(provider_settings.DriverConfigError, match="at most"):
+        provider_settings._check_field_constraints("c", 27, {"maximum": 26})
+    # Booleans and non-numbers are not bounded; an unusable pattern is skipped.
+    provider_settings._check_field_constraints("b", True, {"minimum": 5})
+    provider_settings._check_field_constraints("s", "x", {"minimum": 5})
+    provider_settings._check_field_constraints("s", "x", {"pattern": "(["})
 
 
 def test_validate_provider_config_payload_reports_missing_and_coerces():
@@ -1171,6 +1597,59 @@ def test_validate_provider_config_payload_reports_missing_and_coerces():
         }
     )
     assert validated["field_values"]["channel"] == 26
+
+
+def test_validate_provider_config_payload_treats_whitespace_as_missing():
+    with pytest.raises(provider_settings.DriverConfigError, match="channel"):
+        provider_settings.validate_provider_config_payload(
+            {"required_fields": [{"name": "channel", "type": "integer"}], "field_values": {"channel": "   "}}
+        )
+
+
+def test_validate_provider_config_payload_enforces_recorded_constraints():
+    payload = {
+        "required_fields": [
+            {"name": "channel", "type": "integer", "minimum": 11, "maximum": 26},
+            {"name": "region", "type": "string", "pattern": "^[a-z]{2}$"},
+        ],
+        "field_values": {"channel": "27", "region": "eu"},
+    }
+    with pytest.raises(provider_settings.DriverConfigError, match="'channel' must be at most 26"):
+        provider_settings.validate_provider_config_payload(payload)
+    payload["field_values"] = {"channel": "26", "region": "EUR"}
+    with pytest.raises(provider_settings.DriverConfigError, match="'region' must match"):
+        provider_settings.validate_provider_config_payload(payload)
+    payload["field_values"] = {"channel": "26", "region": "eu"}
+    assert provider_settings.validate_provider_config_payload(payload)["field_values"] == {
+        "channel": 26,
+        "region": "eu",
+    }
+
+
+def test_validate_provider_config_payload_checks_aes_key_forms():
+    payload = {
+        "required_fields": [{"name": "aes_key", "type": "string", "pattern": "^[A-Fa-f0-9]{32}$"}],
+        "field_values": {"aes_key": "not-hex"},
+    }
+    with pytest.raises(provider_settings.DriverConfigError, match="32 hex characters"):
+        provider_settings.validate_provider_config_payload(payload)
+    payload["field_values"] = {"aes_key": list(range(16))}
+    assert provider_settings.validate_provider_config_payload(payload)["field_values"] == {
+        "aes_key": list(range(16))
+    }
+
+
+def test_validate_provider_config_payload_drops_keys_the_driver_did_not_ask_for(caplog):
+    with caplog.at_level(logging.WARNING):
+        validated = provider_settings.validate_provider_config_payload(
+            {
+                "required_fields": [{"name": "channel", "type": "integer", "required": True}],
+                "field_values": {"channel": "26", "leftover": "x", "aes_key": "00" * 16},
+            }
+        )
+    # A hand-edited config's extra keys are not posted to the driver.
+    assert validated["field_values"] == {"channel": 26}
+    assert any("leftover" in record.getMessage() for record in caplog.records)
 
 
 def test_validate_provider_config_payload_omits_blank_optional_fields():
@@ -1348,6 +1827,47 @@ def test_initialize_configured_providers_on_startup_covers_each_outcome(monkeypa
 
 
 # ---------------------------------------------------------------------------
+# gRPC selection checks
+# ---------------------------------------------------------------------------
+
+
+def _grpc_details(target="h:50051", required=("heartbeat_period_duration", "aes_key")):
+    interfaces = [{"type": "http", "address": "http://x"}]
+    if target is not None:
+        interfaces.append({"type": "grpc", "target": target, "address": target})
+    return {
+        "interfaces": interfaces,
+        "driver_requirement_fields": [{"name": name, "required": True} for name in required]
+        + [{"name": "channel", "required": False}],
+    }
+
+
+def test_check_grpc_selection_accepts_an_advertised_target_with_the_fixed_init_fields():
+    provider_settings.check_grpc_selection(_grpc_details())
+
+
+def test_check_grpc_selection_rejects_a_missing_grpc_interface():
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="advertises no grpc interface"):
+        provider_settings.check_grpc_selection(_grpc_details(target=None))
+
+
+def test_check_grpc_selection_rejects_a_grpc_interface_without_target():
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="advertises no target"):
+        provider_settings.check_grpc_selection(_grpc_details(target=""))
+
+
+def test_check_grpc_selection_rejects_requirements_lacking_the_fixed_init_fields():
+    with pytest.raises(provider_settings.ProviderRegistrationError) as exc:
+        provider_settings.check_grpc_selection(_grpc_details(required=("aes_key",)))
+    assert "does not list: heartbeat_period_duration" in str(exc.value)
+    # An optional extra does not count: ConfigureDriver needs the value.
+    details = _grpc_details(required=("heartbeat_period_duration",))
+    details["driver_requirement_fields"].append({"name": "aes_key", "required": False})
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="does not list: aes_key"):
+        provider_settings.check_grpc_selection(details)
+
+
+# ---------------------------------------------------------------------------
 # Persistence (DB-backed)
 # ---------------------------------------------------------------------------
 
@@ -1396,9 +1916,9 @@ def test_get_saved_providers_handles_blank_invalid_and_non_dict(session):
     assert saved[0]["enabled"] is True
 
 
-def test_save_and_lookup_providers_roundtrip(session, monkeypatch, tmp_path):
+def test_save_and_lookup_providers_roundtrip(session, monkeypatch, tmp_path, fake_driver):
     _use_temp_config_root(monkeypatch, tmp_path)
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
 
     provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
     session.flush()
@@ -1408,9 +1928,9 @@ def test_save_and_lookup_providers_roundtrip(session, monkeypatch, tmp_path):
     assert provider_settings.get_enabled_provider()["id"] == provider_id
 
 
-def test_save_provider_settings_replaces_existing_by_id(session, monkeypatch, tmp_path):
+def test_save_provider_settings_replaces_existing_by_id(session, monkeypatch, tmp_path, fake_driver):
     _use_temp_config_root(monkeypatch, tmp_path)
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
 
     provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
     session.flush()
@@ -1423,9 +1943,9 @@ def test_save_provider_settings_replaces_existing_by_id(session, monkeypatch, tm
     assert providers[0]["base_url"] == "http://127.0.0.1:28080"
 
 
-def test_save_provider_settings_preserves_other_providers(session, monkeypatch, tmp_path):
+def test_save_provider_settings_preserves_other_providers(session, monkeypatch, tmp_path, fake_driver):
     _use_temp_config_root(monkeypatch, tmp_path)
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
 
     first_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
     session.flush()
@@ -1442,11 +1962,70 @@ def test_save_provider_settings_preserves_other_providers(session, monkeypatch, 
     assert providers[second_id]["base_url"] == "http://127.0.0.1:28080"
 
 
-def test_save_provider_settings_falls_back_for_invalid_interface(session, monkeypatch, tmp_path):
+def test_save_provider_settings_falls_back_for_unknown_non_grpc_interface(
+    session, monkeypatch, tmp_path, fake_driver
+):
     _use_temp_config_root(monkeypatch, tmp_path)
-    monkeypatch.setattr(provider_settings.httpx, "get", _fake_openapi_get)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
 
-    # "grpc" is not advertised by _fake_openapi_get, so it falls back to http.
-    provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "grpc")
+    # "mqtt" is not advertised, so the default interface (http) is saved.
+    provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "mqtt")
     session.flush()
     assert provider_settings.get_provider(provider_id)["selected_interface"] == "http"
+
+
+def test_save_provider_settings_refuses_grpc_the_driver_does_not_advertise(
+    session, monkeypatch, tmp_path, fake_driver
+):
+    _use_temp_config_root(monkeypatch, tmp_path)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(_spec_document()))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="advertises no grpc interface"):
+        provider_settings.save_provider_settings("http://127.0.0.1:18080", "grpc")
+    assert provider_settings.get_saved_providers() == []
+
+
+def test_save_provider_settings_refuses_grpc_without_a_target(session, monkeypatch, tmp_path, fake_driver):
+    _use_temp_config_root(monkeypatch, tmp_path)
+    document = _spec_document(
+        **{
+            "x-meter-driver": {
+                "default_interface": "http",
+                "interfaces": [{"type": "http", "base_url": "http://127.0.0.1:18080"}, {"type": "grpc"}],
+            }
+        }
+    )
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="advertises no target"):
+        provider_settings.save_provider_settings("http://127.0.0.1:18080", "grpc")
+
+
+def test_save_provider_settings_refuses_grpc_when_requirements_lack_its_fields(
+    session, monkeypatch, tmp_path, spec_document, fake_driver
+):
+    _use_temp_config_root(monkeypatch, tmp_path)
+    # The spec document advertises grpc at 127.0.0.1:50051, but this driver's
+    # /v1/requirements has no aes_key: ConfigureDriver could never be built.
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("heartbeat_period_duration", "site_token")),
+    )
+
+    with pytest.raises(provider_settings.ProviderRegistrationError, match="does not list: aes_key"):
+        provider_settings.save_provider_settings("http://127.0.0.1:18080", "grpc")
+
+
+def test_save_provider_settings_records_the_advertised_grpc_target(
+    session, monkeypatch, tmp_path, spec_document, fake_driver
+):
+    _use_temp_config_root(monkeypatch, tmp_path)
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(spec_document))
+
+    provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "grpc")
+    session.flush()
+
+    provider = provider_settings.get_provider(provider_id)
+    assert provider["selected_interface"] == "grpc"
+    assert provider["selected_interface_target"] == "127.0.0.1:50051"
