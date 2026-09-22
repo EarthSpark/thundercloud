@@ -4,13 +4,13 @@ Generic HTTP+SSE and gRPC clients built directly against the Thunder-Cloud
 2.0 Open Source Meter Driver Specification — not against any vendor's
 package. Any driver that implements the spec's required HTTP+SSE contract
 works here with zero vendor-specific code. A driver that additionally
-implements the optional gRPC profile (see sparkmeter/metering/proto/)
-works over gRPC too, using the client Thundercloud compiles from its own
-spec-owned .proto files.
+implements the optional gRPC profile works over gRPC too, through the
+stubs the `meter-driver-spec` wheel compiles from the spec's own
+meter_driver.proto (`meter_driver_spec.grpc`).
 
-SparkNet-Http gets no special treatment here: it's one compliant driver
-instance among however many a deployment configures. Nothing in this
-module imports a vendor-published client package.
+No driver gets special treatment here: SparkNet-Http is one compliant
+driver instance among however many a deployment configures. Nothing in
+this module imports a vendor-published client package.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ import logging
 import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Any
-from urllib.parse import urlparse
 
 import grpc
 import httpx
@@ -42,6 +41,17 @@ from meter_driver_spec.http.models import (
 from sparkmeter.metering.http_sse import stream_json_events
 
 logger = logging.getLogger(__name__)
+
+# The gRPC profile's ConfigureDriver message has fixed fields (spec section 7,
+# meter_driver.proto), so the gRPC init path needs these two whatever the
+# driver advertised on /v1/requirements. The HTTP path has no such list: it
+# posts exactly the discovered fields.
+_GRPC_INIT_REQUIRED_FIELDS = ("heartbeat_period_duration", "aes_key")
+
+
+class GrpcTargetUnavailable(ValueError):
+    """gRPC was selected for a driver whose contract advertises no grpc target."""
+
 
 # Lowercase behavior verb -> the spec's ElectricalMeterCommandName. Verbs with
 # no spec command ("none", "enter_unprovisioned") return None; callers skip
@@ -116,10 +126,7 @@ class HttpCommandClient(MeteringCommandClient):
         )
 
     async def init_driver(self, payload: dict[str, Any]) -> None:
-        # The spec's own worked examples show POST /v1/init; the reference
-        # driver (SparkNet-Http-New) actually serves this at
-        # /v1/sparknet/init. Targeting the endpoint that's actually live.
-        response = await self._client.post("/v1/sparknet/init", json=payload)
+        response = await self._client.post("/v1/init", json=payload)
         response.raise_for_status()
 
     async def register_node(self, req: RegisterNodeRequest) -> None:
@@ -150,8 +157,9 @@ class HttpCommandClient(MeteringCommandClient):
 
 class GrpcCommandClient(MeteringCommandClient):
     """Command client backed by the standard TC 2.0 meter driver gRPC
-    profile, compiled from Thundercloud's own proto (sparkmeter/metering/proto/)
-    — not imported from any driver vendor's package.
+    profile, using the `meter_driver_spec.grpc` stubs the `meter-driver-spec`
+    wheel compiles from the spec's meter_driver.proto — not imported from
+    any driver vendor's package.
     """
 
     transport_name = "grpc"
@@ -161,6 +169,12 @@ class GrpcCommandClient(MeteringCommandClient):
         self._stub = pb2_grpc.MeterDriverControlStub(self._channel)
 
     async def init_driver(self, payload: dict[str, Any]) -> None:
+        missing = [name for name in _GRPC_INIT_REQUIRED_FIELDS if payload.get(name) in (None, "")]
+        if missing:
+            raise ValueError(
+                "gRPC ConfigureDriver requires the init fields {}; the stored driver "
+                "config is missing: {}".format(", ".join(_GRPC_INIT_REQUIRED_FIELDS), ", ".join(missing))
+            )
         request = pb2.ConfigureDriver(
             heartbeat_period_duration=int(payload["heartbeat_period_duration"]),
             aes_key=_aes_key_bytes(payload["aes_key"]),
@@ -205,7 +219,7 @@ class HttpEventClient:
 
 class GrpcEventClient:
     """Event streaming client backed by the standard TC 2.0 gRPC profile's
-    SubscribeEvents stream, compiled from Thundercloud's own proto.
+    SubscribeEvents stream, through the `meter_driver_spec.grpc` stubs.
     """
 
     transport_name = "grpc-stream"
@@ -236,37 +250,37 @@ def _selected_interface_details(provider, provider_details):
 
 
 def _grpc_target(provider, provider_details) -> str | None:
+    """Return the grpc `target` the driver advertised in x-meter-driver, or None.
+
+    The live contract's selected-interface details win; the target saved at
+    registration is the fallback. Nothing is derived from the HTTP base URL:
+    the spec has no default gRPC port, so a driver that advertises no grpc
+    interface has no target.
+    """
     selected_details = _selected_interface_details(provider, provider_details)
     target = selected_details.get("target") or selected_details.get("address")
     target = str(target or "").strip()
     if not target:
         target = str((provider or {}).get("selected_interface_target") or "").strip()
-    if not target:
-        base_url = str((provider or {}).get("base_url") or "").strip()
-        parsed = urlparse(base_url)
-        hostname = parsed.hostname or ""
-        if hostname:
-            target = "{}:50051".format(hostname)
-            logger.warning(
-                "provider %s selected gRPC but no target metadata is available; "
-                "falling back to derived target %s",
-                base_url,
-                target,
-            )
     return target or None
+
+
+def _require_grpc_target(provider, provider_details) -> str:
+    target = _grpc_target(provider, provider_details)
+    if not target:
+        raise GrpcTargetUnavailable(
+            "provider {} selected gRPC but its contract advertises no grpc interface target".format(
+                (provider or {}).get("base_url")
+            )
+        )
+    return target
 
 
 def build_command_client(provider, client_id: str, provider_details=None) -> MeteringCommandClient:
     """Create the command transport for the selected provider interface."""
     selected_interface = str((provider or {}).get("selected_interface") or "http").strip().lower()
     if selected_interface == "grpc":
-        target = _grpc_target(provider, provider_details)
-        if target:
-            return GrpcCommandClient(target)
-        logger.warning(
-            "provider %s selected gRPC but no grpc target is available; falling back to HTTP commands",
-            (provider or {}).get("base_url"),
-        )
+        return GrpcCommandClient(_require_grpc_target(provider, provider_details))
     return HttpCommandClient(str((provider or {}).get("base_url") or ""), client_id)
 
 
@@ -274,13 +288,7 @@ def build_event_client(provider, client_id: str, provider_details=None):
     """Create the event transport for the selected provider interface."""
     selected_interface = str((provider or {}).get("selected_interface") or "http").strip().lower()
     if selected_interface == "grpc":
-        target = _grpc_target(provider, provider_details)
-        if target:
-            return GrpcEventClient(target)
-        logger.warning(
-            "provider %s selected gRPC but no grpc target is available; falling back to HTTP SSE events",
-            (provider or {}).get("base_url"),
-        )
+        return GrpcEventClient(_require_grpc_target(provider, provider_details))
     return HttpEventClient(str((provider or {}).get("base_url") or ""), client_id)
 
 

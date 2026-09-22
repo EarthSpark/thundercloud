@@ -23,13 +23,22 @@ def test_grpc_target_falls_back_to_saved_target():
     assert runtime_client._grpc_target(provider, provider_details=None) == "127.0.0.1:50051"
 
 
-def test_grpc_target_derives_default_from_base_url_host():
+def test_grpc_target_prefers_advertised_interface_details():
+    provider = {"base_url": "http://127.0.0.1:18080", "selected_interface_target": "stale:1"}
+    details = {"selected_interface_details": {"type": "grpc", "target": "h:50051"}}
+
+    assert runtime_client._grpc_target(provider, provider_details=details) == "h:50051"
+
+
+def test_grpc_target_is_none_when_no_grpc_interface_is_advertised():
+    # The spec fixes no gRPC port, so nothing is derived from the HTTP host.
     provider = {
         "base_url": "http://127.0.0.1:18080",
         "selected_interface_target": "",
     }
 
-    assert runtime_client._grpc_target(provider, provider_details=None) == "127.0.0.1:50051"
+    assert runtime_client._grpc_target(provider, provider_details=None) is None
+    assert runtime_client._grpc_target(provider, provider_details={"selected_interface_details": {}}) is None
 
 
 @pytest.mark.asyncio
@@ -273,7 +282,7 @@ class TestHttpCommandClient:
         calls = client._client.calls
         methods_and_paths = [(method, path) for method, path, _ in calls]
         assert methods_and_paths == [
-            ("POST", "/v1/sparknet/init"),
+            ("POST", "/v1/init"),
             ("POST", "/v1/nodes/register"),
             ("POST", "/v1/meters/configure"),
             ("POST", "/v1/nodes/7/balance-and-flags"),
@@ -371,6 +380,27 @@ class TestGrpcCommandClient:
         assert request.HasField("channel") is False
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "payload, missing",
+        [
+            ({"aes_key": "00" * 16}, "heartbeat_period_duration"),
+            ({"heartbeat_period_duration": 60}, "aes_key"),
+            ({"heartbeat_period_duration": 60, "aes_key": ""}, "aes_key"),
+        ],
+    )
+    async def test_init_driver_names_the_fixed_fields_it_is_missing(self, monkeypatch, payload, missing):
+        # ConfigureDriver has fixed proto fields; a driver whose /v1/requirements
+        # omitted one cannot be initialized over gRPC, and the error says which.
+        client, holder, _ = self._client_with_stub(monkeypatch)
+
+        with pytest.raises(ValueError) as exc:
+            await client.init_driver(payload)
+
+        assert "gRPC ConfigureDriver requires" in str(exc.value)
+        assert missing in str(exc.value)
+        assert "InitDriver" not in holder["stub"].calls
+
+    @pytest.mark.asyncio
     async def test_command_methods_delegate_to_stub(self, monkeypatch):
         client, holder, _ = self._client_with_stub(monkeypatch)
 
@@ -440,9 +470,36 @@ class TestBuildClients:
         client = runtime_client.build_command_client(provider, "cid")
         assert isinstance(client, runtime_client.GrpcCommandClient)
 
-    def test_build_command_client_falls_back_to_http(self, monkeypatch):
-        # gRPC selected but no target resolvable -> HTTP fallback.
-        provider = {"selected_interface": "grpc", "base_url": ""}
+    def test_build_command_client_uses_advertised_grpc_target(self, monkeypatch):
+        holder = {}
+
+        def factory(channel):
+            holder["stub"] = _RecordingStub(channel)
+            return holder["stub"]
+
+        targets = []
+        monkeypatch.setattr(
+            runtime_client.grpc.aio, "insecure_channel", lambda target: targets.append(target)
+        )
+        monkeypatch.setattr(runtime_client.pb2_grpc, "MeterDriverControlStub", factory)
+        provider = {"selected_interface": "grpc", "base_url": "http://driver:18080"}
+        details = {"selected_interface_details": {"type": "grpc", "target": "h:50051"}}
+
+        client = runtime_client.build_command_client(provider, "cid", provider_details=details)
+
+        assert isinstance(client, runtime_client.GrpcCommandClient)
+        assert targets == ["h:50051"]
+
+    def test_build_command_client_errors_when_grpc_selected_without_target(self):
+        # gRPC selected but the contract advertises no grpc interface: no
+        # derived host:50051 and no silent HTTP fallback.
+        provider = {"selected_interface": "grpc", "base_url": "http://driver:18080"}
+        with pytest.raises(runtime_client.GrpcTargetUnavailable) as exc:
+            runtime_client.build_command_client(provider, "cid")
+        assert "advertises no grpc interface target" in str(exc.value)
+
+    def test_build_command_client_defaults_to_http(self):
+        provider = {"base_url": "http://driver:18080"}
         client = runtime_client.build_command_client(provider, "cid")
         assert isinstance(client, runtime_client.HttpCommandClient)
 
@@ -456,8 +513,13 @@ class TestBuildClients:
         client = runtime_client.build_event_client(provider, "cid")
         assert isinstance(client, runtime_client.GrpcEventClient)
 
-    def test_build_event_client_falls_back_to_http(self):
-        provider = {"selected_interface": "grpc", "base_url": ""}
+    def test_build_event_client_errors_when_grpc_selected_without_target(self):
+        provider = {"selected_interface": "grpc", "base_url": "http://driver:18080"}
+        with pytest.raises(runtime_client.GrpcTargetUnavailable):
+            runtime_client.build_event_client(provider, "cid")
+
+    def test_build_event_client_defaults_to_http(self):
+        provider = {"base_url": "http://driver:18080"}
         client = runtime_client.build_event_client(provider, "cid")
         assert isinstance(client, runtime_client.HttpEventClient)
 
