@@ -111,7 +111,7 @@ Run the driver as its own service, then register it from the running ground app 
 **Global Settings > Meter Drivers > Register driver** by entering the base URL of its HTTP
 service. Registered drivers become selectable per meter on the meter form.
 
-The groundbolt-dev workspace metarepo runs `sparknet-http` as part of its stack for
+The [groundbolt-dev workspace](https://github.com/EarthSpark/groundbolt-dev) runs `sparknet-http` as part of its stack for
 convenience during development; that is a choice of that stack, not a dependency of this
 application.
 
