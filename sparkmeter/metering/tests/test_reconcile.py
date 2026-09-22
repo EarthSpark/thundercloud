@@ -309,7 +309,7 @@ class TestWorkerThreadEntryPoints:
             payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
 
         assert payload is None
-        assert any("not 32 hex characters" in record.message for record in caplog.records)
+        assert any("32 hex characters" in record.message for record in caplog.records)
 
     def test_load_driver_init_payload_only_checks_aes_key_when_present(self, app, session, monkeypatch):
         # No aes_key among the driver's fields: no hex check applies.
@@ -328,8 +328,7 @@ class TestWorkerThreadEntryPoints:
         }
 
     def test_load_driver_init_payload_passes_a_byte_array_aes_key_through(self, app, session, monkeypatch):
-        # The spec's AesKeyInput also allows a 16-byte integer array; only the
-        # string form is format-checked.
+        # The spec's AesKeyInput also allows an array of exactly 16 byte values.
         key = list(range(16))
         self._use_driver_config(
             monkeypatch,
@@ -412,36 +411,14 @@ class TestSpecOnlyDriverInit:
 
     @pytest.mark.asyncio
     async def test_reconcile_posts_exactly_one_init_with_the_discovered_fields(
-        self, app, session, monkeypatch, tmp_path
+        self, app, session, monkeypatch, tmp_path, spec_document, fake_driver
     ):
         import json
-        from pathlib import Path
 
         from sparkmeter.metering import runtime_client
 
-        spec_document = json.loads(
-            (Path(provider_settings.__file__).parent / "tests" / "meter_driver_spec_openapi.json").read_text()
-        )
         required_fields = ["heartbeat_period_duration", "aes_key"]
-
-        class _Response:
-            def __init__(self, payload):
-                self.payload = payload
-
-            def raise_for_status(self):
-                return None
-
-            def json(self):
-                return self.payload
-
-        def fake_get(url, timeout):
-            if url.endswith("/openapi.json"):
-                return _Response(spec_document)
-            if url.endswith("/v1/requirements"):
-                return _Response({"required_fields": required_fields})
-            raise AssertionError("unexpected GET {}".format(url))
-
-        monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
+        monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(spec_document, required_fields))
         monkeypatch.setattr(provider_settings, "_REPO_ROOT", tmp_path)
         monkeypatch.setattr(provider_settings, "_METER_DRIVER_CONFIG_DIR", tmp_path / "meter_driver_configs")
 
@@ -502,6 +479,49 @@ class _RecordingClient:
 
     async def unregister_node(self, node_id):
         pass
+
+
+class TestReconcileAllInit:
+    @pytest.mark.asyncio
+    async def test_empty_payload_still_initializes_the_driver(self, monkeypatch):
+        # A driver whose /v1/requirements is empty is initialized with an
+        # empty body: {} is a payload, only None means "nothing configured".
+        monkeypatch.setattr(reconcile, "_load_driver_init_payload", lambda flask_app: {})
+        monkeypatch.setattr(reconcile, "_load_meters", lambda flask_app: [])
+        client = _RecordingClient()
+
+        await reconcile.reconcile_all(client, object())
+
+        assert client.inits == [{}]
+
+    @pytest.mark.asyncio
+    async def test_none_payload_skips_init(self, monkeypatch):
+        monkeypatch.setattr(reconcile, "_load_driver_init_payload", lambda flask_app: None)
+        monkeypatch.setattr(reconcile, "_load_meters", lambda flask_app: [])
+        client = _RecordingClient()
+
+        await reconcile.reconcile_all(client, object())
+
+        assert client.inits == []
+
+    @pytest.mark.asyncio
+    async def test_init_value_error_propagates(self, monkeypatch):
+        # The gRPC client raises ValueError when the discovered fields lack
+        # ConfigureDriver's fixed ones; reconcile does not swallow it (the
+        # per-meter try/except covers only the meter loop).
+        monkeypatch.setattr(reconcile, "_load_driver_init_payload", lambda flask_app: {"site_token": "x"})
+        meters_loaded = []
+        monkeypatch.setattr(reconcile, "_load_meters", lambda flask_app: meters_loaded.append(1) or [])
+
+        class _GrpcLikeClient(_RecordingClient):
+            async def init_driver(self, payload):
+                raise ValueError("gRPC ConfigureDriver requires the init fields ...; missing: aes_key")
+
+        with pytest.raises(ValueError, match="ConfigureDriver"):
+            await reconcile.reconcile_all(_GrpcLikeClient(), object())
+
+        # Nothing after init ran.
+        assert meters_loaded == []
 
 
 class TestReconcileAllLoop:

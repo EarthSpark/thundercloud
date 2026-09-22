@@ -18,7 +18,6 @@ reconcile.
 
 import asyncio
 import logging
-import re
 from typing import TYPE_CHECKING, Any, Optional
 
 from meter_driver_spec.http.models import (
@@ -37,7 +36,6 @@ if TYPE_CHECKING:
     from sparkmeter.metering.runtime_client import MeteringCommandClient
 
 logger = logging.getLogger(__name__)
-_AES_KEY_HEX_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
 _KNOWN_METER_TYPES = {
@@ -142,10 +140,9 @@ def _load_driver_init_payload(flask_app: "Flask") -> dict[str, Any] | None:
     `field_values`; nothing about the field set is hardcoded here. The
     payload is exactly those fields. Returns None, with a warning, when
     the config is absent or incomplete, so reconcile skips init rather
-    than posting a body the driver will reject.
-
-    `aes_key` is the one field with a format check, and only when present
-    as a string: the spec's 32-hex-character form (section 5.3).
+    than posting a body the driver will reject. Value checks (types, the
+    contract's pattern/minimum/maximum, the spec's AesKeyInput forms for
+    `aes_key`) live in validate_provider_config_payload.
     """
     try:
         from sparkmeter.config.provider_settings import (
@@ -168,23 +165,10 @@ def _load_driver_init_payload(flask_app: "Flask") -> dict[str, Any] | None:
             return None
 
         try:
-            payload: dict[str, Any] = dict(validate_provider_config_payload(driver_config)["field_values"])
+            return dict(validate_provider_config_payload(driver_config)["field_values"])
         except DriverConfigError as exc:
             logger.warning("metering reconcile: skipping driver init; driver config is not usable: %s", exc)
             return None
-
-        aes_key = payload.get("aes_key")
-        if isinstance(aes_key, str):
-            aes_key = aes_key.strip()
-            if not _AES_KEY_HEX_RE.fullmatch(aes_key):
-                logger.warning(
-                    "metering reconcile: skipping driver init; AES key %r is not 32 hex characters",
-                    payload.get("aes_key"),
-                )
-                return None
-            payload["aes_key"] = aes_key
-
-        return payload
 
 
 def _load_meters(flask_app: "Flask") -> list[dict[str, Any]]:
