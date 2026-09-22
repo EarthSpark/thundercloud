@@ -9,6 +9,7 @@ Flask's `current_app` is unavailable. They are tested with `app` fixture
 calls that intentionally invoke them from a fresh thread.
 """
 
+import logging
 import threading
 from types import SimpleNamespace
 
@@ -209,103 +210,177 @@ class TestWorkerThreadEntryPoints:
         with pytest.raises(TypeError):
             reconcile._load_meters()  # type: ignore[call-arg]
 
-    def test_load_driver_init_payload_reads_driver_fields(self, app, session, monkeypatch):
+    @staticmethod
+    def _use_driver_config(monkeypatch, config):
         monkeypatch.setattr(
             provider_settings,
             "get_enabled_provider",
             lambda: {"base_url": "http://127.0.0.1:18080", "selected_interface": "http"},
         )
-        monkeypatch.setattr(
-            provider_settings,
-            "load_provider_runtime_settings",
-            lambda provider: {
+        monkeypatch.setattr(provider_settings, "load_provider_runtime_settings", lambda provider: config)
+
+    # The field specs registration writes for the reference /v1/requirements
+    # list, typed from the spec's InitRequest schema.
+    _REFERENCE_FIELDS = [
+        {"name": "aes_key", "type": "string", "required": True},
+        {"name": "channel", "type": "integer", "required": True},
+        {"name": "heartbeat_period_duration", "type": "integer", "required": True},
+    ]
+
+    def test_load_driver_init_payload_builds_from_discovered_fields(self, app, session, monkeypatch):
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": self._REFERENCE_FIELDS,
                 "field_values": {
-                    "aes_key": "00112233445566778899AABBCCDDEEFF",
+                    "aes_key": " 00112233445566778899AABBCCDDEEFF ",
                     "channel": "26",
                     "heartbeat_period_duration": "60",
-                }
+                },
             },
         )
 
         payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
 
+        # Exactly the discovered fields, coerced to their InitRequest types.
         assert payload == {
             "aes_key": "00112233445566778899AABBCCDDEEFF",
             "channel": 26,
             "heartbeat_period_duration": 60,
         }
 
-    def test_load_driver_init_payload_skips_invalid_aes_key(self, app, session, monkeypatch):
-        monkeypatch.setattr(
-            provider_settings,
-            "get_enabled_provider",
-            lambda: {"base_url": "http://127.0.0.1:18080", "selected_interface": "http"},
-        )
-        monkeypatch.setattr(
-            provider_settings,
-            "load_provider_runtime_settings",
-            lambda provider: {
-                "field_values": {
-                    "aes_key": "not-hex",
-                    "channel": "12",
-                    "heartbeat_period_duration": "60",
-                }
+    def test_load_driver_init_payload_uses_the_drivers_own_fields(self, app, session, monkeypatch):
+        # A driver with init fields unlike the reference driver's: the payload
+        # is whatever it asked for, with no aes_key or heartbeat expected.
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": [
+                    {"name": "site_token", "type": "string", "required": True},
+                    {"name": "poll_seconds", "type": "integer", "required": True},
+                    {"name": "verbose", "type": "boolean", "required": False},
+                ],
+                "field_values": {"site_token": "abc", "poll_seconds": "30", "verbose": "yes"},
             },
         )
 
         payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
 
-        assert payload is None
+        assert payload == {"site_token": "abc", "poll_seconds": 30, "verbose": True}
 
-    def test_load_driver_init_payload_requires_heartbeat(self, app, session, monkeypatch):
-        monkeypatch.setattr(
-            provider_settings, "get_enabled_provider", lambda: {"base_url": "http://127.0.0.1:18080"}
-        )
-        monkeypatch.setattr(
-            provider_settings,
-            "load_provider_runtime_settings",
-            lambda provider: {"field_values": {"aes_key": "00112233445566778899AABBCCDDEEFF"}},
+    def test_load_driver_init_payload_omits_blank_optional_fields(self, app, session, monkeypatch):
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": [
+                    {"name": "heartbeat_period_duration", "type": "integer", "required": True},
+                    {"name": "channel", "type": "integer", "required": False},
+                ],
+                "field_values": {"heartbeat_period_duration": "60", "channel": ""},
+            },
         )
 
-        # No heartbeat period means there is nothing to init the driver with.
+        payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
+
+        assert payload == {"heartbeat_period_duration": 60}
+
+    def test_load_driver_init_payload_sends_empty_body_for_a_driver_needing_no_fields(
+        self, app, session, monkeypatch
+    ):
+        self._use_driver_config(monkeypatch, {"required_fields": [], "field_values": {}})
+
+        assert _run_in_fresh_thread(reconcile._load_driver_init_payload, app) == {}
+
+    def test_load_driver_init_payload_none_without_a_config_file(self, app, session, monkeypatch):
+        self._use_driver_config(monkeypatch, {})
+
         assert _run_in_fresh_thread(reconcile._load_driver_init_payload, app) is None
 
-    def test_load_driver_init_payload_skips_invalid_channel(self, app, session, monkeypatch):
-        monkeypatch.setattr(
-            provider_settings, "get_enabled_provider", lambda: {"base_url": "http://127.0.0.1:18080"}
+    def test_load_driver_init_payload_skips_invalid_aes_key(self, app, session, monkeypatch, caplog):
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": self._REFERENCE_FIELDS,
+                "field_values": {"aes_key": "not-hex", "channel": "12", "heartbeat_period_duration": "60"},
+            },
         )
-        monkeypatch.setattr(
-            provider_settings,
-            "load_provider_runtime_settings",
-            lambda provider: {
+
+        with caplog.at_level(logging.WARNING):
+            payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
+
+        assert payload is None
+        assert any("not 32 hex characters" in record.message for record in caplog.records)
+
+    def test_load_driver_init_payload_only_checks_aes_key_when_present(self, app, session, monkeypatch):
+        # No aes_key among the driver's fields: no hex check applies.
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": [
+                    {"name": "heartbeat_period_duration", "type": "integer", "required": True}
+                ],
+                "field_values": {"heartbeat_period_duration": "60"},
+            },
+        )
+
+        assert _run_in_fresh_thread(reconcile._load_driver_init_payload, app) == {
+            "heartbeat_period_duration": 60
+        }
+
+    def test_load_driver_init_payload_passes_a_byte_array_aes_key_through(self, app, session, monkeypatch):
+        # The spec's AesKeyInput also allows a 16-byte integer array; only the
+        # string form is format-checked.
+        key = list(range(16))
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": [{"name": "aes_key", "type": "array", "required": True}],
+                "field_values": {"aes_key": key},
+            },
+        )
+
+        assert _run_in_fresh_thread(reconcile._load_driver_init_payload, app) == {"aes_key": key}
+
+    def test_load_driver_init_payload_skips_when_a_required_field_is_missing(
+        self, app, session, monkeypatch, caplog
+    ):
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": self._REFERENCE_FIELDS,
+                "field_values": {"aes_key": "00112233445566778899AABBCCDDEEFF", "channel": "26"},
+            },
+        )
+
+        with caplog.at_level(logging.WARNING):
+            payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
+
+        # A required field without a value means the driver cannot be
+        # initialized; nothing partial is sent.
+        assert payload is None
+        assert any("heartbeat_period_duration" in record.message for record in caplog.records)
+
+    def test_load_driver_init_payload_skips_on_uncoercible_value(self, app, session, monkeypatch, caplog):
+        self._use_driver_config(
+            monkeypatch,
+            {
+                "required_fields": self._REFERENCE_FIELDS,
                 "field_values": {
                     "aes_key": "00112233445566778899AABBCCDDEEFF",
                     "channel": "not-an-int",
                     "heartbeat_period_duration": "60",
-                }
+                },
             },
         )
 
-        payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
+        with caplog.at_level(logging.WARNING):
+            payload = _run_in_fresh_thread(reconcile._load_driver_init_payload, app)
 
-        # The bad channel is dropped; the rest of the payload still comes through.
-        assert payload == {
-            "aes_key": "00112233445566778899AABBCCDDEEFF",
-            "heartbeat_period_duration": 60,
-        }
+        assert payload is None
+        assert any("channel" in record.message for record in caplog.records)
 
-    def test_load_driver_init_payload_requires_aes_key(self, app, session, monkeypatch):
-        monkeypatch.setattr(
-            provider_settings, "get_enabled_provider", lambda: {"base_url": "http://127.0.0.1:18080"}
-        )
-        monkeypatch.setattr(
-            provider_settings,
-            "load_provider_runtime_settings",
-            lambda provider: {"field_values": {"heartbeat_period_duration": "60"}},
         )
 
-        # No AES key means there is nothing to initialize the driver with.
-        assert _run_in_fresh_thread(reconcile._load_driver_init_payload, app) is None
 
 
 class _RecordingClient:
