@@ -427,14 +427,19 @@ class TestSpecOnlyDriverInit:
         session.commit()
         provider = provider_settings.get_provider(provider_id)
 
-        # The generated config lists the driver's own /v1/requirements fields;
-        # the operator fills them in.
+        # The generated config lists the driver's own /v1/requirements fields,
+        # then the InitRequest property it left out as optional; the operator
+        # fills in the required ones and leaves the optional channel blank.
         config = json.loads(provider_settings.load_provider_config_text(provider))
-        assert [field["name"] for field in config["required_fields"]] == required_fields
-        assert config["field_values"] == {"heartbeat_period_duration": "", "aes_key": ""}
+        assert [(field["name"], field["required"]) for field in config["required_fields"]] == [
+            *((name, True) for name in required_fields),
+            ("channel", False),
+        ]
+        assert config["field_values"] == {"heartbeat_period_duration": "", "aes_key": "", "channel": ""}
         config["field_values"] = {
             "heartbeat_period_duration": "60",
             "aes_key": "00112233445566778899aabbccddeeff",
+            "channel": "",
         }
         provider_settings.save_provider_config_text(provider, json.dumps(config))
 
@@ -444,9 +449,10 @@ class TestSpecOnlyDriverInit:
 
         await reconcile.reconcile_all(client, app)
 
-        # Exactly one POST /v1/init carrying exactly the discovered fields,
-        # typed by the spec's InitRequest schema; no vendor init route, no
-        # legacy /health probe.
+        # Exactly one POST /v1/init carrying exactly the filled-in fields,
+        # typed by the spec's InitRequest schema; the blank optional channel
+        # is omitted, and there is no vendor init route and no legacy /health
+        # probe.
         assert client._client.calls == [
             (
                 "POST",
