@@ -449,9 +449,34 @@ def _message_data(message) -> dict[str, Any]:
     them) and a 64-bit node_id, which the protobuf JSON mapping renders as
     a string, is restored to an integer.
     """
-    data = MessageToDict(message, preserving_proto_field_name=True, always_print_fields_with_no_presence=True)
+    data = _message_dict(message)
     if "node_id" in data:
         data["node_id"] = int(message.node_id)
+    return data
+
+
+def _message_dict(message) -> dict[str, Any]:
+    """Render a protobuf message with unset singular submessages rendered as their defaults.
+
+    `always_print_fields_with_no_presence` keeps default scalars, but a
+    submessage field has presence, so an unset one (e.g. a heartbeat's
+    `millisecond_read_reply_stats`) is omitted and the spec payload that
+    requires it fails validation. Each singular submessage outside a
+    oneof is rendered from its value, which reads as the default instance
+    when unset. Oneof members and google.protobuf wrappers keep their
+    absent-means-absent meaning.
+    """
+    data = MessageToDict(message, preserving_proto_field_name=True, always_print_fields_with_no_presence=True)
+    for field in message.DESCRIPTOR.fields:
+        submessage_type = field.message_type
+        if (
+            submessage_type is None
+            or field.is_repeated
+            or field.containing_oneof is not None
+            or submessage_type.full_name.startswith("google.protobuf.")
+        ):
+            continue
+        data[field.name] = _message_dict(getattr(message, field.name))
     return data
 
 

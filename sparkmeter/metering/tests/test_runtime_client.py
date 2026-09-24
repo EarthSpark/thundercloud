@@ -3,10 +3,13 @@
 from types import SimpleNamespace
 
 import pytest
+from meter_driver_spec.grpc import meter_driver_pb2 as pb2
 from meter_driver_spec.http.models import (
     ConfigureElectricalMeterCompatRequest,
     ElectricalMeterCommandName,
     ElectricalMeterConfiguration,
+    GatewayStatus,
+    HeartbeatStatistics,
     RegisterNodeRequest,
     SetBalanceAndFlagsRequest,
 )
@@ -652,28 +655,43 @@ class TestGrpcEventToRawDict:
         assert event.voltage_min_b == pytest.approx(3.0)
         assert event.phases.b is True
 
-    def test_heartbeat_event_passes_the_message_through(self, monkeypatch):
-        stats = {"count": 1, "last_value": 1.0, "max": 1.0, "min": 1.0, "avg": 1.0}
-        rendered = {
-            "timestamp": 1700000000,
-            "total_registered_nodes": 20,
-            "millisecond_read_reply_stats": stats,
-            "millisecond_set_config_reply_stats": stats,
-        }
-        seen = {}
-
-        def fake_to_dict(message, **kwargs):
-            seen["kwargs"] = kwargs
-            return dict(rendered)
-
-        monkeypatch.setattr(runtime_client, "MessageToDict", fake_to_dict)
-        raw = runtime_client._grpc_event_to_raw_dict(_event("heartbeat_statistics", SimpleNamespace()), 7)
-        assert raw == {"type": "heartbeat_statistics", "event_id": 7, "data": rendered}
+    def test_heartbeat_event_renders_a_real_message_as_the_spec_payload(self):
+        stats = pb2.Statistics(count=3, last_value=1.5, max=2.0, min=1.0, avg=1.5)
+        event = pb2.MeterDriverEvent(
+            heartbeat_statistics=pb2.HeartbeatStatistics(
+                timestamp=1700000000,
+                total_registered_nodes=20,
+                millisecond_read_reply_stats=stats,
+                millisecond_set_config_reply_stats=stats,
+            )
+        )
+        raw = runtime_client._grpc_event_to_raw_dict(event, 7)
+        assert raw["type"] == "heartbeat_statistics"
+        assert raw["event_id"] == 7
         # Spec field names, and zero-valued counters kept (the model requires them).
-        assert seen["kwargs"] == {
-            "preserving_proto_field_name": True,
-            "always_print_fields_with_no_presence": True,
-        }
+        heartbeat = HeartbeatStatistics.model_validate(raw["data"])
+        assert heartbeat.total_registered_nodes == 20
+        assert heartbeat.total_packets_sent == 0
+        assert heartbeat.millisecond_read_reply_stats.count == 3
+        assert heartbeat.millisecond_set_config_reply_stats.avg == pytest.approx(1.5)
+
+    def test_heartbeat_event_renders_unset_stats_as_zeroed_statistics(self):
+        # A driver that never sets the two stats submessages still produces a
+        # payload the spec model accepts, so the reading flush marker is not lost.
+        event = pb2.MeterDriverEvent(heartbeat_statistics=pb2.HeartbeatStatistics(timestamp=1700000000))
+        data = runtime_client._grpc_event_to_raw_dict(event, 7)["data"]
+        zeroed = {"count": 0, "last_value": 0.0, "max": 0.0, "min": 0.0, "avg": 0.0}
+        assert data["millisecond_read_reply_stats"] == zeroed
+        assert data["millisecond_set_config_reply_stats"] == zeroed
+        HeartbeatStatistics.model_validate(data)
+
+    def test_gateway_status_event_renders_an_unset_firmware_version(self):
+        event = pb2.MeterDriverEvent(
+            gateway_status=pb2.GatewayStatusEvent(connected=True, gateway_type="usb")
+        )
+        data = runtime_client._grpc_event_to_raw_dict(event, 9)["data"]
+        assert data["firmware_version"] == {"major": 0, "minor": 0, "patch": 0}
+        assert GatewayStatus.model_validate(data).connected is True
 
     def test_firmware_change_event_translated(self):
         message = SimpleNamespace(node_id=100, firmware_version=SimpleNamespace(major=1, minor=2, patch=3))
@@ -684,17 +702,16 @@ class TestGrpcEventToRawDict:
             "data": {"node_id": 100, "firmware_version": {"major": 1, "minor": 2, "patch": 3}},
         }
 
-    def test_side_channel_event_passes_through_message_dict(self, monkeypatch):
-        monkeypatch.setattr(runtime_client, "MessageToDict", lambda message, **kwargs: {"connected": True})
-        raw = runtime_client._grpc_event_to_raw_dict(_event("gateway_status", SimpleNamespace()), 9)
-        assert raw == {"type": "gateway_status", "event_id": 9, "data": {"connected": True}}
+    def test_side_channel_event_passes_through_message_dict(self):
+        event = pb2.MeterDriverEvent(gateway_status=pb2.GatewayStatusEvent(connected=True))
+        raw = runtime_client._grpc_event_to_raw_dict(event, 9)
+        assert set(raw) == {"type", "event_id", "data"}
+        assert raw["type"] == "gateway_status"
+        assert raw["event_id"] == 9
+        assert raw["data"]["connected"] is True
 
-    def test_side_channel_node_id_is_restored_to_an_integer(self, monkeypatch):
+    def test_side_channel_node_id_is_restored_to_an_integer(self):
         # The protobuf JSON mapping renders uint64 as a string; the spec payload wants an integer.
-        monkeypatch.setattr(
-            runtime_client, "MessageToDict", lambda message, **kwargs: {"node_id": "63519", "source_type": 1}
-        )
-        raw = runtime_client._grpc_event_to_raw_dict(
-            _event("node_registered", SimpleNamespace(node_id=63519)), 10
-        )
-        assert raw["data"] == {"node_id": 63519, "source_type": 1}
+        event = pb2.MeterDriverEvent(node_registered=pb2.NodeRegistered(node_id=63519))
+        raw = runtime_client._grpc_event_to_raw_dict(event, 10)
+        assert raw["data"]["node_id"] == 63519
