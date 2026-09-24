@@ -9,9 +9,11 @@ and default data. Each test gets its own clone, so there is zero
 cross-test pollution and tests can run in parallel with pytest-xdist.
 """
 
+import json
 import os
 import uuid
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -25,6 +27,74 @@ from sparkmeter.misc.logutils import setup_logging
 setup_logging()
 
 TEMPLATE_DB_NAME = "test_template"
+
+# The Meter Driver Specification's own openapi/meter-driver.yaml, converted
+# to JSON: exactly what a driver serving nothing but the spec answers on
+# GET /openapi.json. Regenerate it after bumping the meter-driver-spec wheel:
+#
+#   uv run python -c 'import json, sys, yaml; \
+#     json.dump(yaml.safe_load(open(sys.argv[1])), open(sys.argv[2], "w"), indent=2); \
+#     open(sys.argv[2], "a").write("\n")' \
+#     <meter-driver-spec>/openapi/meter-driver.yaml sparkmeter/config/tests/meter_driver_spec_openapi.json
+#
+# test_provider_settings.py checks its info.version against the installed
+# wheel's version, so a bump cannot leave the fixture stale.
+SPEC_OPENAPI_DOCUMENT_PATH = Path(__file__).parent / "config" / "tests" / "meter_driver_spec_openapi.json"
+
+
+class FakeJsonResponse(object):
+    """Minimal httpx-like response double: `raise_for_status()` passes, `json()` returns the payload."""
+
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        """Pretend the response was successful."""
+
+    def json(self):
+        """Return the configured JSON payload."""
+        return self._payload
+
+
+@pytest.fixture
+def fake_json_response():
+    """The FakeJsonResponse class, for httpx.get doubles."""
+    return FakeJsonResponse
+
+
+@pytest.fixture
+def spec_document():
+    """A fresh copy of the spec's OpenAPI document (see SPEC_OPENAPI_DOCUMENT_PATH)."""
+    return json.loads(SPEC_OPENAPI_DOCUMENT_PATH.read_text())
+
+
+@pytest.fixture
+def fake_driver():
+    """Factory for httpx.get doubles serving a driver's /openapi.json and /v1/requirements.
+
+    `fake_driver(document, required_fields=..., requirements_error=...)`
+    returns a callable with the `httpx.get(url, timeout)` signature. Every
+    URL it answers is recorded on its `.calls`; any other URL raises
+    AssertionError, so a stray probe fails the test immediately.
+    """
+
+    def _factory(document, required_fields=("heartbeat_period_duration", "aes_key"), requirements_error=None):
+        calls = []
+
+        def fake_get(url, timeout):
+            calls.append(url)
+            if url.endswith("/v1/requirements"):
+                if requirements_error is not None:
+                    raise requirements_error
+                return FakeJsonResponse({"required_fields": list(required_fields)})
+            if url.endswith("/openapi.json"):
+                return FakeJsonResponse(document)
+            raise AssertionError("unexpected GET {}".format(url))
+
+        fake_get.calls = calls
+        return fake_get
+
+    return _factory
 
 
 # ---------------------------------------------------------------------------

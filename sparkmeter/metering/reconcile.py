@@ -5,7 +5,7 @@ provider on every webapp lifespan start.
 The provider holds no durable per-meter state across restarts. This
 module re-issues the full sequence on every webapp boot:
 
-    configure_provider (heartbeat + vendor net params)
+    init_driver (POST /v1/init with the driver's discovered init fields)
     for each meter in DB:
         register_meter
         configure_meter (limits + behavior verb)
@@ -18,7 +18,6 @@ reconcile.
 
 import asyncio
 import logging
-import re
 from typing import TYPE_CHECKING, Any, Optional
 
 from meter_driver_spec.http.models import (
@@ -37,7 +36,6 @@ if TYPE_CHECKING:
     from sparkmeter.metering.runtime_client import MeteringCommandClient
 
 logger = logging.getLogger(__name__)
-_AES_KEY_HEX_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 
 
 _KNOWN_METER_TYPES = {
@@ -76,8 +74,8 @@ async def reconcile_all(
     this Flask instance.
 
     `skip_provider_init` is used when the caller has already issued the
-    vendor-specific provider init for this runtime transition and only
-    needs the per-meter reconcile sequence.
+    driver init for this runtime transition and only needs the per-meter
+    reconcile sequence.
     """
     logger.info("metering reconcile: starting")
 
@@ -134,10 +132,24 @@ async def reconcile_all(
 
 
 def _load_driver_init_payload(flask_app: "Flask") -> dict[str, Any] | None:
+    """Build the POST /v1/init body from the driver's discovered fields and stored values.
+
+    The field set is whatever the driver reported on GET /v1/requirements
+    at registration (persisted as `required_fields` in its config file,
+    typed from its InitRequest schema) and the values are the operator's
+    `field_values`; nothing about the field set is hardcoded here. The
+    payload is exactly those fields. Returns None, with a warning, when
+    the config is absent or incomplete, so reconcile skips init rather
+    than posting a body the driver will reject. Value checks (types, the
+    contract's pattern/minimum/maximum, the spec's AesKeyInput forms for
+    `aes_key`) live in validate_provider_config_payload.
+    """
     try:
         from sparkmeter.config.provider_settings import (
+            DriverConfigError,
             get_enabled_provider,
             load_provider_runtime_settings,
+            validate_provider_config_payload,
         )
     except ImportError:
         return None
@@ -149,37 +161,14 @@ def _load_driver_init_payload(flask_app: "Flask") -> dict[str, Any] | None:
     with flask_app.app_context():
         enabled_provider = get_enabled_provider()
         driver_config = load_provider_runtime_settings(enabled_provider)
-        driver_field_values = ((driver_config or {}).get("field_values")) or {}
-        aes_key_hex = driver_field_values.get("aes_key")
-        if not aes_key_hex:
+        if not driver_config:
             return None
 
-        heartbeat = driver_field_values.get("heartbeat_period_duration")
-        if heartbeat in (None, ""):
+        try:
+            return dict(validate_provider_config_payload(driver_config)["field_values"])
+        except DriverConfigError as exc:
+            logger.warning("metering reconcile: skipping driver init; driver config is not usable: %s", exc)
             return None
-
-        payload: dict[str, Any] = {
-            "heartbeat_period_duration": int(heartbeat),
-            "aes_key": str(aes_key_hex).strip(),
-        }
-        channel = driver_field_values.get("channel")
-        if channel is not None:
-            try:
-                payload["channel"] = int(channel)
-            except (TypeError, ValueError):
-                logger.warning(
-                    "metering reconcile: skipping invalid channel %r; expected integer",
-                    channel,
-                )
-        aes_key = payload["aes_key"]
-        if not _AES_KEY_HEX_RE.fullmatch(aes_key):
-            logger.warning(
-                "metering reconcile: skipping invalid driver AES key %r; expected 32 hex characters",
-                aes_key_hex,
-            )
-            return None
-
-        return payload
 
 
 def _load_meters(flask_app: "Flask") -> list[dict[str, Any]]:

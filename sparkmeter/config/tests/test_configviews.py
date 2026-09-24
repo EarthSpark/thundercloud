@@ -123,7 +123,7 @@ class ConfigTest(WebViewTestCaseBase):
         monkeypatch.setattr(
             configviews,
             "get_live_interface_details",
-            lambda base_url, selected_interface=None: _interface_details(),
+            lambda base_url, selected_interface=None, provider=None: _interface_details(),
         )
         seen = {}
 
@@ -163,7 +163,7 @@ class ConfigTest(WebViewTestCaseBase):
         monkeypatch.setattr(
             provider_settings,
             "get_live_interface_details",
-            lambda service_url, selected_interface=None, timeout=2.0: details,
+            lambda service_url, selected_interface=None, timeout=2.0, provider=None: details,
         )
         monkeypatch.setattr(
             provider_settings,
@@ -172,9 +172,7 @@ class ConfigTest(WebViewTestCaseBase):
         )
         saved = {}
 
-        def fake_save(
-            service_url, selected_interface, enabled=True, provider_id=None, aes_key="", channel=""
-        ):
+        def fake_save(service_url, selected_interface, enabled=True, provider_id=None):
             saved["service_url"] = service_url
             saved["selected_interface"] = selected_interface
             saved["enabled"] = enabled
@@ -212,7 +210,7 @@ class ConfigTest(WebViewTestCaseBase):
         monkeypatch.setattr(
             configviews,
             "get_live_interface_details",
-            lambda base_url, selected_interface=None: _interface_details(),
+            lambda base_url, selected_interface=None, provider=None: _interface_details(),
         )
 
         response = client.get("/config/meter-driver/driver-1/edit")
@@ -236,7 +234,7 @@ class ConfigTest(WebViewTestCaseBase):
         monkeypatch.setattr(
             configviews,
             "get_live_interface_details",
-            lambda base_url, selected_interface=None: _interface_details(),
+            lambda base_url, selected_interface=None, provider=None: _interface_details(),
         )
         monkeypatch.setattr(
             provider_settings,
@@ -267,7 +265,7 @@ class ConfigTest(WebViewTestCaseBase):
         monkeypatch.setattr(
             configviews,
             "get_live_interface_details",
-            lambda base_url, selected_interface=None: _interface_details(),
+            lambda base_url, selected_interface=None, provider=None: _interface_details(),
         )
         monkeypatch.setattr(
             provider_settings,

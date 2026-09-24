@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -1722,6 +1722,7 @@ dependencies = [
     { name = "phonenumbers" },
     { name = "protobuf" },
     { name = "psycopg2-binary" },
+    { name = "pydantic" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
     { name = "requests" },
@@ -1786,6 +1787,7 @@ requires-dist = [
     { name = "phonenumbers" },
     { name = "protobuf" },
     { name = "psycopg2-binary" },
+    { name = "pydantic" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
     { name = "requests" },

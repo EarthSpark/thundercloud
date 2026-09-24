@@ -4,13 +4,13 @@ Generic HTTP+SSE and gRPC clients built directly against the Thunder-Cloud
 2.0 Open Source Meter Driver Specification — not against any vendor's
 package. Any driver that implements the spec's required HTTP+SSE contract
 works here with zero vendor-specific code. A driver that additionally
-implements the optional gRPC profile (see sparkmeter/metering/proto/)
-works over gRPC too, using the client Thundercloud compiles from its own
-spec-owned .proto files.
+implements the optional gRPC profile works over gRPC too, through the
+stubs the `meter-driver-spec` wheel compiles from the spec's own
+meter_driver.proto (`meter_driver_spec.grpc`).
 
-SparkNet-Http gets no special treatment here: it's one compliant driver
-instance among however many a deployment configures. Nothing in this
-module imports a vendor-published client package.
+No driver gets special treatment here: SparkNet-Http is one compliant
+driver instance among however many a deployment configures. Nothing in
+this module imports a vendor-published client package.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ import logging
 import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Any
-from urllib.parse import urlparse
 
 import grpc
 import httpx
@@ -42,6 +41,17 @@ from meter_driver_spec.http.models import (
 from sparkmeter.metering.http_sse import stream_json_events
 
 logger = logging.getLogger(__name__)
+
+# The gRPC profile's ConfigureDriver message has fixed fields (spec section 7,
+# meter_driver.proto), so the gRPC init path needs these two whatever the
+# driver advertised on /v1/requirements. The HTTP path has no such list: it
+# posts exactly the discovered fields.
+_GRPC_INIT_REQUIRED_FIELDS = ("heartbeat_period_duration", "aes_key")
+
+
+class GrpcTargetUnavailable(ValueError):
+    """gRPC was selected for a driver whose contract advertises no grpc target."""
+
 
 # Lowercase behavior verb -> the spec's ElectricalMeterCommandName. Verbs with
 # no spec command ("none", "enter_unprovisioned") return None; callers skip
@@ -116,10 +126,7 @@ class HttpCommandClient(MeteringCommandClient):
         )
 
     async def init_driver(self, payload: dict[str, Any]) -> None:
-        # The spec's own worked examples show POST /v1/init; the reference
-        # driver (SparkNet-Http-New) actually serves this at
-        # /v1/sparknet/init. Targeting the endpoint that's actually live.
-        response = await self._client.post("/v1/sparknet/init", json=payload)
+        response = await self._client.post("/v1/init", json=payload)
         response.raise_for_status()
 
     async def register_node(self, req: RegisterNodeRequest) -> None:
@@ -150,8 +157,9 @@ class HttpCommandClient(MeteringCommandClient):
 
 class GrpcCommandClient(MeteringCommandClient):
     """Command client backed by the standard TC 2.0 meter driver gRPC
-    profile, compiled from Thundercloud's own proto (sparkmeter/metering/proto/)
-    — not imported from any driver vendor's package.
+    profile, using the `meter_driver_spec.grpc` stubs the `meter-driver-spec`
+    wheel compiles from the spec's meter_driver.proto — not imported from
+    any driver vendor's package.
     """
 
     transport_name = "grpc"
@@ -161,6 +169,12 @@ class GrpcCommandClient(MeteringCommandClient):
         self._stub = pb2_grpc.MeterDriverControlStub(self._channel)
 
     async def init_driver(self, payload: dict[str, Any]) -> None:
+        missing = [name for name in _GRPC_INIT_REQUIRED_FIELDS if payload.get(name) in (None, "")]
+        if missing:
+            raise ValueError(
+                "gRPC ConfigureDriver requires the init fields {}; the stored driver "
+                "config is missing: {}".format(", ".join(_GRPC_INIT_REQUIRED_FIELDS), ", ".join(missing))
+            )
         request = pb2.ConfigureDriver(
             heartbeat_period_duration=int(payload["heartbeat_period_duration"]),
             aes_key=_aes_key_bytes(payload["aes_key"]),
@@ -205,7 +219,7 @@ class HttpEventClient:
 
 class GrpcEventClient:
     """Event streaming client backed by the standard TC 2.0 gRPC profile's
-    SubscribeEvents stream, compiled from Thundercloud's own proto.
+    SubscribeEvents stream, through the `meter_driver_spec.grpc` stubs.
     """
 
     transport_name = "grpc-stream"
@@ -236,37 +250,37 @@ def _selected_interface_details(provider, provider_details):
 
 
 def _grpc_target(provider, provider_details) -> str | None:
+    """Return the grpc `target` the driver advertised in x-meter-driver, or None.
+
+    The live contract's selected-interface details win; the target saved at
+    registration is the fallback. Nothing is derived from the HTTP base URL:
+    the spec has no default gRPC port, so a driver that advertises no grpc
+    interface has no target.
+    """
     selected_details = _selected_interface_details(provider, provider_details)
     target = selected_details.get("target") or selected_details.get("address")
     target = str(target or "").strip()
     if not target:
         target = str((provider or {}).get("selected_interface_target") or "").strip()
-    if not target:
-        base_url = str((provider or {}).get("base_url") or "").strip()
-        parsed = urlparse(base_url)
-        hostname = parsed.hostname or ""
-        if hostname:
-            target = "{}:50051".format(hostname)
-            logger.warning(
-                "provider %s selected gRPC but no target metadata is available; "
-                "falling back to derived target %s",
-                base_url,
-                target,
-            )
     return target or None
+
+
+def _require_grpc_target(provider, provider_details) -> str:
+    target = _grpc_target(provider, provider_details)
+    if not target:
+        raise GrpcTargetUnavailable(
+            "provider {} selected gRPC but its contract advertises no grpc interface target".format(
+                (provider or {}).get("base_url")
+            )
+        )
+    return target
 
 
 def build_command_client(provider, client_id: str, provider_details=None) -> MeteringCommandClient:
     """Create the command transport for the selected provider interface."""
     selected_interface = str((provider or {}).get("selected_interface") or "http").strip().lower()
     if selected_interface == "grpc":
-        target = _grpc_target(provider, provider_details)
-        if target:
-            return GrpcCommandClient(target)
-        logger.warning(
-            "provider %s selected gRPC but no grpc target is available; falling back to HTTP commands",
-            (provider or {}).get("base_url"),
-        )
+        return GrpcCommandClient(_require_grpc_target(provider, provider_details))
     return HttpCommandClient(str((provider or {}).get("base_url") or ""), client_id)
 
 
@@ -274,13 +288,7 @@ def build_event_client(provider, client_id: str, provider_details=None):
     """Create the event transport for the selected provider interface."""
     selected_interface = str((provider or {}).get("selected_interface") or "http").strip().lower()
     if selected_interface == "grpc":
-        target = _grpc_target(provider, provider_details)
-        if target:
-            return GrpcEventClient(target)
-        logger.warning(
-            "provider %s selected gRPC but no grpc target is available; falling back to HTTP SSE events",
-            (provider or {}).get("base_url"),
-        )
+        return GrpcEventClient(_require_grpc_target(provider, provider_details))
     return HttpEventClient(str((provider or {}).get("base_url") or ""), client_id)
 
 
@@ -353,150 +361,143 @@ def _decimal_proto(value: SpecDecimal) -> pb2.Decimal:
     return pb2.Decimal(sign=int(value.sign), coef=int(value.coef), exp=int(value.exp))
 
 
+# Event names whose protobuf message maps field-for-field onto the spec's
+# SSE payload, so a JSON rendering of the message is the envelope's data.
+_PASSTHROUGH_GRPC_EVENTS = {
+    "heartbeat_statistics",
+    "gateway_status",
+    "heartbeat_read_hops",
+    "driver_configuration_applied",
+    "node_registered",
+    "node_already_registered",
+    "node_unregistered",
+    "node_to_unregister_unknown",
+    "invalid_electrical_meter_configuration",
+    "electrical_meter_configuration_accepted",
+    "electrical_meter_configuration_applied",
+    "electrical_meter_balance_and_flags_accepted",
+}
+
+# ElectricalMeterReading fields (spec section 6) by wire type.
+_READING_INT_FIELDS = ("period_start", "period_end", "uptime_secs")
+_READING_FLOAT_FIELDS = (
+    "frequency",
+    "current_avg",
+    "current_min",
+    "current_max",
+    "voltage_avg",
+    "voltage_min",
+    "voltage_max",
+    "true_power_avg",
+    "true_power_inst",
+    "apparent_power_avg",
+    "power_factor_avg",
+    "energy",
+    "user_power_limit",
+)
+# The per-phase measurements ElectricalMeterReadingPhased adds, suffixed _a/_b/_c.
+_PHASED_FLOAT_FIELDS = (
+    "frequency",
+    "current_avg",
+    "current_min",
+    "current_max",
+    "voltage_avg",
+    "voltage_min",
+    "voltage_max",
+    "true_power_avg",
+    "true_power_inst",
+    "apparent_power_avg",
+    "power_factor_avg",
+)
+_PHASES = ("a", "b", "c")
+
+
 def _grpc_event_to_raw_dict(event: "pb2.MeterDriverEvent", event_id: int):
-    """Translate a protobuf stream event into the raw event dict shape."""
+    """Translate a protobuf stream event into the `{type, event_id, data}` envelope.
+
+    `type` and `data` are what the dispatcher reads, exactly as an SSE frame
+    carries them; `data` uses the spec's field names and JSON types.
+    """
     event_name = event.WhichOneof("event")
     if not event_name:
         return None
 
     message = getattr(event, event_name)
-    message_dict = MessageToDict(message, preserving_proto_field_name=True)
 
     if event_name == "electrical_meter_reading":
+        data = _reading_data(message)
+    elif event_name == "electrical_meter_reading_phased":
+        data = _phased_reading_data(message)
+    elif event_name == "node_firmware_version_changed":
         data = {
             "node_id": int(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": int(message.state),
-            "frequency": float(message.frequency),
-            "current_avg": float(message.current_avg),
-            "current_min": float(message.current_min),
-            "current_max": float(message.current_max),
-            "voltage_avg": float(message.voltage_avg),
-            "voltage_min": float(message.voltage_min),
-            "voltage_max": float(message.voltage_max),
-            "true_power_avg": float(message.true_power_avg),
-            "true_power_inst": float(message.true_power_inst),
-            "apparent_power_avg": float(message.apparent_power_avg),
-            "power_factor_avg": float(message.power_factor_avg),
-            "energy": float(message.energy),
-            "uptime_secs": int(message.uptime_secs),
-            "user_power_limit": float(message.user_power_limit),
-        }
-        return {
-            "type": "electrical_meter_reading",
-            "event_id": event_id,
-            "event_type": "meter_reading",
-            "meter_id": str(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": _meter_state_name(message.state),
-            "frequency_hz": float(message.frequency),
-            "current_avg_amps": float(message.current_avg),
-            "current_max_amps": float(message.current_max),
-            "current_min_amps": float(message.current_min),
-            "voltage_avg": float(message.voltage_avg),
-            "voltage_max": float(message.voltage_max),
-            "voltage_min": float(message.voltage_min),
-            "true_power_avg_watts": float(message.true_power_avg),
-            "true_power_inst_watts": float(message.true_power_inst),
-            "apparent_power_avg_va": float(message.apparent_power_avg),
-            "power_factor_avg": float(message.power_factor_avg),
-            "energy_wh": float(message.energy),
-            "uptime_seconds": int(message.uptime_secs),
-            "user_power_limit_watts": float(message.user_power_limit),
-            "data": data,
-        }
-
-    if event_name == "electrical_meter_reading_phased":
-        data = {
-            "node_id": int(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": int(message.state),
-            "energy": float(message.energy),
-            "uptime_secs": int(message.uptime_secs),
-            "user_power_limit": float(message.user_power_limit),
-        }
-        return {
-            "type": "electrical_meter_reading_phased",
-            "event_id": event_id,
-            "event_type": "meter_reading_phased",
-            "meter_id": str(message.node_id),
-            "period_start": int(message.period_start),
-            "period_end": int(message.period_end),
-            "state": _meter_state_name(message.state),
-            "energy_wh": float(message.energy),
-            "uptime_seconds": int(message.uptime_secs),
-            "user_power_limit_watts": float(message.user_power_limit),
-            "aggregate": _phase_reading_dict(message),
-            "per_phase": _phased_per_phase_dict(message),
-            "phases": _phases_list(message),
-            "computed_fields_version": int(message.computed_fields_version),
-            "data": data,
-        }
-
-    if event_name == "heartbeat_statistics":
-        return {
-            "type": "heartbeat_statistics",
-            "event_id": event_id,
-            "event_type": "heartbeat_summary",
-            "timestamp": int(message.timestamp),
-            "total_registered_meters": int(message.total_registered_nodes),
-            "meters_attempted": int(message.nodes_reached_out_to_in_current_heartbeat),
-            "meters_responded": int(message.nodes_heard_from_in_current_heartbeat),
-            "packets_sent": int(message.packets_sent_in_current_heartbeat),
-            "packets_received": int(message.packets_received_in_current_heartbeat),
-            "read_reply_latency_ms": _stats_dict(message_dict.get("millisecond_read_reply_stats")),
-            "set_config_reply_latency_ms": _stats_dict(
-                message_dict.get("millisecond_set_config_reply_stats")
-            ),
-            "data": message_dict,
-        }
-
-    if event_name == "node_firmware_version_changed":
-        return {
-            "type": "node_firmware_version_changed",
-            "event_id": event_id,
-            "event_type": "meter_firmware_changed",
-            "meter_id": str(message.node_id),
             "firmware_version": _version_dict(message.firmware_version),
-            "data": {
-                "node_id": int(message.node_id),
-                "firmware_version": _version_dict(message.firmware_version),
-            },
         }
+    elif event_name in _PASSTHROUGH_GRPC_EVENTS:
+        data = _message_data(message)
+    else:
+        logger.debug("ignoring unsupported gRPC provider event %s", event_name)
+        return None
 
-    if event_name in {
-        "gateway_status",
-        "heartbeat_read_hops",
-        "driver_configuration_applied",
-        "node_registered",
-        "node_already_registered",
-        "node_unregistered",
-        "node_to_unregister_unknown",
-        "invalid_electrical_meter_configuration",
-        "electrical_meter_configuration_accepted",
-        "electrical_meter_configuration_applied",
-        "electrical_meter_balance_and_flags_accepted",
-    }:
-        return {
-            "type": event_name,
-            "event_id": event_id,
-            "data": message_dict,
-        }
-
-    logger.debug("ignoring unsupported gRPC provider event %s", event_name)
-    return None
+    return {"type": event_name, "event_id": event_id, "data": data}
 
 
-def _meter_state_name(state_value: int) -> str:
-    mapping = {
-        getattr(pb2.ElectricalMeterState, "ElectricalMeterStateOff", 0): "off",
-        getattr(pb2.ElectricalMeterState, "ElectricalMeterStateOn", 1): "on",
-        getattr(pb2.ElectricalMeterState, "ElectricalMeterStateUnknown", -1): "unknown",
-    }
-    return mapping.get(state_value, "unknown")
+def _message_data(message) -> dict[str, Any]:
+    """Render a protobuf message as the spec's JSON payload.
+
+    Fields at their default value are kept (the spec payloads require
+    them) and a 64-bit node_id, which the protobuf JSON mapping renders as
+    a string, is restored to an integer.
+    """
+    data = _message_dict(message)
+    if "node_id" in data:
+        data["node_id"] = int(message.node_id)
+    return data
+
+
+def _message_dict(message) -> dict[str, Any]:
+    """Render a protobuf message with unset singular submessages rendered as their defaults.
+
+    `always_print_fields_with_no_presence` keeps default scalars, but a
+    submessage field has presence, so an unset one (e.g. a heartbeat's
+    `millisecond_read_reply_stats`) is omitted and the spec payload that
+    requires it fails validation. Each singular submessage outside a
+    oneof is rendered from its value, which reads as the default instance
+    when unset. Oneof members and google.protobuf wrappers keep their
+    absent-means-absent meaning.
+    """
+    data = MessageToDict(message, preserving_proto_field_name=True, always_print_fields_with_no_presence=True)
+    for field in message.DESCRIPTOR.fields:
+        submessage_type = field.message_type
+        if (
+            submessage_type is None
+            or field.is_repeated
+            or field.containing_oneof is not None
+            or submessage_type.full_name.startswith("google.protobuf.")
+        ):
+            continue
+        data[field.name] = _message_dict(getattr(message, field.name))
+    return data
+
+
+def _reading_data(message) -> dict[str, Any]:
+    data: dict[str, Any] = {"node_id": int(message.node_id), "state": int(message.state)}
+    for name in _READING_INT_FIELDS:
+        data[name] = int(getattr(message, name))
+    for name in _READING_FLOAT_FIELDS:
+        data[name] = float(getattr(message, name))
+    return data
+
+
+def _phased_reading_data(message) -> dict[str, Any]:
+    data = _reading_data(message)
+    for name in _PHASED_FLOAT_FIELDS:
+        for phase in _PHASES:
+            field = "{}_{}".format(name, phase)
+            data[field] = float(getattr(message, field))
+    data["phases"] = {phase: bool(getattr(message.phases, phase)) for phase in _PHASES}
+    data["computed_fields_version"] = int(message.computed_fields_version)
+    return data
 
 
 def _version_dict(version_message: Any) -> dict[str, int]:
@@ -505,63 +506,4 @@ def _version_dict(version_message: Any) -> dict[str, int]:
         "major": int(getattr(version_message, "major", 0) or 0),
         "minor": int(getattr(version_message, "minor", 0) or 0),
         "patch": int(getattr(version_message, "patch", 0) or 0),
-    }
-
-
-def _phase_reading_dict(message) -> dict[str, float]:
-    return {
-        "apparent_power_avg_va": float(message.apparent_power_avg),
-        "current_avg_amps": float(message.current_avg),
-        "current_max_amps": float(message.current_max),
-        "current_min_amps": float(message.current_min),
-        "frequency_hz": float(message.frequency),
-        "power_factor_avg": float(message.power_factor_avg),
-        "true_power_avg_watts": float(message.true_power_avg),
-        "true_power_inst_watts": float(message.true_power_inst),
-        "voltage_avg": float(message.voltage_avg),
-        "voltage_max": float(message.voltage_max),
-        "voltage_min": float(message.voltage_min),
-    }
-
-
-def _phased_per_phase_dict(message) -> dict[str, dict[str, float]]:
-    per_phase = {}
-    for phase in _phases_list(message):
-        suffix = phase
-        per_phase[phase] = {
-            "apparent_power_avg_va": float(getattr(message, f"apparent_power_avg_{suffix}")),
-            "current_avg_amps": float(getattr(message, f"current_avg_{suffix}")),
-            "current_max_amps": float(getattr(message, f"current_max_{suffix}")),
-            "current_min_amps": float(getattr(message, f"current_min_{suffix}")),
-            "frequency_hz": float(getattr(message, f"frequency_{suffix}")),
-            "power_factor_avg": float(getattr(message, f"power_factor_avg_{suffix}")),
-            "true_power_avg_watts": float(getattr(message, f"true_power_avg_{suffix}")),
-            "true_power_inst_watts": float(getattr(message, f"true_power_inst_{suffix}")),
-            "voltage_avg": float(getattr(message, f"voltage_avg_{suffix}")),
-            "voltage_max": float(getattr(message, f"voltage_max_{suffix}")),
-            "voltage_min": float(getattr(message, f"voltage_min_{suffix}")),
-        }
-    return per_phase
-
-
-def _phases_list(message) -> list[str]:
-    phases = []
-    if getattr(message.phases, "a", False):
-        phases.append("a")
-    if getattr(message.phases, "b", False):
-        phases.append("b")
-    if getattr(message.phases, "c", False):
-        phases.append("c")
-    return phases
-
-
-def _stats_dict(data: dict[str, Any] | None):
-    if not data:
-        return None
-    return {
-        "count": int(data.get("count", 0)),
-        "last_value": float(data.get("last_value", 0.0)),
-        "max": float(data.get("max", 0.0)),
-        "min": float(data.get("min", 0.0)),
-        "avg": float(data.get("avg", 0.0)),
     }

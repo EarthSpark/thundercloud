@@ -103,17 +103,29 @@ docker compose exec ground uv run flask user create
 
 ## Meter drivers
 
-Thundercloud is not tied to any one meter driver. It talks to a driver over the HTTP+SSE
-contract (and optionally gRPC) from the Thunder-Cloud 2.0 Open Source Meter Driver
-Specification, so any compliant driver works — SparkNet-Http or a third party's.
+A meter driver is a separate service that reaches the meters through their gateway radio;
+Thundercloud talks to it over the HTTP+SSE contract (and optionally gRPC) of the
+[Meter Driver Specification](https://github.com/EarthSpark/meter-driver-spec), version 1.4.0.
+Any driver that implements the spec's required contract works, including the
+meter-driver-emulator for development.
 
 Run the driver as its own service, then register it from the running ground app under
 **Global Settings > Meter Drivers > Register driver** by entering the base URL of its HTTP
-service. Registered drivers become selectable per meter on the meter form.
+service. Registration checks the driver's `openapi.json` against the spec and reports what is
+missing. The document's `x-meter-driver` block lists the driver's interfaces; when it
+advertises none, an `http` interface at the base URL is assumed. Selecting gRPC requires the
+driver to advertise a gRPC target. Registration also asks the driver which init fields it
+needs and writes them, with their types, to `meter_driver_configs/<id>.json`.
 
-The groundbolt-dev workspace metarepo runs `sparknet-http` as part of its stack for
-convenience during development; that is a choice of that stack, not a dependency of this
-application.
+Fill in those fields under **Global Settings > Meter Drivers > Edit config** and save: the
+values are validated against the discovered fields and sent to the driver's init endpoint,
+and the outcome is recorded in the same file. The same init is re-sent whenever Thundercloud
+starts. Registered drivers become selectable per meter on the meter form.
+
+The [groundbolt-dev workspace](https://github.com/EarthSpark/groundbolt-dev) runs a meter
+driver alongside the webapp for development, the meter-driver-emulator, so developing
+Thundercloud needs no gateway hardware and no vendor driver. Which driver a deployment uses is
+the deployment's choice, not a dependency of this application.
 
 ## Development
 
