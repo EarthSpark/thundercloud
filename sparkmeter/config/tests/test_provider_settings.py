@@ -1439,16 +1439,22 @@ def test_get_runtime_status_is_offline_when_healthz_is_not_json(monkeypatch, fak
     assert "not valid JSON" in status["message"]
 
 
-def test_get_runtime_status_is_offline_when_status_is_not_an_object(monkeypatch, fake_json_response):
+@pytest.mark.parametrize("gateway", [["connected"], [], "connected", None])
+def test_get_runtime_status_stays_online_when_status_is_not_an_object(
+    monkeypatch, fake_json_response, gateway
+):
+    # Liveness is /v1/healthz alone; an unusable /v1/status body means no
+    # gateway, the same as a transport failure or invalid JSON there.
     def fake_get(url, timeout):
         if url.endswith("/v1/status"):
-            return fake_json_response(["connected"])
+            return fake_json_response(gateway)
         return fake_json_response({"ok": True})
 
     monkeypatch.setattr(provider_settings.httpx, "get", fake_get)
     status = provider_settings.get_runtime_status("http://127.0.0.1:18080")
-    assert status["online"] is False
-    assert "/v1/status" in status["message"]
+    assert status["online"] is True
+    assert status["message"] == "online"
+    assert status["gateway_checked"] is True
     assert status["gateway_active"] is False
     assert status["gateway_type"] is None
 

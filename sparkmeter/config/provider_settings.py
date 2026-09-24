@@ -1295,9 +1295,10 @@ def get_runtime_status(service_url, timeout=2.0, include_gateway_status=True):
     """Check driver liveness on GET /v1/healthz and, optionally, gateway state on GET /v1/status.
 
     Online means /v1/healthz answered 200 with the spec's HealthResponse
-    `{"ok": true}`. With `include_gateway_status`, /v1/status must answer
-    a JSON object (its `connected` and `gateway_type` are reported); a
-    transport failure there leaves the driver online with no gateway.
+    `{"ok": true}`. With `include_gateway_status`, the `connected` and
+    `gateway_type` of the JSON object /v1/status answers are reported; a
+    transport failure, invalid JSON or a body that is not an object there
+    leaves the driver online with no gateway.
     """
     base_url = normalize_base_url(service_url)
     healthz_url = base_url.rstrip("/") + "/v1/healthz"
@@ -1339,11 +1340,11 @@ def get_runtime_status(service_url, timeout=2.0, include_gateway_status=True):
         gateway_response.raise_for_status()
         gateway_data = gateway_response.json()
     except (httpx.HTTPError, ValueError):
+        gateway_data = None
+    if not isinstance(gateway_data, dict):
         status["gateway_active"] = False
         status["gateway_type"] = None
         return status
-    if not isinstance(gateway_data, dict):
-        return offline("driver /v1/status response is not a JSON object")
     status["gateway_active"] = bool(gateway_data.get("connected"))
     status["gateway_type"] = gateway_data.get("gateway_type")
     return status
