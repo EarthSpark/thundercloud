@@ -129,11 +129,6 @@ async def ensure_metering_runtime(
         app.state.metering = None
         return False
 
-    if config.is_offline():
-        logger.info("metering provider disabled in offline mode; skipping startup")
-        app.state.metering = None
-        return False
-
     flask_app = getattr(app.state, "flask_app", None)
     desired_signature = _enabled_provider_signature(flask_app)
     existing_client = getattr(app.state, "metering", None)
@@ -297,12 +292,6 @@ async def metering_lifespan(app: FastAPI) -> AsyncIterator[None]:
     from sparkmeter.config.configdict import config
 
     if config.is_cloud():
-        app.state.metering = None
-        yield
-        return
-
-    if config.is_offline():
-        logger.info("metering provider disabled in offline mode; skipping startup")
         app.state.metering = None
         yield
         return

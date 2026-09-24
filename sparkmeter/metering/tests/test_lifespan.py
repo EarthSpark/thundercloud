@@ -491,18 +491,8 @@ class TestMeteringLifespan:
         assert app.state.metering is None
 
     @pytest.mark.asyncio
-    async def test_offline_mode_is_noop(self, config):
-        config["HEROKU"] = False
-        config["OFFLINE"] = True
-        app = SimpleNamespace(state=SimpleNamespace())
-        async with lifespan.metering_lifespan(app):
-            pass
-        assert app.state.metering is None
-
-    @pytest.mark.asyncio
     async def test_not_started_skips_shutdown(self, monkeypatch, config):
         config["HEROKU"] = False
-        config["OFFLINE"] = False
 
         async def fake_ensure(app):
             return False
@@ -523,7 +513,6 @@ class TestMeteringLifespan:
     @pytest.mark.asyncio
     async def test_started_runs_shutdown(self, monkeypatch, config):
         config["HEROKU"] = False
-        config["OFFLINE"] = False
 
         async def fake_ensure(app):
             return True
@@ -551,16 +540,8 @@ class TestEnsureMeteringRuntimeEarlyReturns:
         assert app.state.metering is None
 
     @pytest.mark.asyncio
-    async def test_offline_returns_false(self, config):
-        config["HEROKU"] = False
-        config["OFFLINE"] = True
-        app = SimpleNamespace(state=SimpleNamespace())
-        assert await lifespan.ensure_metering_runtime(app) is False
-
-    @pytest.mark.asyncio
     async def test_already_active_reruns_reconcile(self, monkeypatch, config):
         config["HEROKU"] = False
-        config["OFFLINE"] = False
         signature = ("a", "http://x", "http", True)
         monkeypatch.setattr(lifespan, "_enabled_provider_signature", lambda flask_app: signature)
 
@@ -976,7 +957,6 @@ def _install_ensure_harness(
     from sparkmeter.config.configdict import config
 
     monkeypatch.setitem(config, "HEROKU", False)
-    monkeypatch.setitem(config, "OFFLINE", False)
     monkeypatch.setattr(lifespan, "_enabled_provider_signature", lambda flask_app: signature)
     monkeypatch.setattr(
         lifespan, "configured_provider_url", lambda *, default="", flask_app=None: provider_url
@@ -1040,7 +1020,6 @@ class TestEnsureMeteringRuntimeStartup:
         # shutdown_metering_runtime is awaited, then the empty provider URL
         # early-returns False with metering cleared.
         config["HEROKU"] = False
-        config["OFFLINE"] = False
         monkeypatch.setattr(
             lifespan, "_enabled_provider_signature", lambda flask_app: ("new", "http://new", "http", True)
         )
@@ -1071,7 +1050,6 @@ class TestEnsureMeteringRuntimeStartup:
     @pytest.mark.asyncio
     async def test_ensure_init_pass_logs_per_result_branch(self, monkeypatch, caplog, config):
         config["HEROKU"] = False
-        config["OFFLINE"] = False
         monkeypatch.setattr(
             lifespan, "_enabled_provider_signature", lambda flask_app: ("x", "y", "http", True)
         )
@@ -1106,7 +1084,6 @@ class TestEnsureMeteringRuntimeStartup:
     @pytest.mark.asyncio
     async def test_ensure_init_pass_exception_is_swallowed(self, monkeypatch, caplog, config):
         config["HEROKU"] = False
-        config["OFFLINE"] = False
         monkeypatch.setattr(
             lifespan, "_enabled_provider_signature", lambda flask_app: ("x", "y", "http", True)
         )
