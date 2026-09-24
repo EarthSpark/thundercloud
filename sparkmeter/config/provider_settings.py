@@ -369,13 +369,22 @@ def _extract_driver_requirement_fields(base_url, spec, timeout=10.0):
     """Discover the driver's init fields.
 
     GET /v1/requirements is required and its list order is kept; each name
-    is typed from the document's InitRequest schema. Fields from the
-    optional /v1/commands vendor-option extension, if the document has
-    one, follow as optional extras.
+    is typed from the document's InitRequest schema. Every other
+    InitRequest property follows as an optional field, in schema order.
+    Fields from the optional /v1/commands vendor-option extension, if the
+    document has one, follow as optional extras for names not already
+    listed, so InitRequest typing wins for a name present in both.
     """
     names = _fetch_requirements_payload(base_url, timeout=timeout)
     fields = _extract_fields_from_requirements(spec, names)
     known = {field["name"] for field in fields}
+    init_schema = _init_request_schema(spec)
+    init_properties = init_schema.get("properties") if isinstance(init_schema.get("properties"), dict) else {}
+    for name, schema in init_properties.items():
+        if name in known:
+            continue
+        fields.append(_field_spec(name, _scalar_schema(spec, schema), False))
+        known.add(name)
     for vendor_field in _extract_vendor_option_fields(spec):
         if vendor_field["name"] in known:
             continue

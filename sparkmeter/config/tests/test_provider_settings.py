@@ -658,6 +658,121 @@ def test_validate_contract_reads_openapi_31_type_arrays(monkeypatch, spec_docume
 
 
 # ---------------------------------------------------------------------------
+# validate_contract: optional InitRequest properties
+# ---------------------------------------------------------------------------
+
+
+def test_validate_contract_offers_optional_init_request_properties(monkeypatch, spec_document, fake_driver):
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("heartbeat_period_duration", "aes_key")),
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_fields"]
+
+    # /v1/requirements fields first, then the InitRequest properties it did
+    # not list, optional and typed from the schema.
+    assert [(field["name"], field["required"], field["type"]) for field in fields] == [
+        ("heartbeat_period_duration", True, "integer"),
+        ("aes_key", True, "string"),
+        ("channel", False, "integer"),
+    ]
+
+
+def test_validate_contract_adds_no_optional_fields_when_all_are_required(
+    monkeypatch, spec_document, fake_driver
+):
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("aes_key", "channel", "heartbeat_period_duration")),
+    )
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_fields"]
+
+    assert [(field["name"], field["required"]) for field in fields] == [
+        ("aes_key", True),
+        ("channel", True),
+        ("heartbeat_period_duration", True),
+    ]
+
+
+def test_validate_contract_without_init_request_lists_requirements_and_vendor_fields(
+    monkeypatch, fake_driver
+):
+    document = _with_vendor_options(_spec_document(), region={"type": "string"})
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document, required_fields=("aes_key",)))
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_fields"]
+
+    assert [(field["name"], field["required"]) for field in fields] == [("aes_key", True), ("region", False)]
+
+
+def _register_spec_driver_and_capture_init(
+    session, monkeypatch, tmp_path, spec_document, fake_driver, channel
+):
+    """Register the spec driver, set its init values, run init, and return the init body sent."""
+    import sparkmeter.metering.runtime_client as runtime_client
+
+    _use_temp_config_root(monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        provider_settings.httpx,
+        "get",
+        fake_driver(spec_document, required_fields=("heartbeat_period_duration", "aes_key")),
+    )
+    provider_id = provider_settings.save_provider_settings("http://127.0.0.1:18080", "http")
+    session.flush()
+    provider = provider_settings.get_provider(provider_id)
+
+    captured = {}
+
+    def fake_initialize_provider_sync(provider, field_values, provider_details=None):
+        captured["field_values"] = field_values
+
+    monkeypatch.setattr(runtime_client, "initialize_provider_sync", fake_initialize_provider_sync)
+    monkeypatch.setattr(provider_settings, "get_live_interface_details", lambda *a, **k: {})
+
+    payload = provider_settings.load_provider_runtime_settings(provider)
+    payload["field_values"] = {
+        "heartbeat_period_duration": "60",
+        "aes_key": "00112233445566778899aabbccddeeff",
+        "channel": channel,
+    }
+    provider_settings.init_provider_from_payload(provider, payload)
+    return captured["field_values"]
+
+
+def test_registered_spec_driver_init_sends_optional_channel(
+    session, monkeypatch, tmp_path, spec_document, fake_driver, caplog
+):
+    with caplog.at_level(logging.WARNING, logger=provider_settings.logger.name):
+        field_values = _register_spec_driver_and_capture_init(
+            session, monkeypatch, tmp_path, spec_document, fake_driver, channel="15"
+        )
+
+    assert field_values == {
+        "heartbeat_period_duration": 60,
+        "aes_key": "00112233445566778899aabbccddeeff",
+        "channel": 15,
+    }
+    assert "not sent" not in caplog.text
+
+
+def test_registered_spec_driver_init_omits_blank_optional_channel(
+    session, monkeypatch, tmp_path, spec_document, fake_driver
+):
+    field_values = _register_spec_driver_and_capture_init(
+        session, monkeypatch, tmp_path, spec_document, fake_driver, channel=""
+    )
+
+    assert field_values == {
+        "heartbeat_period_duration": 60,
+        "aes_key": "00112233445566778899aabbccddeeff",
+    }
+
+
+# ---------------------------------------------------------------------------
 # validate_contract: optional /v1/commands vendor options
 # ---------------------------------------------------------------------------
 
@@ -668,6 +783,7 @@ def test_validate_contract_appends_vendor_options_as_optional_extras(monkeypatch
         aes_key={"type": "string", "title": "AES key", "pattern": "[0-9a-fA-F]{32}"},
         channel={"type": "integer", "title": "Channel", "minimum": 11, "maximum": 26},
         region={"type": "string", "title": "Region", "description": "Radio regulatory region."},
+        tx_power={"type": "integer", "title": "TX power", "minimum": 1, "maximum": 20},
     )
     monkeypatch.setattr(
         provider_settings.httpx,
@@ -677,23 +793,53 @@ def test_validate_contract_appends_vendor_options_as_optional_extras(monkeypatch
 
     details = provider_settings.validate_contract("http://127.0.0.1:18080")
 
-    # Required fields first, in /v1/requirements order; vendor extras after,
-    # optional, and never duplicating a required field.
+    # Required fields first, in /v1/requirements order; the other InitRequest
+    # properties next; vendor extras after, optional, and never duplicating
+    # a name already listed.
     assert [(field["name"], field["required"]) for field in details["driver_requirement_fields"]] == [
         ("heartbeat_period_duration", True),
         ("aes_key", True),
         ("channel", False),
         ("region", False),
+        ("tx_power", False),
     ]
     fields = details["driver_requirement_field_map"]
-    # aes_key keeps the spec's InitRequest typing, not the vendor schema's.
+    # aes_key and channel keep the spec's InitRequest typing, not the vendor schema's.
     assert fields["aes_key"]["pattern"] == "^[A-Fa-f0-9]{32}$"
-    assert fields["channel"]["minimum"] == 11
-    assert fields["channel"]["maximum"] == 26
+    assert fields["channel"]["type"] == "integer"
+    assert fields["channel"]["minimum"] is None
+    assert fields["channel"]["maximum"] is None
     assert fields["region"]["description"] == "Radio regulatory region."
+    # A vendor-only field keeps the vendor schema's typing.
+    assert fields["tx_power"]["type"] == "integer"
+    assert fields["tx_power"]["minimum"] == 1
+    assert fields["tx_power"]["maximum"] == 20
     # The raw vendor-option view is still exposed for the form layer.
-    assert [field["name"] for field in details["vendor_option_fields"]] == ["aes_key", "channel", "region"]
-    assert set(details["vendor_option_field_map"]) == {"aes_key", "channel", "region"}
+    assert [field["name"] for field in details["vendor_option_fields"]] == [
+        "aes_key",
+        "channel",
+        "region",
+        "tx_power",
+    ]
+    assert set(details["vendor_option_field_map"]) == {"aes_key", "channel", "region", "tx_power"}
+
+
+def test_validate_contract_skips_vendor_extras_the_init_request_schema_types(
+    monkeypatch, spec_document, fake_driver
+):
+    document = _with_vendor_options(
+        spec_document, channel={"type": "integer", "title": "Channel", "minimum": 11, "maximum": 26}
+    )
+    monkeypatch.setattr(provider_settings.httpx, "get", fake_driver(document))
+
+    fields = provider_settings.validate_contract("http://127.0.0.1:18080")["driver_requirement_fields"]
+
+    channel_fields = [field for field in fields if field["name"] == "channel"]
+    assert len(channel_fields) == 1
+    assert channel_fields[0]["required"] is False
+    assert channel_fields[0]["type"] == "integer"
+    assert channel_fields[0]["minimum"] is None
+    assert channel_fields[0]["maximum"] is None
 
 
 def test_validate_contract_appends_nothing_without_vendor_options(monkeypatch, fake_driver):
