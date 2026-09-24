@@ -27,7 +27,7 @@
                 <form class="form form-horizontal" role="form" method="POST">
                     {{ form.hidden_tag() }}
                     {{ addon_form_field(form.service_url, form_type="horizontal", horizontal_columns=('lg', 2, 10)) }}
-                    {% if form.vendor_option_fields() %}
+                    {% if form.driver_fields() %}
                     <div class="form-group">
                       <label class="control-label col-lg-2">{{ _('Driver config JSON') }}</label>
                       <div class="input-group col-lg-10">
@@ -45,9 +45,9 @@
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="control-label col-lg-2">{{ _('Required fields') }}</label>
+                      <label class="control-label col-lg-2">{{ _('Driver fields') }}</label>
                       <div class="input-group col-lg-10">
-                        {% for option in form.vendor_option_fields() %}
+                        {% for option in form.driver_fields() %}
                         <div>
                           <strong>{{ option.label }}</strong>
                           {% if option.required %}

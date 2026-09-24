@@ -40,7 +40,7 @@ class TestMeterDriverSettingsForm:
                 ("http", "HTTP API (http://driver:18080)"),
                 ("grpc", "gRPC (driver:50051)"),
             ]
-            # Advertised vendor-option labels are applied to the fields.
+            # Labels from the driver's contract are applied to the fields.
             assert form.aes_key.label.text == "AES Key"
             assert form.channel.label.text == "Radio Channel"
             assert form.selected_interface.data == "http"
@@ -59,15 +59,70 @@ class TestMeterDriverSettingsForm:
             assert form.service_url.data == "http://driver:18080"
             assert form.selected_interface.data == "grpc"
 
-    def test_vendor_option_helpers(self, app):
+    def test_driver_field_helpers(self, app):
         with app.test_request_context():
             form = providerform.MeterDriverSettingsForm(formdata=None, provider_details=_DETAILS)
-            assert form.supports_vendor_option("aes_key") is True
-            assert form.supports_vendor_option("nonexistent") is False
-            assert form.vendor_option_required("aes_key") is True
-            assert form.vendor_option_required("channel") is False
-            assert form.vendor_option_description("aes_key") == "hex key"
-            assert [f["name"] for f in form.vendor_option_fields()] == ["aes_key", "channel"]
+            assert form.driver_field_spec("aes_key")["required"] is True
+            assert form.driver_field_spec("channel")["required"] is False
+            assert form.driver_field_spec("aes_key")["description"] == "hex key"
+            assert form.driver_field_spec("nonexistent") is None
+            assert [f["name"] for f in form.driver_fields()] == ["aes_key", "channel"]
+
+    def test_edit_mode_reads_recorded_fields_for_its_provider(self, app, monkeypatch):
+        seen = {}
+
+        def fake_details(service_url, selected_interface=None, provider=None):
+            seen["provider"] = provider
+            return _DETAILS
+
+        monkeypatch.setattr(provider_settings, "get_live_interface_details", fake_details)
+        provider = {"id": "abc", "base_url": "http://driver:18080", "selected_interface": "http"}
+        with app.test_request_context():
+            providerform.MeterDriverSettingsForm(formdata=None, provider=provider)
+        # The saved provider is passed so its recorded fields (not a
+        # /v1/requirements round trip) populate the form.
+        assert seen["provider"] is provider
+
+    def test_validate_selected_interface_rejects_grpc_without_target(self, app):
+        details = {
+            "interfaces": [
+                {"type": "http", "label": "HTTP API", "address": "http://driver:18080"},
+                {"type": "grpc", "label": "gRPC", "address": ""},
+            ],
+            "default_interface": "http",
+            "driver_requirement_fields": [
+                {"name": "heartbeat_period_duration", "required": True},
+                {"name": "aes_key", "required": True},
+            ],
+            "driver_requirement_field_map": {},
+        }
+        with app.test_request_context():
+            form = providerform.MeterDriverSettingsForm(formdata=None, provider_details=details)
+            form.service_url.data = "http://driver:18080"
+            form.selected_interface.data = "grpc"
+            with pytest.raises(ValidationError, match="advertises no target"):
+                form.validate_selected_interface(form.selected_interface)
+
+    def test_validate_selected_interface_rejects_grpc_without_its_init_fields(self, app):
+        # _DETAILS advertises a grpc target but its fields lack heartbeat_period_duration.
+        with app.test_request_context():
+            form = providerform.MeterDriverSettingsForm(formdata=None, provider_details=_DETAILS)
+            form.service_url.data = "http://driver:18080"
+            form.selected_interface.data = "grpc"
+            with pytest.raises(ValidationError, match="heartbeat_period_duration"):
+                form.validate_selected_interface(form.selected_interface)
+
+    def test_validate_selected_interface_accepts_grpc_with_target_and_fields(self, app):
+        details = dict(_DETAILS)
+        details["driver_requirement_fields"] = [
+            {"name": "heartbeat_period_duration", "required": True},
+            {"name": "aes_key", "required": True},
+        ]
+        with app.test_request_context():
+            form = providerform.MeterDriverSettingsForm(formdata=None, provider_details=details)
+            form.service_url.data = "http://driver:18080"
+            form.selected_interface.data = "grpc"
+            assert form.validate_selected_interface(form.selected_interface) is None
 
     def test_config_paths(self, app, monkeypatch):
         monkeypatch.setattr(
@@ -233,7 +288,7 @@ class TestMeterDriverConfigEditorForm:
                 formdata=None, provider=provider, provider_details=_DETAILS
             )
             assert form.config_text.data == '{"driver": {}}\n'
-            assert [f["name"] for f in form.required_fields()] == ["aes_key", "channel"]
+            assert [f["name"] for f in form.driver_fields()] == ["aes_key", "channel"]
 
     def test_config_file_path(self, app, monkeypatch):
         monkeypatch.setattr(provider_settings, "load_provider_config_text", lambda provider: "{}\n")

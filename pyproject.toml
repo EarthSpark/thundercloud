@@ -60,6 +60,10 @@ dependencies = [
     "meter-driver-spec @ https://github.com/EarthSpark/meter-driver-spec/releases/download/v1.4.0/meter_driver_spec-1.4.0-py3-none-any.whl",
     "protobuf",
     "grpcio",
+    # sparkmeter.config.provider_settings catches pydantic.ValidationError
+    # raised by the meter-driver-spec models, so pydantic is a dependency of
+    # this package and not only of meter-driver-spec.
+    "pydantic",
     "click",
 
     # dates and times

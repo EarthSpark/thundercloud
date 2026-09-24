@@ -379,7 +379,7 @@ class TestObserveGatewayDisconnect:
     @pytest.mark.asyncio
     async def test_non_gateway_event_ignored(self):
         app, gateway_state = _build_app()
-        await lifespan._observe_gateway_status(app, {"type": "meter_reading"})
+        await lifespan._observe_gateway_status(app, {"type": "electrical_meter_reading"})
         assert gateway_state["gateway_paused"] is False
 
     @pytest.mark.asyncio
@@ -606,7 +606,7 @@ class TestRunSseConsumer:
                 if index == 0:
                     # Connect successfully, deliver one event, then the
                     # stream ends -> "treating provider as restarted".
-                    yield {"type": "meter_reading", "data": {}}
+                    yield {"type": "electrical_meter_reading", "data": {}}
                     return
                 # Second connection attempt breaks mid-stream.
                 raise RuntimeError("stream broke")
@@ -1236,6 +1236,81 @@ class TestEnsureMeteringRuntimeStartup:
         assert "aborting startup" in caplog.text
 
         await _drain_runtime_tasks(app)
+
+    @pytest.mark.asyncio
+    async def test_ensure_grpc_without_target_leaves_metering_off_without_aborting(self, monkeypatch, caplog):
+        from sparkmeter.metering.runtime_client import GrpcTargetUnavailable
+
+        records = _install_ensure_harness(monkeypatch, signature=("id", "http://drv", "grpc", True))
+        provider = {
+            "id": "id",
+            "name": "Old Driver",
+            "base_url": "http://drv",
+            "selected_interface": "grpc",
+            "enabled": True,
+        }
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_enabled_provider", lambda: provider)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_live_interface_details",
+            lambda base_url, selected_interface=None: {"selected_interface_details": {"type": "grpc"}},
+        )
+
+        def refuse(provider, client_id, provider_details=None):
+            raise GrpcTargetUnavailable(
+                "provider http://drv selected gRPC but its contract advertises no grpc interface target"
+            )
+
+        monkeypatch.setattr(lifespan, "build_command_client", refuse)
+
+        app = _make_ground_app()
+        with caplog.at_level(logging.ERROR):
+            result = await lifespan.ensure_metering_runtime(app, skip_provider_init=True)
+
+        # Startup is not aborted: the call returns False with metering off and
+        # nothing half-published on app.state, and the error names the provider.
+        assert result is False
+        assert app.state.metering is None
+        assert getattr(app.state, "metering_event_client", None) is None
+        assert getattr(app.state, "metering_sse_task", None) is None
+        assert records["reconcile"] == []
+        assert records["event_clients"] == []
+        assert any(
+            "Old Driver" in record.getMessage()
+            and "advertises no grpc interface target" in record.getMessage()
+            for record in caplog.records
+            if record.levelno == logging.ERROR
+        )
+
+    @pytest.mark.asyncio
+    async def test_ensure_grpc_without_target_closes_a_built_command_client(self, monkeypatch):
+        from sparkmeter.metering.runtime_client import GrpcTargetUnavailable
+
+        records = _install_ensure_harness(monkeypatch)
+        provider = {"id": "id", "base_url": "http://drv", "selected_interface": "grpc", "enabled": True}
+        monkeypatch.setattr("sparkmeter.config.provider_settings.get_enabled_provider", lambda: provider)
+        monkeypatch.setattr(
+            "sparkmeter.config.provider_settings.get_live_interface_details",
+            lambda base_url, selected_interface=None: None,
+        )
+        built = []
+
+        def build_command(provider, client_id, provider_details=None):
+            client = _FakeRuntimeClient("command", "fake-cmd")
+            built.append(client)
+            return client
+
+        def refuse_event(provider, client_id, provider_details=None):
+            raise GrpcTargetUnavailable("no target")
+
+        monkeypatch.setattr(lifespan, "build_command_client", build_command)
+        monkeypatch.setattr(lifespan, "build_event_client", refuse_event)
+
+        app = _make_ground_app()
+        assert await lifespan.ensure_metering_runtime(app, skip_provider_init=True) is False
+        # The command client built before the event client failed is closed, not leaked.
+        assert built[0].closed is True
+        assert app.state.metering is None
+        assert records["reconcile"] == []
 
 
 class TestSseConsumerCancelled:

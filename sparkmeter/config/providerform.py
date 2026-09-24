@@ -43,38 +43,25 @@ class MeterDriverSettingsForm(BaseForm):
                 selected_interface=(
                     self.provider["selected_interface"] if self.provider is not None else None
                 ),
+                provider=self.provider,
             )
 
         if self.provider_details is not None:
             self._set_interface_choices(self.provider_details)
-            self._apply_vendor_option_labels()
+            self._apply_driver_field_labels()
 
         if not self.selected_interface.data:
             self.selected_interface.data = (
                 self.provider["selected_interface"] if self.provider is not None else None
             ) or self._default_selected_interface()
 
-    def vendor_option_spec(self, name):
-        """Return the normalized driver-requirement spec for a known field."""
+    def driver_field_spec(self, name):
+        """Return the normalized spec of one field the driver asks for, if it does."""
         provider_data = self.provider_details or {}
         return (provider_data.get("driver_requirement_field_map") or {}).get(name)
 
-    def supports_vendor_option(self, name):
-        """Whether the validated provider advertises the given vendor option."""
-        return self.vendor_option_spec(name) is not None
-
-    def vendor_option_description(self, name):
-        """Return help text for a vendor option field."""
-        spec = self.vendor_option_spec(name) or {}
-        return spec.get("description") or ""
-
-    def vendor_option_required(self, name):
-        """Whether the vendor option is required by the contract."""
-        spec = self.vendor_option_spec(name) or {}
-        return bool(spec.get("required"))
-
-    def vendor_option_fields(self):
-        """Return the contract-advertised driver requirement field list."""
+    def driver_fields(self):
+        """Return the fields the driver asks for: /v1/requirements first, optional extras after."""
         provider_data = self.provider_details or {}
         return provider_data.get("driver_requirement_fields") or []
 
@@ -114,13 +101,13 @@ class MeterDriverSettingsForm(BaseForm):
             return self.selected_interface.choices[0][0]
         return "http"
 
-    def _apply_vendor_option_labels(self):
-        """Update known vendor-option labels from the validated contract."""
-        aes_key_spec = self.vendor_option_spec("aes_key")
+    def _apply_driver_field_labels(self):
+        """Update the known field labels from the validated contract."""
+        aes_key_spec = self.driver_field_spec("aes_key")
         if aes_key_spec and aes_key_spec.get("label"):
             self.aes_key.label.text = aes_key_spec["label"]
 
-        channel_spec = self.vendor_option_spec("channel")
+        channel_spec = self.driver_field_spec("channel")
         if channel_spec and channel_spec.get("label"):
             self.channel.label.text = channel_spec["label"]
 
@@ -133,7 +120,7 @@ class MeterDriverSettingsForm(BaseForm):
         try:
             self.provider_details = provider_settings.validate_contract(field.data)
             self._set_interface_choices(self.provider_details)
-            self._apply_vendor_option_labels()
+            self._apply_driver_field_labels()
         except provider_settings.ProviderRegistrationError as exc:
             raise ValidationError(str(exc))
 
@@ -148,6 +135,12 @@ class MeterDriverSettingsForm(BaseForm):
         valid_interfaces = {interface["type"] for interface in provider_data.get("interfaces") or []}
         if field.data not in valid_interfaces:
             raise ValidationError(_("Selected interface is not available from this driver."))
+
+        if field.data == "grpc":
+            try:
+                provider_settings.check_grpc_selection(provider_data)
+            except provider_settings.ProviderRegistrationError as exc:
+                raise ValidationError(str(exc))
 
     def validate_aes_key(self, field):
         field.data = ""
@@ -208,8 +201,8 @@ class MeterDriverConfigEditorForm(BaseForm):
         if not self.config_text.data:
             self.config_text.data = provider_settings.load_provider_config_text(self.provider)
 
-    def required_fields(self):
-        """Return the driver-required field list."""
+    def driver_fields(self):
+        """Return the fields the driver asks for: /v1/requirements first, optional extras after."""
         return (self.provider_details or {}).get("driver_requirement_fields") or []
 
     def config_file_path(self):

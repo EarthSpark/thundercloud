@@ -22,7 +22,11 @@ import httpx
 from fastapi import FastAPI
 
 from sparkmeter.metering.provider_config import configured_provider_url
-from sparkmeter.metering.runtime_client import build_command_client, build_event_client
+from sparkmeter.metering.runtime_client import (
+    GrpcTargetUnavailable,
+    build_command_client,
+    build_event_client,
+)
 from sparkmeter.metering.runtime_registry import get_running_app
 
 logger = logging.getLogger(__name__)
@@ -207,8 +211,24 @@ async def ensure_metering_runtime(
             "selected_interface": "http",
         }
 
-    client = build_command_client(provider, client_id, provider_details=provider_details)
-    event_client = build_event_client(provider, client_id, provider_details=provider_details)
+    client = None
+    try:
+        client = build_command_client(provider, client_id, provider_details=provider_details)
+        event_client = build_event_client(provider, client_id, provider_details=provider_details)
+    except GrpcTargetUnavailable as exc:
+        # The saved selection cannot be honored (the driver advertises no
+        # gRPC target). Log it against the provider and leave metering off
+        # rather than aborting the ASGI startup; nothing has been published
+        # on app.state yet.
+        logger.error(
+            "metering provider %s cannot start over its selected interface: %s",
+            provider.get("name") or provider.get("base_url") or base_url,
+            exc,
+        )
+        if client is not None:
+            await client.close()
+        app.state.metering = None
+        return False
     logger.info(
         "metering provider command transport=%s event transport=%s",
         getattr(client, "transport_name", type(client).__name__),
