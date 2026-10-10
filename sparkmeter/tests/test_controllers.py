@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright © 2013-2018 SparkMeter, Inc.
 # All Rights Reserved.
+import contextlib
+import itertools
 import json
 import threading
 import time
@@ -621,14 +623,6 @@ class ControllerTest(SparkMeterTestCaseBase):
         finally:
             conn.close()
 
-        # The worker threads patch controller.session_scope concurrently, which
-        # races on save/restore and can leave it pointing at a dead mock that
-        # then leaks into later tests. Restore the real one explicitly.
-        import sparkmeter.controller as controller_module
-        from sparkmeter.models import session_scope as real_session_scope
-
-        controller_module.session_scope = real_session_scope
-
     @pytest.mark.parametrize(
         "reading_delay,transaction_delay,balance",
         (
@@ -674,18 +668,21 @@ class ControllerTest(SparkMeterTestCaseBase):
             self.session = session_manager.create("testwide")  # Create a new root transaction
             tx_exc = []
             reading_exc = []
+            session_scopes = ThreadSessionScopes()
             tx_thread = threading.Thread(
-                target=do_transaction, args=(tx.id, transaction_delay, session_manager, tx_exc)
+                target=do_transaction,
+                args=(tx.id, transaction_delay, session_manager, session_scopes, tx_exc),
             )
             reading_thread = threading.Thread(
-                target=do_reading, args=(meter, reading_delay, session_manager, reading_exc)
+                target=do_reading, args=(meter, reading_delay, session_manager, session_scopes, reading_exc)
             )
-            tx_thread.start()
-            reading_thread.start()
-            all_done = False
-            while not all_done:
-                all_done = not (tx_thread.is_alive() or reading_thread.is_alive())
-                time.sleep(1)
+            with mock.patch("sparkmeter.controller.session_scope", session_scopes):
+                tx_thread.start()
+                reading_thread.start()
+                all_done = False
+                while not all_done:
+                    all_done = not (tx_thread.is_alive() or reading_thread.is_alive())
+                    time.sleep(1)
 
             # If a worker thread raised, it silently dropped its operation
             # (leaving a wrong wallet balance). Surface that as a clear failure
@@ -746,10 +743,14 @@ class ControllerTest(SparkMeterTestCaseBase):
             tx_exc = []
             # Acquire a lock on the wallet before starting the transaction
             self.session.query(Wallet).with_for_update().filter(Wallet.id == meter.credit_wallet.id).one()
-            tx_thread = threading.Thread(target=do_transaction, args=(tx.id, 0, session_manager, tx_exc))
-            tx_thread.start()
-            while tx_thread.is_alive():
-                time.sleep(1)
+            session_scopes = ThreadSessionScopes()
+            tx_thread = threading.Thread(
+                target=do_transaction, args=(tx.id, 0, session_manager, session_scopes, tx_exc)
+            )
+            with mock.patch("sparkmeter.controller.session_scope", session_scopes):
+                tx_thread.start()
+                while tx_thread.is_alive():
+                    time.sleep(1)
 
             self.session.commit()
             assert len(tx_exc) == 1
@@ -775,10 +776,14 @@ class ControllerTest(SparkMeterTestCaseBase):
             read_exc = []
             # Acquire a lock on the wallet before starting the transaction
             self.session.query(Wallet).with_for_update().filter(Wallet.id == meter.credit_wallet.id).one()
-            reading_thread = threading.Thread(target=do_reading, args=(meter, 0, session_manager, read_exc))
-            reading_thread.start()
-            while reading_thread.is_alive():
-                time.sleep(1)
+            session_scopes = ThreadSessionScopes()
+            reading_thread = threading.Thread(
+                target=do_reading, args=(meter, 0, session_manager, session_scopes, read_exc)
+            )
+            with mock.patch("sparkmeter.controller.session_scope", session_scopes):
+                reading_thread.start()
+                while reading_thread.is_alive():
+                    time.sleep(1)
 
             self.session.commit()
             assert len(read_exc) == 1
@@ -789,58 +794,84 @@ class ControllerTest(SparkMeterTestCaseBase):
             self._cleanup_serialized_data()
 
 
-def do_transaction(tx_id, delay, session_manager, exceptions=None):
+class ThreadSessionScopes:
+    """Stand-in for `controller.session_scope` that hands each thread its own sessions.
+
+    The test patches `sparkmeter.controller.session_scope` with this once, from
+    the main thread, before starting any workers. Each worker thread registers
+    the sessions its `session_scope()` calls should yield. Patching the module
+    attribute from inside each worker raced: with concurrent workers, one
+    thread's controller code could pick up the other thread's mock and session.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._sessions = {}
+
+    def register(self, sessions):
+        """Set the sessions the calling thread's `session_scope()` calls yield, in order."""
+        with self._lock:
+            self._sessions[threading.get_ident()] = sessions
+
+    @contextlib.contextmanager
+    def __call__(self):
+        with self._lock:
+            sessions = self._sessions[threading.get_ident()]
+        yield next(sessions)
+
+
+def do_transaction(tx_id, delay, session_manager, session_scopes, exceptions=None):
     """Simulate a transaction. This is meant to be run within a thread, and commits data to the DB.
 
     :param tx_id: The ID of the transaction to process.
     :param delay: How long to sleep before starting the thread operation. In seconds.
     :param session_manager: The session manager object
-    :param process_delay: How long to sleep before processing the transaction. In seconds.
+    :param session_scopes: The `ThreadSessionScopes` patched over `controller.session_scope`
     """
     from zope.component import getUtility
 
     app = getUtility(IApplication)
     with app.app_context():
-        _do_transaction(tx_id, delay, session_manager, exceptions)
+        _do_transaction(tx_id, delay, session_manager, session_scopes, exceptions)
 
 
-def _do_transaction(tx_id, delay, session_manager, exceptions=None):
+def _do_transaction(tx_id, delay, session_manager, session_scopes, exceptions=None):
     time.sleep(delay)
     new_session = session_manager.create("tprocessor")
     transaction = new_session.query(Transaction).get(tx_id)
     print("ToWal Before TX: {}".format(transaction.to_wallet.value))
-    with mock.patch("sparkmeter.controller.session_scope") as session_mock:
-        session_mock.return_value.__enter__.return_value = new_session
-        try:
-            processed = process_transaction(transaction.id)
-            print("ToWal After TX: {}".format(processed.to_wallet.value))
-            new_session.commit()
-        except Exception as e:
-            new_session.rollback()
-            if exceptions is not None:
-                exceptions.append(e)
-            else:
-                raise
-        finally:
-            # Write and close the session's root transaction
-            new_session.close()
+    session_scopes.register(itertools.repeat(new_session))
+    try:
+        processed = process_transaction(transaction.id)
+        print("ToWal After TX: {}".format(processed.to_wallet.value))
+        new_session.commit()
+    except Exception as e:
+        new_session.rollback()
+        if exceptions is not None:
+            exceptions.append(e)
+        else:
+            raise
+    finally:
+        # Write and close the session's root transaction
+        new_session.close()
 
 
-def do_reading(meter, delay, session_manager, exceptions=None):
+def do_reading(meter, delay, session_manager, session_scopes, exceptions=None):
     """Simulate a reading. This is meant to be run within a thread, and commits data to the DB.
 
     :param meter: The meter from which the reading should originate.
     :param delay: How long to sleep before performing the operation.
     :param session_manager: The session manager object
+    :param session_scopes: The `ThreadSessionScopes` patched over `controller.session_scope`
     """
     from zope.component import getUtility
 
     app = getUtility(IApplication)
     with app.app_context():
-        _do_reading(meter, delay, session_manager, exceptions)
+        _do_reading(meter, delay, session_manager, session_scopes, exceptions)
 
 
-def _do_reading(meter, delay, session_manager, exceptions=None):
+def _do_reading(meter, delay, session_manager, session_scopes, exceptions=None):
     from sparkmeter.meter.meterdomain import Meter
 
     time.sleep(delay)
@@ -877,22 +908,21 @@ def _do_reading(meter, delay, session_manager, exceptions=None):
         "user_power_limit": 24000,
     }
     read_sessions = [session_manager.create("rprocessor1"), session_manager.create("rprocessor2")]
-    with mock.patch("sparkmeter.controller.session_scope") as session_mock:
-        session_mock.return_value.__enter__.side_effect = read_sessions
-        try:
-            add_reading(reading_data)
-            for ses in read_sessions:
-                ses.commit()
+    session_scopes.register(iter(read_sessions))
+    try:
+        add_reading(reading_data)
+        for ses in read_sessions:
+            ses.commit()
 
-            print("Credit After Reading: {}".format(new_session.query(Wallet).get(wallet_id).value))
-            new_session.commit()
-        except Exception as e:
-            new_session.rollback()
-            for ses in read_sessions:
-                ses.rollback()
-            if exceptions is not None:
-                exceptions.append(e)
-            else:
-                raise
-        finally:
-            new_session.close()
+        print("Credit After Reading: {}".format(new_session.query(Wallet).get(wallet_id).value))
+        new_session.commit()
+    except Exception as e:
+        new_session.rollback()
+        for ses in read_sessions:
+            ses.rollback()
+        if exceptions is not None:
+            exceptions.append(e)
+        else:
+            raise
+    finally:
+        new_session.close()
