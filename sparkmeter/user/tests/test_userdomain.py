@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 # Copyright © 2013-2016 SparkMeter, Inc.
 # All Rights Reserved.
+import re
 import uuid
 from builtins import str
 
+from sqlalchemy import text
+
 from sparkmeter.tests.base import SparkMeterTestCaseBase
 from sparkmeter.tests.test_data_factory import SalesAccountFactory, UserFactory, VendorFactory
-from sparkmeter.user.userdomain import user_datastore
+from sparkmeter.user.userdomain import User, user_datastore
 
 
 class UserTest(SparkMeterTestCaseBase):
@@ -19,6 +22,27 @@ class UserTest(SparkMeterTestCaseBase):
     def test_unicode(self):
         user = VendorFactory()
         assert str(user) == "testüser-001"
+
+    def test_fs_uniquifier_generated_by_orm(self, vendor_role):
+        user = User.create_empty("vendor")
+        user.username = "no-uniquifier"
+        self.session.add(user)
+        self.session.flush()
+        assert re.fullmatch(r"[a-f0-9]{32}", user.fs_uniquifier)
+
+    def test_fs_uniquifier_generated_for_raw_insert(self):
+        # SymmetricDS loads users synced up from 0.82 grounds without the
+        # column, so the database itself has to supply it.
+        user_id = self.session.execute(
+            text(
+                'INSERT INTO "user" (username, account_all_access, ground_all_access) '
+                "VALUES ('synced-from-ground', false, false) RETURNING id"
+            )
+        ).scalar_one()
+        uniquifier = self.session.execute(
+            text('SELECT fs_uniquifier FROM "user" WHERE id = :id'), {"id": user_id}
+        ).scalar_one()
+        assert re.fullmatch(r"[a-f0-9]{32}", uniquifier)
 
     def test_transaction_permission(self, api_role):
         account = SalesAccountFactory()

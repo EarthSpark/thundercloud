@@ -2,7 +2,7 @@ CREATE TABLE "user" (
     username VARCHAR(100),
     password VARCHAR(255),
     email VARCHAR(255),
-    fs_uniquifier VARCHAR(255) NOT NULL,
+    fs_uniquifier VARCHAR(255) DEFAULT replace(uuid_generate_v4()::text, '-', '') NOT NULL,
     portal_id CHAR(32),
     active BOOLEAN,
     locale VARCHAR,
