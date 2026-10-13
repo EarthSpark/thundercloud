@@ -19,6 +19,7 @@ every webapp lifespan start) to restore meter state from DB.
 
 import asyncio
 import logging
+import time
 from typing import Any
 
 from meter_driver_spec.http.models import (
@@ -28,6 +29,7 @@ from meter_driver_spec.http.models import (
     SetBalanceAndFlagsRequest,
 )
 
+from sparkmeter import metrics
 from sparkmeter.metering.runtime_client import behavior_to_command, to_spec_decimal
 
 logger = logging.getLogger(__name__)
@@ -82,13 +84,21 @@ async def command_dispatcher(
         op = cmd.get("op")
         handler = _HANDLERS.get(op)
         if handler is None:
+            metrics.METERING_COMMANDS.labels("unknown", "dropped").inc()
             logger.warning("metering dispatch: unknown op=%r, dropping", op)
             continue
 
+        # Export the error series at 0 before the first failure so increase() sees it.
+        metrics.METERING_COMMANDS.labels(op, "error")
+        started = time.perf_counter()
         try:
             await handler(client, cmd)
+            result = "ok"
         except Exception:  # noqa: BLE001
+            result = "error"
             logger.exception("metering dispatch: handler op=%r failed", op)
+        metrics.METERING_COMMAND_DURATION.labels(op).observe(time.perf_counter() - started)
+        metrics.METERING_COMMANDS.labels(op, result).inc()
 
 
 # ----------------------------------------------------------------------

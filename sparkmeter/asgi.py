@@ -9,7 +9,8 @@ integration, admin proxy, etc.).
 
 Two ASGI servers run in this process:
 - Public app on port 5000 (mapped externally) — Flask routes + public FastAPI routes
-- Internal app on port 5001 (NOT mapped) — admin endpoints
+- Internal app on port 5001 (NOT mapped) — admin endpoints and the
+  Prometheus scrape endpoint, `GET /metrics` (see sparkmeter/metrics.py)
 
 Run as:
     python -m sparkmeter.asgi
@@ -22,13 +23,14 @@ import signal
 import sys
 
 from a2wsgi import WSGIMiddleware
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 
 # Ensure the webapp dir is importable when running as a script
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from contextlib import asynccontextmanager  # noqa: E402
 
+from sparkmeter import metrics  # noqa: E402
 from sparkmeter.app import SparkmeterApplication  # noqa: E402
 from sparkmeter.cli import register_cli_commands  # noqa: E402
 from sparkmeter.metering.lifespan import metering_lifespan  # noqa: E402
@@ -63,6 +65,7 @@ def create_flask_app() -> SparkmeterApplication:
     flask_app = SparkmeterApplication(mode=SparkmeterApplication.MODE_PRODUCTION)
     register_cli_commands(flask_app)
     flask_app.bootstrap()
+    metrics.instrument_flask_app(flask_app)
     return flask_app
 
 
@@ -79,6 +82,7 @@ def create_public_app() -> FastAPI:
         redoc_url=None,
         lifespan=app_lifespan,
     )
+    api.add_middleware(metrics.HTTPMetricsMiddleware)
 
     @api.get("/health")
     async def health():
@@ -102,7 +106,7 @@ def create_public_app() -> FastAPI:
 
 
 def create_internal_app(public_app: FastAPI) -> FastAPI:
-    """The internal ASGI app: admin endpoints. Not network-exposed.
+    """The internal ASGI app: admin endpoints and the metrics scrape. Not network-exposed.
 
     Shares the public app's metering-provider client via
     `app.state.metering`. CLI tools that talk directly to the metering
@@ -114,6 +118,15 @@ def create_internal_app(public_app: FastAPI) -> FastAPI:
     async def share_metering_state(request, call_next):
         request.app.state.metering = getattr(public_app.state, "metering", None)
         return await call_next(request)
+
+    # A plain route rather than mounting prometheus_client's ASGI app: a
+    # Starlette Mount at /metrics only matches /metrics/ and would answer
+    # every scrape of /metrics with a 307. Sync, so collection runs in the
+    # threadpool rather than on the event loop.
+    @api.get("/metrics", include_in_schema=False)
+    def scrape_metrics(request: Request) -> Response:
+        body, headers = metrics.render(request.headers.get("accept"), request.headers.get("accept-encoding"))
+        return Response(body, headers=headers)
 
     return api
 
@@ -146,6 +159,18 @@ def __getattr__(name):  # PEP 562 module-level __getattr__
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+def _scrape_quiet_logger_class():
+    """Hypercorn logger class for the internal listener that skips access lines for scrapes."""
+    from hypercorn.logging import Logger
+
+    class ScrapeQuietLogger(Logger):
+        async def access(self, request, response, request_time):
+            if request.get("path") != "/metrics":
+                await super().access(request, response, request_time)
+
+    return ScrapeQuietLogger
+
+
 async def _serve_both() -> None:
     """Run both ASGI servers in this process, sharing one shutdown signal."""
     from hypercorn.asyncio import serve
@@ -163,6 +188,7 @@ async def _serve_both() -> None:
     internal_cfg.bind = [os.environ.get("INTERNAL_BIND", "0.0.0.0:5001")]
     internal_cfg.accesslog = "-"
     internal_cfg.errorlog = "-"
+    internal_cfg.logger_class = _scrape_quiet_logger_class()
 
     shutdown = asyncio.Event()
 

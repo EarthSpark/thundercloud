@@ -141,8 +141,9 @@ COPY --chown=spark:spark uv.lock uv.lock
 COPY --chown=spark:spark run/webapp run/webapp
 
 # 5000 = public listener (mapped to host port 80 in production).
-# 5001 = internal listener (admin endpoints; not network-exposed
-#        in production, reachable via `docker compose exec`).
+# 5001 = internal listener (admin endpoints and the Prometheus scrape
+#        at /metrics; not network-exposed in production, reachable via
+#        `docker compose exec`).
 EXPOSE 5000 5001
 
 # `uv run` defaults to syncing the venv against the lockfile, which

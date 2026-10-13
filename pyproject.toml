@@ -50,6 +50,10 @@ dependencies = [
     "sqlalchemy",
     "flask-sqlalchemy",
 
+    # Metrics: the official Prometheus client. The scrape endpoint is served
+    # on the internal listener (sparkmeter/metrics.py).
+    "prometheus-client",
+
     # ASGI / FastAPI
     "fastapi",
     "hypercorn",

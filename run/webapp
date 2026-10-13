@@ -52,9 +52,9 @@ run_webserver() {
     echo "[ Running web server ]"
     # The ASGI entrypoint binds two listeners in one Hypercorn process:
     # - 0.0.0.0:5000 for public traffic (mapped to host port 80)
-    # - 0.0.0.0:5001 for internal admin/proxy endpoints (NOT mapped, only
-    #   reachable from inside the container; CLI tools use it via
-    #   `docker compose exec`).
+    # - 0.0.0.0:5001 for internal admin/proxy endpoints and the Prometheus
+    #   scrape at /metrics (NOT mapped, only reachable from inside the
+    #   container; CLI tools use it via `docker compose exec`).
     uv run python -m sparkmeter.asgi
 }
 

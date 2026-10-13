@@ -9,8 +9,15 @@ from meter_driver_spec.http.models import (
     RegisterNodeRequest,
     SetBalanceAndFlagsRequest,
 )
+from prometheus_client import REGISTRY
 
 from sparkmeter.metering import dispatch
+
+
+def _commands(op, result):
+    return (
+        REGISTRY.get_sample_value("thundercloud_metering_commands_total", {"op": op, "result": result}) or 0.0
+    )
 
 
 class _FakeClient:
@@ -168,11 +175,20 @@ class TestCommandDispatcher:
         queue: asyncio.Queue = asyncio.Queue()
         await queue.put({"op": "does_not_exist"})
         await queue.put({"op": "unregister_meter", "node_id": 3})
+        dropped_before = _commands("unknown", "dropped")
 
         await _drain_with_dispatcher(client, queue, None, lambda: ("unregister_node", 3) in client.calls)
 
         # The unknown op was dropped; the following known op still ran.
         assert client.calls == [("unregister_node", 3)]
+        # Counted under "unknown", not the driver-supplied op name.
+        assert _commands("unknown", "dropped") - dropped_before == 1
+        assert (
+            REGISTRY.get_sample_value(
+                "thundercloud_metering_commands_total", {"op": "does_not_exist", "result": "dropped"}
+            )
+            is None
+        )
 
     @pytest.mark.asyncio
     async def test_handler_failure_is_isolated(self):
@@ -184,11 +200,16 @@ class TestCommandDispatcher:
         queue: asyncio.Queue = asyncio.Queue()
         await queue.put({"op": "register_meter", "node_id": 1})
         await queue.put({"op": "unregister_meter", "node_id": 2})
+        errors_before = _commands("register_meter", "error")
+        ok_before = _commands("unregister_meter", "ok")
 
         await _drain_with_dispatcher(client, queue, None, lambda: ("unregister_node", 2) in client.calls)
 
         # The failing register handler did not stop the loop.
         assert ("unregister_node", 2) in client.calls
+        # Each outcome is counted under its own op.
+        assert _commands("register_meter", "error") - errors_before == 1
+        assert _commands("unregister_meter", "ok") - ok_before == 1
 
     @pytest.mark.asyncio
     async def test_commands_allowed_gate_blocks_until_set(self):

@@ -10,6 +10,7 @@ from meter_driver_spec.http.models import (
     ElectricalMeterReading,
     HeartbeatStatistics,
 )
+from prometheus_client import REGISTRY
 
 from sparkmeter.exceptions import DatabaseLockTimeoutException, DuplicateReadingException
 from sparkmeter.metering import events
@@ -17,6 +18,10 @@ from sparkmeter.metering import events
 # ---------------------------------------------------------------------------
 # Helpers building valid generated-model payloads
 # ---------------------------------------------------------------------------
+
+
+def _sample(name, **labels):
+    return REGISTRY.get_sample_value(name, labels) or 0.0
 
 
 def _reading_data(**overrides):
@@ -102,11 +107,26 @@ class TestDispatchDictEvent:
         async def capture(event):
             captured.append(event)
 
+        unknown_before = _sample("thundercloud_metering_events_total", type="unknown")
+
         with caplog.at_level(logging.WARNING):
             await events.dispatch_dict_event({"type": "wat", "data": {}}, [capture])
 
         assert captured == []
         assert any("unknown type" in rec.message for rec in caplog.records)
+        # Counted as "unknown" so driver-supplied names can't grow the label set.
+        assert _sample("thundercloud_metering_events_total", type="unknown") - unknown_before == 1
+        assert REGISTRY.get_sample_value("thundercloud_metering_events_total", {"type": "wat"}) is None
+
+    @pytest.mark.asyncio
+    async def test_unhashable_type_counted_as_unknown(self, caplog):
+        before = _sample("thundercloud_metering_events_total", type="unknown")
+
+        with caplog.at_level(logging.WARNING):
+            await events.dispatch_dict_event({"type": [], "data": {}}, [])
+
+        assert _sample("thundercloud_metering_events_total", type="unknown") - before == 1
+        assert any("missing type" in rec.message for rec in caplog.records)
 
     @pytest.mark.asyncio
     async def test_missing_type_skipped(self, caplog):
@@ -346,6 +366,16 @@ class TestReadingConsumer:
 
 class TestWatchdog:
     @pytest.mark.asyncio
+    async def test_heartbeat_sets_node_gauges(self):
+        watchdog = events.build_watchdog(app=None)
+
+        await watchdog(_heartbeat(total=12, attempted=11, responded=9))
+
+        assert _sample("thundercloud_metering_nodes", state="registered") == 12
+        assert _sample("thundercloud_metering_nodes", state="attempted") == 11
+        assert _sample("thundercloud_metering_nodes", state="responded") == 9
+
+    @pytest.mark.asyncio
     async def test_below_threshold_does_not_warn(self, monkeypatch, caplog):
         monkeypatch.setenv("METERING_WATCHDOG_MIN_NODES", "10")
         monkeypatch.setenv("METERING_WATCHDOG_MAX_DROPOUTS", "3")
@@ -499,9 +529,13 @@ class TestWriteReadingsSync:
             calls.append((reading_data, update_meter_state))
 
         monkeypatch.setattr("sparkmeter.controller.add_reading", fake_add_reading)
+        written_before = _sample("thundercloud_readings_total", result="written")
+        lag_count_before = _sample("thundercloud_reading_ingest_lag_seconds_count")
 
         events._write_readings_sync([_reading(node_id=100, energy=1234.5)], _FakeFlaskApp())
 
+        assert _sample("thundercloud_readings_total", result="written") - written_before == 1
+        assert _sample("thundercloud_reading_ingest_lag_seconds_count") - lag_count_before == 1
         assert len(calls) == 1
         reading_data, update_meter_state = calls[0]
         assert update_meter_state is False
@@ -532,9 +566,11 @@ class TestWriteReadingsSync:
 
         monkeypatch.setattr("sparkmeter.controller.add_reading", fake_add_reading)
         flask_app = _FakeFlaskApp()
+        before = _sample("thundercloud_readings_total", result="lock_timeout")
 
         events._write_readings_sync([_reading(node_id=77)], flask_app)
 
+        assert _sample("thundercloud_readings_total", result="lock_timeout") - before == 1
         assert flask_app.sentry.captured
         message, tags = flask_app.sentry.captured[0]
         assert message == "Meter 77 reading lock timeout"
@@ -546,10 +582,13 @@ class TestWriteReadingsSync:
 
         monkeypatch.setattr("sparkmeter.controller.add_reading", fake_add_reading)
 
+        before = _sample("thundercloud_readings_total", result="duplicate")
+
         with caplog.at_level(logging.WARNING):
             events._write_readings_sync([_reading(node_id=88)], _FakeFlaskApp())
 
         assert any("duplicate reading" in rec.message for rec in caplog.records)
+        assert _sample("thundercloud_readings_total", result="duplicate") - before == 1
 
     def test_incomplete_heartbeat_window_is_discarded(self, monkeypatch, caplog):
         calls = []
@@ -561,8 +600,11 @@ class TestWriteReadingsSync:
 
         # A falsy period_start means the heartbeat window is incomplete, so the
         # reading is dropped before it ever reaches add_reading.
+        before = _sample("thundercloud_readings_total", result="incomplete")
+
         with caplog.at_level(logging.WARNING):
             events._write_readings_sync([_reading(node_id=55, period_start=0)], _FakeFlaskApp())
 
+        assert _sample("thundercloud_readings_total", result="incomplete") - before == 1
         assert calls == []
         assert any("incomplete heartbeat window" in rec.message for rec in caplog.records)

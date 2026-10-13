@@ -20,6 +20,7 @@ from meter_driver_spec.http.models import (
     RegisterNodeRequest,
     SetBalanceAndFlagsRequest,
 )
+from prometheus_client import REGISTRY
 
 from sparkmeter.config import provider_settings
 from sparkmeter.meter.meterdomain import MeterConfig
@@ -487,6 +488,10 @@ class _RecordingClient:
         pass
 
 
+def _sample(name, **labels):
+    return REGISTRY.get_sample_value(name, labels) or 0.0
+
+
 class TestReconcileAllInit:
     @pytest.mark.asyncio
     async def test_empty_payload_still_initializes_the_driver(self, monkeypatch):
@@ -523,11 +528,14 @@ class TestReconcileAllInit:
             async def init_driver(self, payload):
                 raise ValueError("gRPC ConfigureDriver requires the init fields ...; missing: aes_key")
 
+        errors_before = _sample("thundercloud_metering_reconciles_total", result="error")
+
         with pytest.raises(ValueError, match="ConfigureDriver"):
             await reconcile.reconcile_all(_GrpcLikeClient(), object())
 
         # Nothing after init ran.
         assert meters_loaded == []
+        assert _sample("thundercloud_metering_reconciles_total", result="error") - errors_before == 1
 
 
 class TestReconcileAllLoop:
@@ -589,10 +597,15 @@ class TestReconcileAllLoop:
         monkeypatch.setattr(reconcile, "_load_meters", lambda flask_app: meters)
 
         client = _FlakyClient()
+        ok_before = _sample("thundercloud_metering_reconciles_total", result="ok")
+        failures_before = _sample("thundercloud_metering_reconcile_meter_failures_total")
         # A failure on meter 1 must not stop meter 2 from being reconciled.
         await reconcile.reconcile_all(client, object())
 
         assert [req.node_id for req in client.registered] == [2]
+        # The run still completes; the meter it couldn't reconcile is counted.
+        assert _sample("thundercloud_metering_reconciles_total", result="ok") - ok_before == 1
+        assert _sample("thundercloud_metering_reconcile_meter_failures_total") - failures_before == 1
 
 
 class TestConfigOf:
