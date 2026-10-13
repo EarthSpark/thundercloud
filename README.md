@@ -127,6 +127,14 @@ driver alongside the webapp for development, the meter-driver-emulator, so devel
 Thundercloud needs no gateway hardware and no vendor driver. Which driver a deployment uses is
 the deployment's choice, not a dependency of this application.
 
+## Monitoring
+
+Thundercloud serves Prometheus metrics at `/metrics` on its internal listener (port 5001),
+never on the public one. They cover HTTP traffic, the periodic tasks, the meter driver and the
+database pool. [docs/metrics.md](docs/metrics.md) lists every metric and shows how to scrape
+them, and [docs/grafana/thundercloud.json](docs/grafana/thundercloud.json) is a Grafana
+dashboard ready to import.
+
 ## Development
 
 > [!IMPORTANT]
