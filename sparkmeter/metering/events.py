@@ -23,6 +23,7 @@ Each handler is `async def handler(event: Any) -> None`.
 
 import asyncio
 import logging
+import time
 from typing import TYPE_CHECKING, Any
 
 from meter_driver_spec.http.models import (
@@ -31,6 +32,7 @@ from meter_driver_spec.http.models import (
     HeartbeatStatistics,
 )
 
+from sparkmeter import metrics
 from sparkmeter.meter.meterstate import MeterState
 
 if TYPE_CHECKING:
@@ -88,6 +90,13 @@ _SIDE_CHANNEL_INFO_TYPES = {
 # A `heartbeat_read_hops` frame carries no reading but marks a flush boundary.
 _READING_FLUSH_MARKER = object()
 
+# Envelope types counted under their own name in the events metric; any
+# other value is counted as "unknown" so a misbehaving driver can't grow
+# the label set.
+_KNOWN_EVENT_TYPES = (
+    set(_READING_EVENT_TYPES) | {"heartbeat_statistics", "heartbeat_read_hops"} | _SIDE_CHANNEL_TYPES
+)
+
 
 def build_handlers(app: "FastAPI") -> list["EventHandler"]:
     """Construct the handlers wired up by the SSE consumer task."""
@@ -100,6 +109,9 @@ def build_handlers(app: "FastAPI") -> list["EventHandler"]:
 async def dispatch_dict_event(raw: dict[str, Any], handlers: list["EventHandler"]) -> None:
     """Parse a raw SSE envelope into the matching event and dispatch it."""
     event_type = raw.get("type")
+    known = isinstance(event_type, str) and event_type in _KNOWN_EVENT_TYPES
+    metrics.METERING_EVENTS.labels(event_type if known else "unknown").inc()
+    metrics.METERING_LAST_EVENT.set_to_current_time()
     if not event_type:
         logger.warning("metering SSE event missing type: %r", raw)
         return
@@ -242,6 +254,7 @@ def _write_readings_sync(
         for event in batch:
             try:
                 if not (event.period_start and event.period_end):
+                    metrics.READINGS.labels("incomplete").inc()
                     logger.warning(
                         "discarding reading from meter %s: incomplete heartbeat window "
                         "(period_start=%r, period_end=%r)",
@@ -280,7 +293,10 @@ def _write_readings_sync(
                 )
                 try:
                     add_reading(reading_data, update_meter_state=False)
+                    metrics.READINGS.labels("written").inc()
+                    metrics.READING_INGEST_LAG.observe(max(0.0, time.time() - float(event.period_end)))
                 except DatabaseLockTimeoutException:
+                    metrics.READINGS.labels("lock_timeout").inc()
                     logger.error(
                         "discarding reading from meter %s: db lock timeout",
                         event.node_id,
@@ -290,8 +306,10 @@ def _write_readings_sync(
                         tags={"action": "reading"},
                     )
                 except DuplicateReadingException:
+                    metrics.READINGS.labels("duplicate").inc()
                     logger.warning("discarding duplicate reading from meter %s", event.node_id)
             except Exception:  # noqa: BLE001
+                metrics.READINGS.labels("error").inc()
                 logger.exception(
                     "failed to write reading for node_id=%s",
                     getattr(event, "node_id", "?"),
@@ -330,6 +348,10 @@ def build_watchdog(app: "FastAPI") -> "EventHandler":
         registered = event.total_registered_nodes
         attempted = event.nodes_reached_out_to_in_current_heartbeat
         responded = event.nodes_heard_from_in_current_heartbeat
+
+        metrics.METERING_NODES.labels("registered").set(registered)
+        metrics.METERING_NODES.labels("attempted").set(attempted)
+        metrics.METERING_NODES.labels("responded").set(responded)
 
         logger.info(
             "metering heartbeat summary: registered=%d attempted=%d responded=%d",

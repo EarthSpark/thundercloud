@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 
+from sparkmeter import metrics
 from sparkmeter.metering.provider_config import configured_provider_url
 from sparkmeter.metering.runtime_client import (
     GrpcTargetUnavailable,
@@ -354,12 +355,14 @@ async def _run_sse_consumer(app: FastAPI, event_client, client_id: str) -> None:
                 await _observe_gateway_status(app, raw_event)
                 await dispatch_dict_event(raw_event, handlers)
                 await _run_pending_provider_restart(app)
+            metrics.METERING_STREAM_RECONNECTS.inc()
             if has_connected_once or saw_event_this_connection:
                 logger.warning("metering SSE stream ended; treating provider as restarted")
                 gateway_state["needs_full_restart"] = True
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001
+            metrics.METERING_STREAM_RECONNECTS.inc()
             logger.exception("metering SSE stream broke; reconnecting in %.1fs", backoff)
             if has_connected_once:
                 gateway_state["needs_full_restart"] = True

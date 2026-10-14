@@ -50,6 +50,14 @@ dependencies = [
     "sqlalchemy",
     "flask-sqlalchemy",
 
+    # Logging: renders stdlib log records as text, logfmt or JSON and carries
+    # request/task context (sparkmeter/misc/logutils.py).
+    "structlog",
+
+    # Metrics: the official Prometheus client. The scrape endpoint is served
+    # on the internal listener (sparkmeter/metrics.py).
+    "prometheus-client",
+
     # ASGI / FastAPI
     "fastapi",
     "hypercorn",

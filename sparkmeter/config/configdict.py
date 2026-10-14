@@ -12,11 +12,6 @@ from importlib import reload
 
 from past.builtins import execfile
 
-logging.captureWarnings(True)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)-7s %(asctime)s   %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 

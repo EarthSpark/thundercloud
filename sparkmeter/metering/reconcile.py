@@ -18,6 +18,7 @@ reconcile.
 
 import asyncio
 import logging
+import time
 from typing import TYPE_CHECKING, Any, Optional
 
 from meter_driver_spec.http.models import (
@@ -28,6 +29,7 @@ from meter_driver_spec.http.models import (
 )
 from past.utils import old_div
 
+from sparkmeter import metrics
 from sparkmeter.metering.runtime_client import behavior_to_command, to_spec_decimal
 
 if TYPE_CHECKING:
@@ -77,6 +79,22 @@ async def reconcile_all(
     driver init for this runtime transition and only needs the per-meter
     reconcile sequence.
     """
+    started = time.perf_counter()
+    # Export the error series at 0 before the first failure so increase() sees it.
+    metrics.METERING_RECONCILES.labels("error")
+    try:
+        await _reconcile(client, flask_app, skip_provider_init=skip_provider_init)
+    except Exception:
+        metrics.METERING_RECONCILES.labels("error").inc()
+        raise
+    metrics.METERING_RECONCILES.labels("ok").inc()
+    metrics.METERING_RECONCILE_DURATION.observe(time.perf_counter() - started)
+
+
+async def _reconcile(
+    client: "MeteringCommandClient", flask_app: "Flask", *, skip_provider_init: bool
+) -> None:
+    """Driver init, then register, configure and set the balance of every meter."""
     logger.info("metering reconcile: starting")
 
     if not skip_provider_init:
@@ -121,6 +139,7 @@ async def reconcile_all(
                 )
                 await client.set_balance(int(m["meter_id"]), balance)
         except Exception:  # noqa: BLE001
+            metrics.METERING_RECONCILE_METER_FAILURES.inc()
             logger.exception("metering reconcile: failed for meter_id=%s", m.get("meter_id", "?"))
 
     logger.info("metering reconcile: done (%d meters registered)", len(meters_data))

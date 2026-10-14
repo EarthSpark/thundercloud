@@ -13,6 +13,7 @@ import threading
 
 import pytest
 from flask import current_app
+from prometheus_client import REGISTRY
 
 from sparkmeter import periodic
 
@@ -61,6 +62,32 @@ class TestRunBlocking:
             or "boom from inside the job" in (record.exc_text or "")
             for record in caplog.records
         )
+
+    def test_records_job_metrics(self, app):
+        def _metrics_ok_job():
+            pass
+
+        def _metrics_broken_job():
+            raise RuntimeError("boom")
+
+        def sample(name, **labels):
+            return REGISTRY.get_sample_value(name, labels) or 0.0
+
+        asyncio.run(periodic._run_blocking(_metrics_ok_job, app))
+        asyncio.run(periodic._run_blocking(_metrics_broken_job, app))
+
+        assert sample("thundercloud_task_runs_total", task="_metrics_ok_job", result="success") == 1
+        assert sample("thundercloud_task_runs_total", task="_metrics_broken_job", result="error") == 1
+        # Both series exist for a task before it has ever failed.
+        assert (
+            REGISTRY.get_sample_value(
+                "thundercloud_task_runs_total", {"task": "_metrics_ok_job", "result": "error"}
+            )
+            == 0
+        )
+        assert sample("thundercloud_task_duration_seconds_count", task="_metrics_broken_job") == 1
+        assert sample("thundercloud_task_last_success_timestamp_seconds", task="_metrics_ok_job") > 0
+        assert sample("thundercloud_task_last_success_timestamp_seconds", task="_metrics_broken_job") == 0
 
     def test_signature_requires_flask_app(self):
         """The pre-fix signature accepted only `fn`. Calling without

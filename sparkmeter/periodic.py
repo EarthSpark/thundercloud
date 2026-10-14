@@ -23,7 +23,12 @@ import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime, time, timedelta
+from time import perf_counter
 from typing import TYPE_CHECKING
+
+from structlog.contextvars import bound_contextvars
+
+from sparkmeter import metrics
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -32,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _run_blocking(fn: Callable[[], None], flask_app: "Flask") -> None:
-    """Wrap a sync function in `asyncio.to_thread` with logging.
+    """Wrap a sync function in `asyncio.to_thread` with logging and task metrics.
 
     Pushes a Flask app context on the worker thread before calling `fn`
     so `current_app` resolves. The job functions still call
@@ -45,10 +50,22 @@ async def _run_blocking(fn: Callable[[], None], flask_app: "Flask") -> None:
         with flask_app.app_context():
             fn()
 
-    try:
-        await asyncio.to_thread(_wrapped)
-    except Exception:  # noqa: BLE001
-        logger.exception("periodic job %s raised", fn.__name__)
+    task = fn.__name__
+    # Export the error series at 0 before the first failure so increase() sees it.
+    metrics.TASK_RUNS.labels(task, "error")
+    started = perf_counter()
+    # Everything logged during the run, on the worker thread too, carries task=<name>.
+    with bound_contextvars(task=task):
+        try:
+            await asyncio.to_thread(_wrapped)
+            result = "success"
+        except Exception:  # noqa: BLE001
+            result = "error"
+            logger.exception("periodic job %s raised", task)
+    metrics.TASK_DURATION.labels(task).observe(perf_counter() - started)
+    metrics.TASK_RUNS.labels(task, result).inc()
+    if result == "success":
+        metrics.TASK_LAST_SUCCESS.labels(task).set_to_current_time()
 
 
 async def every_minute_loop(flask_app: "Flask") -> None:

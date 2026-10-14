@@ -9,7 +9,8 @@ integration, admin proxy, etc.).
 
 Two ASGI servers run in this process:
 - Public app on port 5000 (mapped externally) — Flask routes + public FastAPI routes
-- Internal app on port 5001 (NOT mapped) — admin endpoints
+- Internal app on port 5001 (NOT mapped) — admin endpoints and the
+  Prometheus scrape endpoint, `GET /metrics` (see sparkmeter/metrics.py)
 
 Run as:
     python -m sparkmeter.asgi
@@ -17,18 +18,21 @@ or directly via Hypercorn against `sparkmeter.asgi:public_app` for development.
 """
 
 import asyncio
+import logging
 import os
 import signal
 import sys
 
 from a2wsgi import WSGIMiddleware
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 
 # Ensure the webapp dir is importable when running as a script
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from contextlib import asynccontextmanager  # noqa: E402
 
+from sparkmeter import metrics  # noqa: E402
+from sparkmeter.accesslog import AccessLogMiddleware  # noqa: E402
 from sparkmeter.app import SparkmeterApplication  # noqa: E402
 from sparkmeter.cli import register_cli_commands  # noqa: E402
 from sparkmeter.metering.lifespan import metering_lifespan  # noqa: E402
@@ -63,6 +67,7 @@ def create_flask_app() -> SparkmeterApplication:
     flask_app = SparkmeterApplication(mode=SparkmeterApplication.MODE_PRODUCTION)
     register_cli_commands(flask_app)
     flask_app.bootstrap()
+    metrics.instrument_flask_app(flask_app)
     return flask_app
 
 
@@ -79,6 +84,9 @@ def create_public_app() -> FastAPI:
         redoc_url=None,
         lifespan=app_lifespan,
     )
+    api.add_middleware(metrics.HTTPMetricsMiddleware)
+    # Added last, so outermost: the request id is bound before anything else runs.
+    api.add_middleware(AccessLogMiddleware, listener="public", quiet_paths={"/health"})
 
     @api.get("/health")
     async def health():
@@ -102,7 +110,7 @@ def create_public_app() -> FastAPI:
 
 
 def create_internal_app(public_app: FastAPI) -> FastAPI:
-    """The internal ASGI app: admin endpoints. Not network-exposed.
+    """The internal ASGI app: admin endpoints and the metrics scrape. Not network-exposed.
 
     Shares the public app's metering-provider client via
     `app.state.metering`. CLI tools that talk directly to the metering
@@ -115,6 +123,16 @@ def create_internal_app(public_app: FastAPI) -> FastAPI:
         request.app.state.metering = getattr(public_app.state, "metering", None)
         return await call_next(request)
 
+    # A plain route rather than mounting prometheus_client's ASGI app: a
+    # Starlette Mount at /metrics only matches /metrics/ and would answer
+    # every scrape of /metrics with a 307. Sync, so collection runs in the
+    # threadpool rather than on the event loop.
+    @api.get("/metrics", include_in_schema=False)
+    def scrape_metrics(request: Request) -> Response:
+        body, headers = metrics.render(request.headers.get("accept"), request.headers.get("accept-encoding"))
+        return Response(body, headers=headers)
+
+    api.add_middleware(AccessLogMiddleware, listener="internal", quiet_paths={"/metrics"})
     return api
 
 
@@ -154,15 +172,18 @@ async def _serve_both() -> None:
     public = create_public_app()
     internal = create_internal_app(public)
 
+    # AccessLogMiddleware writes the access log, so Hypercorn's is off. Passing
+    # a Logger (rather than "-") for the error log stops Hypercorn from adding
+    # its own handler, so those lines go through the root handler once.
     public_cfg = Config()
     public_cfg.bind = [os.environ.get("PUBLIC_BIND", "0.0.0.0:5000")]
-    public_cfg.accesslog = "-"
-    public_cfg.errorlog = "-"
+    public_cfg.accesslog = None
+    public_cfg.errorlog = logging.getLogger("hypercorn.error")
 
     internal_cfg = Config()
     internal_cfg.bind = [os.environ.get("INTERNAL_BIND", "0.0.0.0:5001")]
-    internal_cfg.accesslog = "-"
-    internal_cfg.errorlog = "-"
+    internal_cfg.accesslog = None
+    internal_cfg.errorlog = logging.getLogger("hypercorn.error")
 
     shutdown = asyncio.Event()
 
