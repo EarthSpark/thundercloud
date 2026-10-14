@@ -21,8 +21,8 @@ port 5001 to your Prometheus server and nothing else. Never publish it on a
 public interface or route it through a public load balancer.
 
 The endpoint returns the Prometheus text format, or OpenMetrics when the
-scraper asks for it, gzipped when the scraper accepts gzip. Scrapes are left
-out of the internal listener's access log.
+scraper asks for it, gzipped when the scraper accepts gzip. Successful scrapes
+are logged at DEBUG, so they stay out of the log at the default level.
 
 ```bash
 docker compose exec ground curl -s localhost:5001/metrics | head

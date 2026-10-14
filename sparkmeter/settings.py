@@ -33,7 +33,11 @@ SESSION_COOKIE_SECURE = False
 
 READING_RETENTION_MINUTES = 60 * 24  # how long to keep summarized readings for
 
+# A level name (DEBUG, INFO, WARNING, ...) or number.
 LOG_LEVEL = logging.INFO
+# text (human-oriented), logfmt (Loki and similar) or json (Elasticsearch and
+# similar); see sparkmeter/misc/logutils.py and docs/logging.md.
+LOG_FORMAT = "text"
 
 LOCALES = [
     "en_US",

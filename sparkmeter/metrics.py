@@ -306,7 +306,8 @@ def instrument_flask_app(flask_app):
     )
 
 
-def _route_template(scope):
+def route_template(scope):
+    """The matched route template for a request scope, or "unmatched"."""
     flask_rule = scope.get(FLASK_RULE_SCOPE_KEY)
     if flask_rule:
         return flask_rule
@@ -345,7 +346,7 @@ class HTTPMetricsMiddleware:
             await self.app(scope, receive, send_with_status)
         finally:
             HTTP_REQUESTS_IN_PROGRESS.dec()
-            route = _route_template(scope)
+            route = route_template(scope)
             HTTP_REQUEST_DURATION.labels(method, route).observe(time.perf_counter() - started)
             HTTP_REQUESTS.labels(method, route, str(status)).inc()
 

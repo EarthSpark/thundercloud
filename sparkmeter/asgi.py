@@ -18,6 +18,7 @@ or directly via Hypercorn against `sparkmeter.asgi:public_app` for development.
 """
 
 import asyncio
+import logging
 import os
 import signal
 import sys
@@ -31,6 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from contextlib import asynccontextmanager  # noqa: E402
 
 from sparkmeter import metrics  # noqa: E402
+from sparkmeter.accesslog import AccessLogMiddleware  # noqa: E402
 from sparkmeter.app import SparkmeterApplication  # noqa: E402
 from sparkmeter.cli import register_cli_commands  # noqa: E402
 from sparkmeter.metering.lifespan import metering_lifespan  # noqa: E402
@@ -83,6 +85,8 @@ def create_public_app() -> FastAPI:
         lifespan=app_lifespan,
     )
     api.add_middleware(metrics.HTTPMetricsMiddleware)
+    # Added last, so outermost: the request id is bound before anything else runs.
+    api.add_middleware(AccessLogMiddleware, listener="public", quiet_paths={"/health"})
 
     @api.get("/health")
     async def health():
@@ -128,6 +132,7 @@ def create_internal_app(public_app: FastAPI) -> FastAPI:
         body, headers = metrics.render(request.headers.get("accept"), request.headers.get("accept-encoding"))
         return Response(body, headers=headers)
 
+    api.add_middleware(AccessLogMiddleware, listener="internal", quiet_paths={"/metrics"})
     return api
 
 
@@ -159,18 +164,6 @@ def __getattr__(name):  # PEP 562 module-level __getattr__
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def _scrape_quiet_logger_class():
-    """Hypercorn logger class for the internal listener that skips access lines for scrapes."""
-    from hypercorn.logging import Logger
-
-    class ScrapeQuietLogger(Logger):
-        async def access(self, request, response, request_time):
-            if request.get("path") != "/metrics":
-                await super().access(request, response, request_time)
-
-    return ScrapeQuietLogger
-
-
 async def _serve_both() -> None:
     """Run both ASGI servers in this process, sharing one shutdown signal."""
     from hypercorn.asyncio import serve
@@ -179,16 +172,18 @@ async def _serve_both() -> None:
     public = create_public_app()
     internal = create_internal_app(public)
 
+    # AccessLogMiddleware writes the access log, so Hypercorn's is off. Passing
+    # a Logger (rather than "-") for the error log stops Hypercorn from adding
+    # its own handler, so those lines go through the root handler once.
     public_cfg = Config()
     public_cfg.bind = [os.environ.get("PUBLIC_BIND", "0.0.0.0:5000")]
-    public_cfg.accesslog = "-"
-    public_cfg.errorlog = "-"
+    public_cfg.accesslog = None
+    public_cfg.errorlog = logging.getLogger("hypercorn.error")
 
     internal_cfg = Config()
     internal_cfg.bind = [os.environ.get("INTERNAL_BIND", "0.0.0.0:5001")]
-    internal_cfg.accesslog = "-"
-    internal_cfg.errorlog = "-"
-    internal_cfg.logger_class = _scrape_quiet_logger_class()
+    internal_cfg.accesslog = None
+    internal_cfg.errorlog = logging.getLogger("hypercorn.error")
 
     shutdown = asyncio.Event()
 

@@ -26,6 +26,8 @@ from datetime import datetime, time, timedelta
 from time import perf_counter
 from typing import TYPE_CHECKING
 
+from structlog.contextvars import bound_contextvars
+
 from sparkmeter import metrics
 
 if TYPE_CHECKING:
@@ -52,12 +54,14 @@ async def _run_blocking(fn: Callable[[], None], flask_app: "Flask") -> None:
     # Export the error series at 0 before the first failure so increase() sees it.
     metrics.TASK_RUNS.labels(task, "error")
     started = perf_counter()
-    try:
-        await asyncio.to_thread(_wrapped)
-        result = "success"
-    except Exception:  # noqa: BLE001
-        result = "error"
-        logger.exception("periodic job %s raised", task)
+    # Everything logged during the run, on the worker thread too, carries task=<name>.
+    with bound_contextvars(task=task):
+        try:
+            await asyncio.to_thread(_wrapped)
+            result = "success"
+        except Exception:  # noqa: BLE001
+            result = "error"
+            logger.exception("periodic job %s raised", task)
     metrics.TASK_DURATION.labels(task).observe(perf_counter() - started)
     metrics.TASK_RUNS.labels(task, result).inc()
     if result == "success":

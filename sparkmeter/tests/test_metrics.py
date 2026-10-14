@@ -3,7 +3,6 @@
 
 import asyncio
 import gzip
-import logging
 from types import SimpleNamespace
 
 import pytest
@@ -128,38 +127,6 @@ class TestScrapeEndpoint:
 
         assert headers["Content-Encoding"] == "gzip"
         assert b"http_requests_total" in gzip.decompress(body)
-
-
-class TestScrapeQuietLogger:
-    @staticmethod
-    def _scope(path):
-        return {
-            "type": "http",
-            "http_version": "1.1",
-            "scheme": "http",
-            "method": "GET",
-            "path": path,
-            "query_string": b"",
-            "headers": [],
-            "client": ("10.0.0.9", 50000),
-        }
-
-    def test_skips_scrapes_and_logs_everything_else(self, caplog):
-        from hypercorn.config import Config
-
-        access = logging.getLogger("test.metrics.access")
-        config = Config()
-        config.accesslog = access
-        log = asgi._scrape_quiet_logger_class()(config)
-        response = {"status": 200, "headers": []}
-
-        with caplog.at_level(logging.INFO, logger=access.name):
-            asyncio.run(log.access(self._scope("/metrics"), response, 0.01))
-            asyncio.run(log.access(self._scope("/admin/thing"), response, 0.01))
-
-        lines = [rec.getMessage() for rec in caplog.records if rec.name == access.name]
-        assert len(lines) == 1
-        assert "/admin/thing" in lines[0]
 
 
 class TestMeteringStateCollector:

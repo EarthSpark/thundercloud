@@ -3,7 +3,19 @@
 set -o errexit
 set -o nounset
 
-echo "[ Running Webapp ]"
+# Startup messages follow SM_LOG_FORMAT like the application's own log
+# lines, so a log pipeline parsing logfmt or JSON doesn't trip on them.
+log() {
+    msg=$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    case "${SM_LOG_FORMAT:-text}" in
+        logfmt) printf 'time=%s level=info logger=run.webapp msg="%s"\n' "$now" "$msg" >&2 ;;
+        json) printf '{"time": "%s", "level": "info", "logger": "run.webapp", "msg": "%s"}\n' "$now" "$msg" >&2 ;;
+        *) printf '[ %s ]\n' "$1" ;;
+    esac
+}
+
+log "Running Webapp"
 
 : ${DATABASE_URL:=""}
 
@@ -11,17 +23,17 @@ n_vars=$#
 cmd=$@
 
 wait_for_postgres() {
-    echo "[ Trying to establish a connection to PostgreSQL... ]"
+    log "Trying to establish a connection to PostgreSQL..."
     until psql -qAt $DATABASE_URL -c 'SELECT 1;' &>/dev/null || false
     do
         sleep 2
     done
-    echo "[ Connection to PostgreSQL established ]"
+    log "Connection to PostgreSQL established"
 }
 
 wait_for_table() {
     table=$1
-    echo "[ Waiting for table $table to be created ]"
+    log "Waiting for table $table to be created"
     stmt="SELECT COUNT(*) FROM pg_tables WHERE tablename = '$table';"
     while true; do
         result=$(psql -qAt $DATABASE_URL -c "$stmt")
@@ -30,7 +42,7 @@ wait_for_table() {
         fi
         sleep 2
     done
-    echo "[ Table $table found ]"
+    log "Table $table found"
 }
 
 check_table_count() {
@@ -38,7 +50,7 @@ check_table_count() {
     n_items=$2
 
     wait_for_table $table
-    echo "[ Waiting for table $table to contain at least $n_items row(s) ]"
+    log "Waiting for table $table to contain at least $n_items row(s)"
     while true; do
         result=$(psql -qAt $DATABASE_URL -c "SELECT COUNT(*) FROM $table;")
         if [ "$result" -ge "$n_items" ]; then
@@ -49,7 +61,7 @@ check_table_count() {
 }
 
 run_webserver() {
-    echo "[ Running web server ]"
+    log "Running web server"
     # The ASGI entrypoint binds two listeners in one Hypercorn process:
     # - 0.0.0.0:5000 for public traffic (mapped to host port 80)
     # - 0.0.0.0:5001 for internal admin/proxy endpoints and the Prometheus
@@ -59,7 +71,7 @@ run_webserver() {
 }
 
 run_command() {
-    echo "[ Running $cmd ]"
+    log "Running $cmd"
     $cmd
 }
 

@@ -87,8 +87,11 @@ class SparkmeterApplication(Flask):
         super(SparkmeterApplication, self).__init__(__name__, static_folder=self._get_static_folder())
         self.mode = mode
         self.developer_mode = os.path.exists(os.path.join(os.path.dirname(__file__), "..", ".git"))
+        # Twice: with defaults so loading the configuration can log, then with
+        # the configured LOG_LEVEL and LOG_FORMAT.
         self._setup_logging()
         self._load_configuration()
+        self._setup_logging()
         self._load_domain_modules()
 
     def _get_static_folder(self):
@@ -267,7 +270,10 @@ class SparkmeterApplication(Flask):
     def _setup_logging(self):
         from sparkmeter.misc.logutils import setup_logging
 
-        setup_logging(level=self.config.get("LOG_LEVEL", logging.INFO))
+        setup_logging(
+            level=self.config.get("LOG_LEVEL", logging.INFO),
+            fmt=self.config.get("LOG_FORMAT", "text"),
+        )
 
     def _setup_bootstrap(self):
         from flask_bootstrap import Bootstrap
@@ -323,7 +329,10 @@ class SparkmeterApplication(Flask):
         from sparkmeter.database.alchemy import sql
 
         sql.init_app(self)
-        logger.info(" * Connected to %s" % (self.config["SQLALCHEMY_DATABASE_URI"],))
+        from sqlalchemy.engine import make_url
+
+        url = make_url(self.config["SQLALCHEMY_DATABASE_URI"])
+        logger.info(" * Connected to %s", url.render_as_string(hide_password=True))
         self.sql = sql
 
     def _demo_login_enabled(self):
